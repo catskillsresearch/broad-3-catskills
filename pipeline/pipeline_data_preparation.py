@@ -224,9 +224,9 @@ class PrepareTrainingData(luigi.Task):
         val_indices = features_data['val_indices']
         test_indices = features_data['test_indices']
         
-        # Load gene expression
+        # Load gene expression - FIX: Added allow_pickle=True
         gene_expression = np.load(os.path.join(small_dataset_dir, 'gene_expression.npy'))
-        gene_names = np.load(os.path.join(small_dataset_dir, 'gene_names.npy'))
+        gene_names = np.load(os.path.join(small_dataset_dir, 'gene_names.npy'), allow_pickle=True)
         
         # Save training data
         np.savez(

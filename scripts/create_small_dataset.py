@@ -107,6 +107,8 @@ def extract_small_dataset(config, output_dir, seed=42):
     # Load spatial data
     spatial_data = zarr.open(config['data_path'], mode='r')
     
+    print(f"Loading data from AnnData-like zarr structure...")
+    
     # Load gene expression data from tables/anucleus/X
     gene_expression = np.array(spatial_data['tables']['anucleus']['X'])
     
@@ -191,8 +193,8 @@ def extract_small_dataset(config, output_dir, seed=42):
     # Save cell coordinates
     np.save(os.path.join(output_dir, 'cell_coordinates.npy'), small_cell_coordinates)
     
-    # Save gene names
-    np.save(os.path.join(output_dir, 'gene_names.npy'), gene_names)
+    # Save gene names - FIX: Use allow_pickle=True when saving object arrays
+    np.save(os.path.join(output_dir, 'gene_names.npy'), gene_names, allow_pickle=True)
     
     # Save region labels
     np.save(os.path.join(output_dir, 'region_labels.npy'), small_region_labels)
