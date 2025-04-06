@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Data - Spatial Transcriptomics Challenge Documentation</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Spatial Transcriptomics Challenge</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html" class="active">Input Data</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#spatial-transcriptomics-data">Spatial Transcriptomics Data</a></li>
+                    <li><a href="#he-images">H&E Pathology Images</a></li>
+                    <li><a href="#nucleus-segmentation">Nucleus Segmentation</a></li>
+                    <li><a href="#scrna-seq-data">scRNA-seq Data</a></li>
+                    <li><a href="#region-annotations">Region Annotations</a></li>
+                    <li><a href="#data-organization">Data Organization</a></li>
+                    <li><a href="#registered-vs-unregistered">Registered vs. Unregistered Images</a></li>
+                    <li><a href="#data-dimensions">Data Dimensions</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Input Data</span>
+            </div>
+
+            <section id="overview">
+                <h2>Input Data Overview</h2>
+                <p>The Spatial Transcriptomics Challenge uses several key data types to predict gene expression from histology images and identify markers for dysplasia in inflammatory bowel disease (IBD). This page provides a detailed explanation of each data type, its format, and its role in the analysis pipeline.</p>
+                
+                <div class="info-box">
+                    <h3>Key Data Types</h3>
+                    <ul>
+                        <li><strong>Spatial Transcriptomics Data</strong>: Gene expression measurements with spatial coordinates</li>
+                        <li><strong>H&E Pathology Images</strong>: Histology images showing tissue morphology</li>
+                        <li><strong>Nucleus Segmentation Masks</strong>: Identification of individual cell nuclei</li>
+                        <li><strong>Single-cell RNA Sequencing Data</strong>: High-resolution gene expression profiles</li>
+                        <li><strong>Region Annotations</strong>: Labeled dysplastic and non-dysplastic regions</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="spatial-transcriptomics-data">
+                <h2>Spatial Transcriptomics Data</h2>
+                <p>The spatial transcriptomics data is stored in Zarr format (.zarr), which is optimized for storing and accessing large, chunked, compressed N-dimensional arrays.</p>
+                
+                <h3>Data Format</h3>
+                <p>The Xenium spatial transcriptomics data includes:</p>
+                <ul>
+                    <li><strong>Cell Coordinates</strong>: X, Y positions of each cell in the tissue</li>
+                    <li><strong>Gene Expression Matrix</strong>: Expression levels of 460 measured genes across all cells</li>
+                    <li><strong>Cell Metadata</strong>: Additional information about each cell</li>
+                </ul>
+                
+                <h3>Data Structure</h3>
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Accessing Spatial Data</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import zarr
+import numpy as np
+import pandas as pd
+
+# Open Zarr store
+store = zarr.open('path/to/xenium_data.zarr', mode='r')
+
+# Access cell coordinates
+cell_positions = np.array([store['cell_positions']['x'][:], store['cell_positions']['y'][:]])
+cell_positions = cell_positions.T  # Transpose to get (n_cells, 2) shape
+
+# Access gene expression matrix
+gene_expression = store['gene_expression'][:]
+gene_names = store['gene_names'][:]
+
+# Create DataFrame
+expression_df = pd.DataFrame(
+    gene_expression, 
+    columns=[gene.decode('utf-8') for gene in gene_names]
+)
+
+# Add cell coordinates
+expression_df['x'] = cell_positions[:, 0]
+expression_df['y'] = cell_positions[:, 1]
+                    </code></pre>
+                </div>
+                
+                <h3>Data Dimensions</h3>
+                <p>The spatial transcriptomics dataset contains:</p>
+                <ul>
+                    <li>Approximately 50,000-200,000 cells per sample</li>
+                    <li>Expression measurements for 460 genes</li>
+                    <li>Multiple tissue samples from IBD patients</li>
+                </ul>
+            </section>
+
+            <section id="he-images">
+                <h2>H&E Pathology Images</h2>
+                <p>Hematoxylin and Eosin (H&E) stained pathology images provide visual information about tissue morphology and cellular organization.</p>
+                
+                <h3>Image Properties</h3>
+                <ul>
+                    <li><strong>Resolution</strong>: High-resolution images (typically 0.5 μm/pixel)</li>
+                    <li><strong>Format</strong>: TIFF or similar format supporting large images</li>
+                    <li><strong>Channels</strong>: RGB color channels</li>
+                    <li><strong>Size</strong>: Large images, often several gigabytes per sample</li>
+                </ul>
+                
+                <h3>Image Content</h3>
+                <p>H&E staining highlights different tissue components:</p>
+                <ul>
+                    <li><strong>Hematoxylin (blue/purple)</strong>: Stains cell nuclei</li>
+                    <li><strong>Eosin (pink/red)</strong>: Stains cytoplasm and extracellular matrix</li>
+                </ul>
+                
+                <p>These images provide critical visual information about:</p>
+                <ul>
+                    <li>Tissue architecture and organization</li>
+                    <li>Cell morphology and density</li>
+                    <li>Pathological features (inflammation, dysplasia, etc.)</li>
+                </ul>
+            </section>
+
+            <section id="nucleus-segmentation">
+                <h2>Nucleus Segmentation Masks</h2>
+                <p>Nucleus segmentation masks identify individual cell nuclei in the H&E images, providing a bridge between the image data and gene expression measurements.</p>
+                
+                <h3>Mask Properties</h3>
+                <ul>
+                    <li><strong>Format</strong>: Binary or labeled masks</li>
+                    <li><strong>Resolution</strong>: Same as the corresponding H&E images</li>
+                    <li><strong>Content</strong>: Each nucleus is identified with a unique label</li>
+                </ul>
+                
+                <h3>Usage in Pipeline</h3>
+                <p>The nucleus segmentation masks are used to:</p>
+                <ul>
+                    <li>Extract image patches centered on each cell nucleus</li>
+                    <li>Associate image features with corresponding gene expression measurements</li>
+                    <li>Provide spatial context for neighboring cells</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Extracting Image Patches</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import numpy as np
+from PIL import Image
+
+def extract_patches(image, cell_positions, patch_size=64):
+    """Extract image patches centered on cell positions."""
+    patches = []
+    half_size = patch_size // 2
+    
+    # Pad image to handle boundary cases
+    padded_image = np.pad(
+        image, 
+        ((half_size, half_size), (half_size, half_size), (0, 0)),
+        mode='reflect'
+    )
+    
+    # Extract patch for each cell
+    for x, y in cell_positions:
+        # Adjust coordinates for padding
+        x_pad = x + half_size
+        y_pad = y + half_size
+        
+        # Extract patch
+        patch = padded_image[
+            y_pad - half_size:y_pad + half_size,
+            x_pad - half_size:x_pad + half_size,
+            :
+        ]
+        
+        patches.append(patch)
+    
+    return np.array(patches)
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="scrna-seq-data">
+                <h2>Single-cell RNA Sequencing Data</h2>
+                <p>Single-cell RNA sequencing (scRNA-seq) data provides high-resolution gene expression profiles for individual cells, including genes not measured in the spatial transcriptomics data.</p>
+                
+                <h3>Data Properties</h3>
+                <ul>
+                    <li><strong>Format</strong>: Matrix of gene expression values (often in AnnData or similar format)</li>
+                    <li><strong>Dimensions</strong>: Cells (rows) × Genes (columns)</li>
+                    <li><strong>Gene Coverage</strong>: ~18,615 genes (much more than the 460 genes in spatial data)</li>
+                    <li><strong>Cell Types</strong>: Various cell types found in IBD tissue</li>
+                </ul>
+                
+                <h3>Role in Challenge</h3>
+                <p>The scRNA-seq data is primarily used for Crunch 2 of the challenge:</p>
+                <ul>
+                    <li>Predicting expression of unmeasured genes in the spatial data</li>
+                    <li>Transferring gene expression information from scRNA-seq to spatial context</li>
+                    <li>Expanding the gene set from 460 to ~18,615 genes</li>
+                </ul>
+                
+                <div class="info-box">
+                    <h3>Data Integration Challenge</h3>
+                    <p>A key challenge is integrating the scRNA-seq data (which lacks spatial information) with the spatial transcriptomics data. This requires finding corresponding cell types between the two datasets and transferring gene expression patterns while preserving spatial context.</p>
+                </div>
+            </section>
+
+            <section id="region-annotations">
+                <h2>Region Annotations</h2>
+                <p>Region annotations provide labels for different tissue regions, particularly distinguishing between dysplastic (pre-cancerous) and non-dysplastic areas.</p>
+                
+                <h3>Annotation Properties</h3>
+                <ul>
+                    <li><strong>Format</strong>: Polygon coordinates or labeled masks</li>
+                    <li><strong>Categories</strong>: Primarily dysplastic vs. non-dysplastic regions</li>
+                    <li><strong>Resolution</strong>: Region-level annotations (not cell-level)</li>
+                </ul>
+                
+                <h3>Role in Challenge</h3>
+                <p>Region annotations are primarily used for Crunch 3 of the challenge:</p>
+                <ul>
+                    <li>Identifying gene markers that distinguish dysplastic from non-dysplastic regions</li>
+                    <li>Calculating differential expression between region types</li>
+                    <li>Evaluating the biological relevance of predicted gene expression</li>
+                </ul>
+            </section>
+
+            <section id="data-organization">
+                <h2>Data Organization</h2>
+                <p>The data is organized in a hierarchical structure to facilitate access and processing.</p>
+                
+                <h3>File Structure</h3>
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>File Structure</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code>
+data/
+├── spatial/
+│   ├── sample1/
+│   │   ├── xenium_data.zarr
+│   │   ├── HE_registered.tif
+│   │   ├── HE_nuc_registered.tif
+│   │   ├── HE_original.tif
+│   │   └── HE_nuc_original.tif
+│   ├── sample2/
+│   │   └── ...
+│   └── ...
+├── scRNA-seq/
+│   ├── counts_matrix.h5ad
+│   └── metadata.csv
+└── annotations/
+    ├── sample1_regions.json
+    ├── sample2_regions.json
+    └── ...
+                    </code></pre>
+                </div>
+                
+                <h3>Data Relationships</h3>
+                <p>The relationships between different data types are crucial for the analysis:</p>
+                <ul>
+                    <li>Spatial transcriptomics data and H&E images are aligned through registration</li>
+                    <li>Cell positions in spatial data correspond to nuclei in segmentation masks</li>
+                    <li>Region annotations define areas within the H&E images</li>
+                    <li>scRNA-seq data is linked to spatial data through cell type similarity</li>
+                </ul>
+            </section>
+
+            <section id="registered-vs-unregistered">
+                <h2>Registered vs. Unregistered Images</h2>
+                <p>The dataset includes both registered and unregistered (original) versions of the H&E images.</p>
+                
+                <h3>Key Differences</h3>
+                <ul>
+                    <li><strong>Original (Unregistered) Images</strong>: Raw H&E images as captured by the imaging system</li>
+                    <li><strong>Registered Images</strong>: Images that have been spatially aligned to match the coordinate system of the Xenium spatial transcriptomics data</li>
+                </ul>
+                
+                <div class="info-box">
+                    <h3>Important Note</h3>
+                    <p>For the purposes of the competition, only the registered images are used in the analysis pipeline. The unregistered images are provided for reference but can be safely excluded from the workflow.</p>
+                </div>
+                
+                <h3>Registration Process</h3>
+                <p>The registration process involves:</p>
+                <ul>
+                    <li>Identifying corresponding landmarks in both the H&E images and the Xenium data</li>
+                    <li>Computing a transformation matrix (affine or non-rigid)</li>
+                    <li>Applying this transformation to align the coordinate systems</li>
+                </ul>
+                
+                <p>This registration ensures that the pixel positions in the H&E images correspond to the same physical locations as the gene expression measurements.</p>
+            </section>
+
+            <section id="data-dimensions">
+                <h2>Data Dimensions and Sizes</h2>
+                <p>Understanding the dimensions and sizes of the input data is important for designing efficient processing pipelines.</p>
+                
+                <h3>Estimated Data Sizes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data Type</th>
+                            <th>Dimensions</th>
+                            <th>Approximate Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>H&E Images</td>
+                            <td>~20,000 × 20,000 pixels (RGB)</td>
+                            <td>1-4 GB per sample</td>
+                        </tr>
+                        <tr>
+                            <td>Spatial Transcriptomics</td>
+                            <td>~100,000 cells × 460 genes</td>
+                            <td>200-500 MB per sample</td>
+                        </tr>
+                        <tr>
+                            <td>Nucleus Segmentation</td>
+                            <td>~20,000 × 20,000 pixels (labeled)</td>
+                            <td>400-800 MB per sample</td>
+                        </tr>
+                        <tr>
+                            <td>scRNA-seq Data</td>
+                            <td>~10,000 cells × 18,615 genes</td>
+                            <td>1-2 GB total</td>
+                        </tr>
+                        <tr>
+                            <td>Region Annotations</td>
+                            <td>Polygon coordinates</td>
+                            <td>< 1 MB per sample</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Processing Considerations</h3>
+                <p>The large size of the data, particularly the H&E images, presents computational challenges:</p>
+                <ul>
+                    <li>Images may need to be processed in tiles or at reduced resolution</li>
+                    <li>Efficient data loading strategies are required (e.g., lazy loading, caching)</li>
+                    <li>Preprocessing steps like patch extraction should be optimized</li>
+                    <li>Intermediate results should be saved to avoid redundant computation</li>
+                </ul>
+            </section>
+
+            <div class="page-navigation">
+                <a href="../index.html" class="prev-page">Previous: Home</a>
+                <a href="process_flow.html" class="next-page">Next: Process Flow</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Spatial Transcriptomics Challenge Documentation</h3>
+                <p>Comprehensive documentation of the winning solutions for the Spatial Transcriptomics Challenge.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="process_flow.html">Process Flow</a></li>
+                    <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Spatial Transcriptomics Challenge Documentation</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>

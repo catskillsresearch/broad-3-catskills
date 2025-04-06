@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="pages/input_data.html">Input Data</a></li>
+                <li><a href="pages/data_structure.html">Data Structure</a></li>
+                <li><a href="pages/pipeline_flow.html">Pipeline Flow</a></li>
+                <li><a href="pages/process_flow.html">Process Flow</a></li>
+                <li><a href="pages/deepspot_architecture.html">DeepSpot Techniques</a></li>
+                <li><a href="pages/implementation.html">Implementation</a></li>
+                <li><a href="pages/visualizations.html">Visualizations</a></li>
+                <li><a href="pages/crunch_approaches.html">Integrated Approach</a></li>
+                <li><a href="pages/getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1>Catskills Solution for Crunch 3</h1>
+            <h2>Identifying Gene Markers in Inflammatory Bowel Disease</h2>
+            <p>A comprehensive approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions in IBD samples.</p>
+            <div class="hero-buttons">
+                <a href="pages/getting_started.html" class="btn primary">Get Started</a>
+                <a href="pages/pipeline_flow.html" class="btn secondary">View Pipeline</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <main class="content home-content">
+            <section class="overview">
+                <h2>Solution Overview</h2>
+                <p>Our Catskills Solution for Crunch 3 of the Broad Institute IBD Challenge focuses on identifying gene markers that distinguish dysplastic (pre-cancerous) from non-dysplastic tissue regions in inflammatory bowel disease samples. We've developed a comprehensive approach that integrates techniques from previous crunches while adding specific innovations for Crunch 3.</p>
+                
+                <div class="feature-cards">
+                    <div class="card">
+                        <h3>Multi-level Spatial Context</h3>
+                        <p>Integrates information from spot, sub-spot, and neighborhood levels to capture both local and global tissue patterns.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Cell-wise Optimization</h3>
+                        <p>Optimizes for preserving the relative expression levels of different genes within each cell for more accurate cellular state representation.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Small Dataset Approach</h3>
+                        <p>Starts with a small, well-labeled dataset for rapid experimentation and validation before scaling to the full dataset.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Hyperparameter Optimization</h3>
+                        <p>Uses Weights & Biases for systematic hyperparameter exploration and experiment tracking.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="key-components">
+                <h2>Key Components</h2>
+                
+                <div class="component">
+                    <div class="component-image">
+                        <div class="mermaid">
+                            graph TD
+                                A[H&E Images] --> B[Feature Extraction]
+                                C[Spatial Data] --> D[Gene Expression]
+                                B --> E[Multi-level Context]
+                                D --> E
+                                E --> F[Gene Prediction]
+                                F --> G[Gene Ranking]
+                                G --> H[Dysplasia Markers]
+                                
+                                classDef primary fill:#e1f5fe,stroke:#01579b
+                                classDef secondary fill:#e8f5e9,stroke:#2e7d32
+                                
+                                class A,C primary
+                                class B,D,E,F,G secondary
+                                class H primary
+                        </div>
+                    </div>
+                    <div class="component-text">
+                        <h3>Streamlined Pipeline</h3>
+                        <p>Our solution features a streamlined pipeline that removes unused data elements and clearly shows the transformations from input data to final gene rankings. The pipeline is implemented using Luigi, which manages dependencies between tasks and ensures that each step is executed in the correct order.</p>
+                        <p>We've organized the pipeline to start with a small dataset for rapid experimentation and hyperparameter optimization before scaling to the full dataset. This approach allows for faster iteration and validation of the model architecture and hyperparameters.</p>
+                        <a href="pages/pipeline_flow.html" class="btn secondary">View Pipeline Flow</a>
+                    </div>
+                </div>
+                
+                <div class="component reverse">
+                    <div class="component-text">
+                        <h3>Integrated Techniques</h3>
+                        <p>Our solution integrates techniques from various approaches to effectively identify gene markers that distinguish dysplastic from non-dysplastic tissue regions:</p>
+                        <ul>
+                            <li><strong>DeepSpot Techniques</strong>: Multi-level spatial context integration, deep-set neural network architecture, and pathology foundation models</li>
+                            <li><strong>Cell-wise Optimization</strong>: Preserving cellular state and function through cell-wise Spearman optimization</li>
+                            <li><strong>Log Fold Change Analysis</strong>: Identifying differentially expressed genes between dysplastic and non-dysplastic regions</li>
+                            <li><strong>Statistical Significance Testing</strong>: Ensuring robustness of findings through rigorous statistical analysis</li>
+                        </ul>
+                        <a href="pages/crunch_approaches.html" class="btn secondary">Explore Techniques</a>
+                    </div>
+                    <div class="component-image">
+                        <div class="mermaid">
+                            graph TD
+                                subgraph "Integrated Techniques"
+                                    A[DeepSpot Techniques] --> D[Catskills Solution]
+                                    B[Cell-wise Optimization] --> D
+                                    C[Log Fold Change Analysis] --> D
+                                    D --> E[Gene Markers]
+                                end
+                                
+                                classDef primary fill:#e1f5fe,stroke:#01579b
+                                classDef secondary fill:#e8f5e9,stroke:#2e7d32
+                                
+                                class A,B,C primary
+                                class D secondary
+                                class E primary
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="component">
+                    <div class="component-image">
+                        <div class="mermaid">
+                            graph TD
+                                A[Small Dataset] --> B[Hyperparameter Search]
+                                B --> C[Optimal Parameters]
+                                C --> D[Full Dataset Training]
+                                D --> E[Trained Model]
+                                
+                                classDef primary fill:#e1f5fe,stroke:#01579b
+                                classDef secondary fill:#e8f5e9,stroke:#2e7d32
+                                
+                                class A,C,E primary
+                                class B,D secondary
+                        </div>
+                    </div>
+                    <div class="component-text">
+                        <h3>Small Dataset Approach</h3>
+                        <p>Our solution starts with a small, well-labeled dataset for rapid experimentation and validation before scaling to the full dataset. This approach allows for:</p>
+                        <ul>
+                            <li><strong>Faster Iteration</strong>: Experiments run in minutes instead of hours or days</li>
+                            <li><strong>Rapid Hyperparameter Exploration</strong>: Test many hyperparameter combinations quickly</li>
+                            <li><strong>Early Validation</strong>: Verify that the model can learn the task before scaling</li>
+                            <li><strong>Debugging</strong>: Easier to identify and fix issues with a smaller dataset</li>
+                        </ul>
+                        <p>We use Weights & Biases for systematic hyperparameter exploration and experiment tracking, allowing us to find the optimal model configuration efficiently.</p>
+                        <a href="pages/getting_started.html#small-dataset-pipeline" class="btn secondary">Learn More</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="getting-started">
+                <h2>Getting Started</h2>
+                <p>Ready to explore our solution? Follow these steps to get started:</p>
+                
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Installation</h3>
+                        <p>Set up the environment and install dependencies.</p>
+                        <a href="pages/getting_started.html#installation" class="btn secondary">Installation Guide</a>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Data Setup</h3>
+                        <p>Prepare the data in the streamlined structure.</p>
+                        <a href="pages/getting_started.html#data-setup" class="btn secondary">Data Setup Guide</a>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Small Dataset Pipeline</h3>
+                        <p>Run the pipeline on a small dataset for rapid experimentation.</p>
+                        <a href="pages/getting_started.html#small-dataset-pipeline" class="btn secondary">Small Dataset Guide</a>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <h3>Full Pipeline</h3>
+                        <p>Scale to the full dataset with optimal hyperparameters.</p>
+                        <a href="pages/getting_started.html#full-pipeline" class="btn secondary">Full Pipeline Guide</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="documentation-overview">
+                <h2>Documentation Overview</h2>
+                <p>Our comprehensive documentation covers all aspects of the Catskills Solution:</p>
+                
+                <div class="doc-cards">
+                    <a href="pages/input_data.html" class="doc-card">
+                        <h3>Input Data</h3>
+                        <p>Overview of the input data types and formats used in the solution.</p>
+                    </a>
+                    <a href="pages/data_structure.html" class="doc-card">
+                        <h3>Data Structure</h3>
+                        <p>Streamlined data structure that removes unused elements and organizes data by type.</p>
+                    </a>
+                    <a href="pages/pipeline_flow.html" class="doc-card">
+                        <h3>Pipeline Flow</h3>
+                        <p>Comprehensive flow diagram showing pipeline steps and data transformations.</p>
+                    </a>
+                    <a href="pages/process_flow.html" class="doc-card">
+                        <h3>Process Flow</h3>
+                        <p>Detailed description of the data transformation process from raw inputs to final outputs.</p>
+                    </a>
+                    <a href="pages/deepspot_architecture.html" class="doc-card">
+                        <h3>DeepSpot Techniques</h3>
+                        <p>Explanation of the DeepSpot techniques integrated into our solution.</p>
+                    </a>
+                    <a href="pages/implementation.html" class="doc-card">
+                        <h3>Implementation</h3>
+                        <p>Implementation details including code structure, dependencies, and configuration.</p>
+                    </a>
+                    <a href="pages/visualizations.html" class="doc-card">
+                        <h3>Visualizations</h3>
+                        <p>Visualization techniques for quality assessment and results interpretation.</p>
+                    </a>
+                    <a href="pages/crunch_approaches.html" class="doc-card">
+                        <h3>Integrated Approach</h3>
+                        <p>Explanation of how we've integrated techniques from various approaches into our solution.</p>
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h3>
+                <p>Comprehensive documentation of our approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="pages/input_data.html">Input Data</a></li>
+                    <li><a href="pages/data_structure.html">Data Structure</a></li>
+                    <li><a href="pages/pipeline_flow.html">Pipeline Flow</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="pages/implementation.html">Implementation</a></li>
+                    <li><a href="pages/visualizations.html">Visualizations</a></li>
+                    <li><a href="pages/crunch_approaches.html">Integrated Approach</a></li>
+                    <li><a href="pages/getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Catskills Solution for Broad Institute IBD Challenge</p>
+        </div>
+    </footer>
+
+    <script src="js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+</body>
+</html>

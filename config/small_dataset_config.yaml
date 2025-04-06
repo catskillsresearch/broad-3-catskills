@@ -1,0 +1,40 @@
+project_name: broad-3-catskills
+description: Small dataset configuration for initial experiments
+version: 1.0.0
+
+# Data paths
+data_path: input/raw/xenium_data.zarr
+region_annotations: input/raw/region_annotations.csv
+output_dir: output/small_dataset
+
+# Small dataset parameters
+quality_threshold: 0.7
+n_samples_per_region: 20  # Smaller sample size for faster experimentation
+n_dummy_regions: 5
+val_test_size: 0.3
+seed: 42
+
+# Feature extraction parameters
+patch_size: 64
+feature_dim: 512
+n_subspots: 4
+n_neighbors: 6
+
+# Model parameters
+phi_dim: 256
+embedding_dim: 512
+n_heads: 4
+dropout: 0.3
+use_gene_graph: true
+
+# Training parameters
+learning_rate: 0.0005
+weight_decay: 0.0001
+loss_weight_spearman: 0.7
+loss_weight_mse: 0.3
+batch_size: 16  # Smaller batch size for small dataset
+max_epochs: 50  # Fewer epochs for faster experimentation
+patience: 5     # Shorter patience for faster experimentation
+
+# W&B parameters
+wandb_project: spatial-transcriptomics-small

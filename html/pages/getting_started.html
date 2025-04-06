@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - Broad Institute IBD Challenge: Catskills Solution for Crunch 3</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="data_structure.html">Data Structure</a></li>
+                <li><a href="pipeline_flow.html">Pipeline Flow</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Techniques</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                <li><a href="getting_started.html" class="active">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#data-setup">Data Setup</a></li>
+                    <li><a href="#small-dataset-pipeline">Small Dataset Pipeline</a></li>
+                    <li><a href="#hyperparameter-search">Hyperparameter Search</a></li>
+                    <li><a href="#full-pipeline">Full Pipeline</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Getting Started</span>
+            </div>
+
+            <section id="installation">
+                <h2>Installation</h2>
+                <p>This section guides you through setting up the environment and installing the required dependencies for the Catskills Solution.</p>
+                
+                <h3>Requirements</h3>
+                <p>The solution requires the following:</p>
+                <ul>
+                    <li>Python 3.8 or higher</li>
+                    <li>CUDA-compatible GPU (recommended for full dataset)</li>
+                    <li>At least 16GB RAM (32GB recommended for full dataset)</li>
+                    <li>At least 100GB disk space for the full dataset and outputs</li>
+                </ul>
+                
+                <h3>Environment Setup</h3>
+                <p>We recommend using a virtual environment:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Setting Up Environment</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+# Clone the repository
+git clone https://github.com/catskills/ibd-challenge-crunch3.git
+cd ibd-challenge-crunch3
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+                    </code></pre>
+                </div>
+                
+                <h3>Weights & Biases Setup</h3>
+                <p>Our solution uses Weights & Biases for hyperparameter optimization and experiment tracking. You'll need to set up an account and log in:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Weights & Biases Setup</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+# Install wandb if not already installed
+pip install wandb
+
+# Log in to wandb
+wandb login
+                    </code></pre>
+                </div>
+                
+                <p>Follow the prompts to complete the login process. You'll need to create an account at <a href="https://wandb.ai" target="_blank">wandb.ai</a> if you don't already have one.</p>
+            </section>
+
+            <section id="data-setup">
+                <h2>Data Setup</h2>
+                <p>Before running the pipeline, you need to prepare the data in the streamlined structure.</p>
+                
+                <h3>Data Preparation</h3>
+                <p>Run the data preparation script to organize the raw data into the streamlined structure:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Data Preparation</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_pipeline.py --config config/config.yaml --step data
+                    </code></pre>
+                </div>
+                
+                <p>This script will:</p>
+                <ul>
+                    <li>Create the streamlined data structure as described in the <a href="data_structure.html">Data Structure</a> page</li>
+                    <li>Remove unused data elements (like unregistered images)</li>
+                    <li>Organize the data by type (images, spatial, scRNA-seq, annotations)</li>
+                    <li>Create the necessary directories for pipeline outputs</li>
+                </ul>
+                
+                <div class="info-box">
+                    <h3>Data Structure Verification</h3>
+                    <p>After running the data preparation script, verify that the data structure matches the expected structure:</p>
+                    <pre><code class="plaintext">
+data/
+├── images/
+│   ├── HE_registered/
+│   └── HE_nuc_registered/
+├── spatial/
+├── scrna/
+├── annotations/
+└── processed/
+                    </code></pre>
+                    <p>If any directories are missing or empty, check the logs for errors.</p>
+                </div>
+            </section>
+
+            <section id="small-dataset-pipeline">
+                <h2>Small Dataset Pipeline</h2>
+                <p>We strongly recommend starting with the small dataset pipeline to validate the approach and optimize hyperparameters before scaling to the full dataset.</p>
+                
+                <h3>Creating the Small Dataset</h3>
+                <p>Create a small subset of the data for rapid experimentation:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Creating Small Dataset</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/create_small_dataset.py --data_dir data --output_dir data/processed/small_dataset --num_samples 2 --num_cells 1000 --num_genes 100
+                    </code></pre>
+                </div>
+                
+                <p>You can adjust the parameters to control the size of the small dataset:</p>
+                <ul>
+                    <li><code>--num_samples</code>: Number of samples to include (default: 2)</li>
+                    <li><code>--num_cells</code>: Number of cells per sample (default: 1000)</li>
+                    <li><code>--num_genes</code>: Number of genes to include (default: 100)</li>
+                </ul>
+                
+                <p>A smaller dataset will run faster but may not capture all the complexity of the full dataset. We recommend starting with the default values and adjusting as needed.</p>
+                
+                <h3>Running the Small Dataset Pipeline</h3>
+                <p>To run the complete pipeline on the small dataset:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Running Small Dataset Pipeline</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_pipeline.py --config config/config.yaml --small_dataset
+                    </code></pre>
+                </div>
+                
+                <p>This will run the entire pipeline on the small dataset, including:</p>
+                <ol>
+                    <li>Feature extraction from the small dataset images</li>
+                    <li>Hyperparameter search on the small dataset</li>
+                    <li>Model training with the optimal hyperparameters</li>
+                    <li>Gene expression prediction</li>
+                    <li>Gene ranking</li>
+                </ol>
+                
+                <p>The results will be saved in the <code>data/processed/</code> directory with a <code>small_dataset</code> prefix to distinguish them from full dataset results.</p>
+            </section>
+
+            <section id="hyperparameter-search">
+                <h2>Hyperparameter Search</h2>
+                <p>The hyperparameter search is a critical component of our approach, allowing us to find the optimal model configuration.</p>
+                
+                <h3>Running Hyperparameter Search on Small Dataset</h3>
+                <p>To run just the hyperparameter search on the small dataset:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Running Hyperparameter Search on Small Dataset</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset
+                    </code></pre>
+                </div>
+                
+                <h3>Verifying Hyperparameter Search</h3>
+                <p>To verify that the hyperparameter search is working correctly and selecting optimal parameters, run it multiple times with different random seeds:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Running Multiple Hyperparameter Searches</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+# Run with different random seeds
+python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset --seed 42
+python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset --seed 123
+python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset --seed 456
+                    </code></pre>
+                </div>
+                
+                <p>Compare the results in the Weights & Biases dashboard to ensure that the search is consistently finding similar optimal parameters.</p>
+                
+                <h3>Analyzing Hyperparameter Search Results</h3>
+                <p>The hyperparameter search results can be analyzed in the Weights & Biases dashboard:</p>
+                
+                <ol class="numbered-steps">
+                    <li>
+                        <h4>Open the Weights & Biases Dashboard</h4>
+                        <p>Go to <a href="https://wandb.ai" target="_blank">wandb.ai</a> and log in to your account.</p>
+                    </li>
+                    <li>
+                        <h4>Navigate to Your Project</h4>
+                        <p>Find the project for your hyperparameter search (default: "ibd-challenge-crunch3").</p>
+                    </li>
+                    <li>
+                        <h4>View the Sweep</h4>
+                        <p>Click on the sweep to view the results of all runs.</p>
+                    </li>
+                    <li>
+                        <h4>Analyze Parameter Importance</h4>
+                        <p>Use the "Parameter Importance" tab to see which hyperparameters have the most impact on performance.</p>
+                    </li>
+                    <li>
+                        <h4>Compare Runs</h4>
+                        <p>Use the "Parallel Coordinates" view to compare different runs and understand the relationships between hyperparameters and performance.</p>
+                    </li>
+                </ol>
+                
+                <p>The optimal hyperparameters will be automatically saved to <code>data/processed/hyperparameters/optimal_params.json</code> for use in the full pipeline.</p>
+            </section>
+
+            <section id="full-pipeline">
+                <h2>Full Pipeline</h2>
+                <p>Once you've verified that the small dataset pipeline is working correctly and found optimal hyperparameters, you can run the full pipeline on the complete dataset.</p>
+                
+                <h3>Running Hyperparameter Search on Full Dataset</h3>
+                <p>If desired, you can refine the hyperparameters on the full dataset, starting from the optimal parameters found on the small dataset:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Running Hyperparameter Search on Full Dataset</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml
+                    </code></pre>
+                </div>
+                
+                <p>This will perform a more focused search around the optimal parameters found on the small dataset.</p>
+                
+                <h3>Running the Full Pipeline</h3>
+                <p>To run the complete pipeline on the full dataset:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Running Full Pipeline</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_pipeline.py --config config/config.yaml
+                    </code></pre>
+                </div>
+                
+                <p>This will run the entire pipeline on the full dataset, using the optimal hyperparameters found during the hyperparameter search.</p>
+                
+                <h3>Running Individual Pipeline Steps</h3>
+                <p>You can also run individual steps of the pipeline:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Running Individual Pipeline Steps</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+# Extract features
+python scripts/run_pipeline.py --task ExtractFeatures --config config/config.yaml
+
+# Train model
+python scripts/run_pipeline.py --task TrainModel --config config/config.yaml
+
+# Predict genes
+python scripts/run_pipeline.py --task PredictGenes --config config/config.yaml
+
+# Rank genes
+python scripts/run_pipeline.py --task RankGenes --config config/config.yaml
+                    </code></pre>
+                </div>
+                
+                <p>Luigi will automatically run any dependencies that haven't been completed yet.</p>
+                
+                <h3>Monitoring Pipeline Progress</h3>
+                <p>You can monitor the progress of the pipeline using the Luigi web interface:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Starting Luigi Web Interface</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+# In a separate terminal
+luigid
+                    </code></pre>
+                </div>
+                
+                <p>Then open <a href="http://localhost:8082" target="_blank">http://localhost:8082</a> in your web browser to view the pipeline status.</p>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+                <p>Here are some common issues and their solutions:</p>
+                
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header">Data Preparation Fails</div>
+                        <div class="accordion-content">
+                            <p>If the data preparation script fails, check the following:</p>
+                            <ul>
+                                <li>Ensure the raw data directory exists and contains the expected files</li>
+                                <li>Check that you have sufficient disk space</li>
+                                <li>Verify that you have write permissions for the output directory</li>
+                                <li>Check the logs for specific error messages</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">Out of Memory Errors</div>
+                        <div class="accordion-content">
+                            <p>If you encounter out of memory errors:</p>
+                            <ul>
+                                <li>Reduce the batch size in the configuration file</li>
+                                <li>Use a smaller small dataset (fewer cells or genes)</li>
+                                <li>Ensure you're not running other memory-intensive processes</li>
+                                <li>Consider using a machine with more RAM</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">CUDA Errors</div>
+                        <div class="accordion-content">
+                            <p>If you encounter CUDA errors:</p>
+                            <ul>
+                                <li>Ensure you have a compatible GPU</li>
+                                <li>Verify that CUDA is installed correctly</li>
+                                <li>Check that the PyTorch version matches your CUDA version</li>
+                                <li>Try running with CPU only by setting <code>--device cpu</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">Luigi Task Failures</div>
+                        <div class="accordion-content">
+                            <p>If Luigi tasks fail:</p>
+                            <ul>
+                                <li>Check the logs in the <code>logs/</code> directory for specific error messages</li>
+                                <li>Verify that all dependencies are installed correctly</li>
+                                <li>Ensure that the input files for the task exist</li>
+                                <li>Try running the task with <code>--local-scheduler</code> for more detailed output</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">Weights & Biases Issues</div>
+                        <div class="accordion-content">
+                            <p>If you encounter issues with Weights & Biases:</p>
+                            <ul>
+                                <li>Verify that you're logged in with <code>wandb login</code></li>
+                                <li>Check your internet connection</li>
+                                <li>Try running offline with <code>--wandb offline</code></li>
+                                <li>Check the W&B documentation for specific error messages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <p>If you encounter other issues, please check the logs and consult the <a href="https://github.com/catskills/ibd-challenge-crunch3/issues" target="_blank">GitHub issues</a> for the project.</p>
+            </section>
+
+            <div class="page-navigation">
+                <a href="crunch_approaches.html" class="prev-page">Previous: Integrated Approach</a>
+                <a href="../index.html" class="next-page">Next: Home</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h3>
+                <p>Comprehensive documentation of our approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="data_structure.html">Data Structure</a></li>
+                    <li><a href="pipeline_flow.html">Pipeline Flow</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Catskills Solution for Broad Institute IBD Challenge</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+        
+        // Accordion functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                
+                header.addEventListener('click', () => {
+                    header.classList.toggle('active');
+                    
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    } else {
+                        content.style.maxHeight = '0';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

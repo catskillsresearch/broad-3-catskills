@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSpot Techniques - Broad Institute IBD Challenge: Catskills Solution for Crunch 3</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html" class="active">DeepSpot Techniques</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#key-innovations">Key Innovations</a></li>
+                    <li><a href="#multi-level-spatial-context">Multi-level Spatial Context</a></li>
+                    <li><a href="#deep-set-architecture">Deep-Set Architecture</a></li>
+                    <li><a href="#phi-networks">Phi Networks</a></li>
+                    <li><a href="#aggregation-operations">Aggregation Operations</a></li>
+                    <li><a href="#rho-networks">Rho Networks</a></li>
+                    <li><a href="#ensemble-learning">Ensemble Learning</a></li>
+                    <li><a href="#loss-functions">Loss Functions</a></li>
+                    <li><a href="#model-implementation">Model Implementation</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>DeepSpot Techniques</span>
+            </div>
+
+            <section id="overview">
+                <h2>DeepSpot Techniques Overview</h2>
+                <p>The DeepSpot techniques represent significant advancements in predicting gene expression from histology images. This page provides a detailed explanation of these techniques and how we've integrated them into our Catskills Solution for Crunch 3 of the Broad Institute IBD Challenge.</p>
+                
+                <div class="info-box">
+                    <h3>DeepSpot Techniques at a Glance</h3>
+                    <p>Our solution integrates the following techniques from the DeepSpot approach (developed for Crunch 1):</p>
+                    <ul>
+                        <li>Multi-level spatial context integration</li>
+                        <li>Permutation-invariant deep-set neural networks</li>
+                        <li>Pre-trained pathology foundation models</li>
+                        <li>Ensemble learning techniques</li>
+                        <li>Specialized loss functions optimized for Spearman correlation</li>
+                    </ul>
+                    <p>This combination allows our solution to effectively capture the relationship between tissue morphology and gene expression patterns, which is crucial for identifying markers that distinguish dysplastic from non-dysplastic regions.</p>
+                </div>
+            </section>
+
+            <section id="key-innovations">
+                <h2>Key Innovations</h2>
+                <p>We've incorporated several key innovations from the DeepSpot approach that contribute to our solution's performance:</p>
+                
+                <h3>1. Multi-level Spatial Context Integration</h3>
+                <p>Our solution integrates information from three spatial levels:</p>
+                <ul>
+                    <li><strong>Spot Level</strong>: Features from the immediate area around each cell</li>
+                    <li><strong>Sub-spot Level</strong>: Features from smaller regions within the spot</li>
+                    <li><strong>Neighborhood Level</strong>: Features from neighboring cells</li>
+                </ul>
+                <p>This multi-level approach captures both local and global tissue patterns, providing a more comprehensive representation of the cellular environment.</p>
+                
+                <h3>2. Permutation-Invariant Architecture</h3>
+                <p>We use a permutation-invariant deep-set architecture that can handle variable numbers of sub-spots and neighbors. This ensures that the model's predictions are not affected by the order in which these elements are processed.</p>
+                
+                <h3>3. Pathology Foundation Models</h3>
+                <p>Our architecture leverages pre-trained vision models specifically designed for pathology images. These foundation models provide rich feature representations that capture relevant histological patterns.</p>
+                
+                <h3>4. Spearman-Optimized Loss Functions</h3>
+                <p>We directly optimize for Spearman rank correlation, which is an important evaluation metric for the challenge. This is achieved through differentiable approximations of the Spearman correlation coefficient.</p>
+                
+                <h3>5. Cell-wise Focus</h3>
+                <p>Our architecture is designed to preserve cell-specific gene expression profiles, which aligns with the cell-wise Spearman correlation metric that has proven effective in previous crunches.</p>
+            </section>
+
+            <section id="multi-level-spatial-context">
+                <h2>Multi-level Spatial Context</h2>
+                <p>The multi-level spatial context is a core innovation that we've integrated into our Catskills Solution. It allows our model to capture information at different spatial scales, providing a more comprehensive understanding of the tissue environment.</p>
+                
+                <div class="mermaid">
+                    graph TD
+                    subgraph "Multi-level Spatial Context"
+                        A[H&E Image] --> B[Spot Level]
+                        A --> C[Sub-spot Level]
+                        A --> D[Neighborhood Level]
+                        
+                        B --> E[Spot Features]
+                        C --> F[Sub-spot Features]
+                        D --> G[Neighborhood Features]
+                        
+                        E --> H[Feature Integration]
+                        F --> H
+                        G --> H
+                        
+                        H --> I[Gene Expression Prediction]
+                    end
+                    
+                    classDef level fill:#e1f5fe,stroke:#01579b
+                    classDef feature fill:#e8f5e9,stroke:#2e7d32
+                    classDef integration fill:#fff9c4,stroke:#fbc02d
+                </div>
+                
+                <h3>Spot Level</h3>
+                <p>At the spot level, we extract features from the immediate area around each cell. This captures the local tissue morphology and provides information about the cell's immediate environment.</p>
+                
+                <h3>Sub-spot Level</h3>
+                <p>The sub-spot level divides the spot into smaller regions and extracts features from each sub-spot. This provides more detailed information about the local tissue structure and allows the model to capture fine-grained patterns.</p>
+                
+                <h3>Neighborhood Level</h3>
+                <p>At the neighborhood level, we extract features from neighboring cells. This captures the broader tissue context and allows the model to understand how cells interact with their surroundings.</p>
+                
+                <p>By integrating information from these three levels, our model can capture both local and global tissue patterns, which is crucial for identifying gene markers that distinguish dysplastic from non-dysplastic regions.</p>
+            </section>
+
+            <section id="deep-set-architecture">
+                <h2>Deep-Set Architecture</h2>
+                <p>Our solution incorporates a deep-set neural network architecture, which is particularly well-suited for handling sets of elements (like sub-spots and neighbors) where the order doesn't matter.</p>
+                
+                <div class="mermaid">
+                    graph TD
+                    subgraph "Deep-Set Architecture"
+                        A[Input Set] --> B[Phi Network]
+                        B --> C[Aggregation]
+                        C --> D[Rho Network]
+                        D --> E[Output]
+                    end
+                    
+                    classDef network fill:#e1f5fe,stroke:#01579b
+                    classDef operation fill:#e8f5e9,stroke:#2e7d32
+                </div>
+                
+                <p>The deep-set architecture consists of three main components:</p>
+                <ol>
+                    <li><strong>Phi Network</strong>: Processes each element in the set independently</li>
+                    <li><strong>Aggregation Operation</strong>: Combines the processed elements in a permutation-invariant way</li>
+                    <li><strong>Rho Network</strong>: Processes the aggregated representation to produce the final output</li>
+                </ol>
+                
+                <p>This architecture ensures that the model's predictions are not affected by the order in which elements are processed, which is important for handling variable numbers of sub-spots and neighbors.</p>
+            </section>
+
+            <section id="phi-networks">
+                <h2>Phi Networks</h2>
+                <p>In our implementation, the Phi networks process each element in the set independently. We use separate Phi networks for sub-spots and neighbors:</p>
+                
+                <h3>Sub-spot Phi Network</h3>
+                <p>The sub-spot Phi network processes each sub-spot independently and extracts features that capture the local tissue structure. It consists of several fully connected layers with ReLU activations.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Sub-spot Phi Network</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class SubspotPhiNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(SubspotPhiNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        
+    def forward(self, x):
+        # x shape: (batch_size, num_subspots, input_dim)
+        batch_size, num_subspots, input_dim = x.shape
+        
+        # Reshape to process all subspots at once
+        x = x.view(-1, input_dim)
+        
+        # Apply Phi network
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        
+        # Reshape back to (batch_size, num_subspots, hidden_dim)
+        x = x.view(batch_size, num_subspots, -1)
+        
+        return x
+                    </code></pre>
+                </div>
+                
+                <h3>Neighbor Phi Network</h3>
+                <p>The neighbor Phi network processes each neighboring cell independently and extracts features that capture the broader tissue context. It has a similar architecture to the sub-spot Phi network but may have different weights.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Neighbor Phi Network</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class NeighborPhiNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(NeighborPhiNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        
+    def forward(self, x):
+        # x shape: (batch_size, num_neighbors, input_dim)
+        batch_size, num_neighbors, input_dim = x.shape
+        
+        # Reshape to process all neighbors at once
+        x = x.view(-1, input_dim)
+        
+        # Apply Phi network
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        
+        # Reshape back to (batch_size, num_neighbors, hidden_dim)
+        x = x.view(batch_size, num_neighbors, -1)
+        
+        return x
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="aggregation-operations">
+                <h2>Aggregation Operations</h2>
+                <p>After processing each element with the Phi networks, we need to aggregate the results in a permutation-invariant way. We use different aggregation operations for sub-spots and neighbors:</p>
+                
+                <h3>Sub-spot Aggregation</h3>
+                <p>For sub-spots, we use a weighted sum aggregation, where the weights are learned by an attention mechanism. This allows the model to focus on the most informative sub-spots.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Sub-spot Aggregation</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class SubspotAggregation(nn.Module):
+    def __init__(self, hidden_dim):
+        super(SubspotAggregation, self).__init__()
+        self.attention = nn.Linear(hidden_dim, 1)
+        
+    def forward(self, x):
+        # x shape: (batch_size, num_subspots, hidden_dim)
+        
+        # Compute attention weights
+        attention_weights = F.softmax(self.attention(x), dim=1)
+        
+        # Apply attention weights
+        x = torch.sum(x * attention_weights, dim=1)
+        
+        return x
+                    </code></pre>
+                </div>
+                
+                <h3>Neighbor Aggregation</h3>
+                <p>For neighbors, we use a similar weighted sum aggregation, but with a different attention mechanism that takes into account the distance between cells.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Neighbor Aggregation</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class NeighborAggregation(nn.Module):
+    def __init__(self, hidden_dim):
+        super(NeighborAggregation, self).__init__()
+        self.attention = nn.Linear(hidden_dim + 1, 1)  # +1 for distance
+        
+    def forward(self, x, distances):
+        # x shape: (batch_size, num_neighbors, hidden_dim)
+        # distances shape: (batch_size, num_neighbors)
+        
+        # Expand distances to match x's dimensions
+        distances = distances.unsqueeze(-1)
+        
+        # Concatenate features and distances
+        x_with_dist = torch.cat([x, distances], dim=-1)
+        
+        # Compute attention weights
+        attention_weights = F.softmax(self.attention(x_with_dist), dim=1)
+        
+        # Apply attention weights
+        x = torch.sum(x * attention_weights, dim=1)
+        
+        return x
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="rho-networks">
+                <h2>Rho Networks</h2>
+                <p>After aggregating the features from sub-spots and neighbors, we use Rho networks to process the aggregated representations and produce the final output.</p>
+                
+                <h3>Spot-level Rho Network</h3>
+                <p>The spot-level Rho network processes the spot features and produces an intermediate representation.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Spot-level Rho Network</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class SpotRhoNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(SpotRhoNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+                    </code></pre>
+                </div>
+                
+                <h3>Sub-spot Rho Network</h3>
+                <p>The sub-spot Rho network processes the aggregated sub-spot features and produces another intermediate representation.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Sub-spot Rho Network</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class SubspotRhoNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(SubspotRhoNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+                    </code></pre>
+                </div>
+                
+                <h3>Neighbor Rho Network</h3>
+                <p>The neighbor Rho network processes the aggregated neighbor features and produces yet another intermediate representation.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Neighbor Rho Network</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class NeighborRhoNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(NeighborRhoNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+                    </code></pre>
+                </div>
+                
+                <h3>Final Rho Network</h3>
+                <p>The final Rho network combines the intermediate representations from the spot-level, sub-spot, and neighbor Rho networks and produces the final gene expression predictions.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Final Rho Network</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class FinalRhoNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(FinalRhoNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim * 3, hidden_dim)  # *3 for spot, subspot, and neighbor
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = nn.Linear(hidden_dim, output_dim)
+        
+    def forward(self, spot_features, subspot_features, neighbor_features):
+        # Concatenate all features
+        x = torch.cat([spot_features, subspot_features, neighbor_features], dim=1)
+        
+        # Apply final Rho network
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        
+        return x
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="ensemble-learning">
+                <h2>Ensemble Learning</h2>
+                <p>To further improve the performance of our solution, we use ensemble learning techniques. We train multiple models with different initializations and hyperparameters, and then combine their predictions.</p>
+                
+                <h3>Model Diversity</h3>
+                <p>We ensure diversity in our ensemble by:</p>
+                <ul>
+                    <li>Using different random initializations</li>
+                    <li>Varying the architecture (e.g., number of layers, hidden dimensions)</li>
+                    <li>Using different subsets of the training data</li>
+                    <li>Applying different regularization techniques</li>
+                </ul>
+                
+                <h3>Ensemble Combination</h3>
+                <p>We combine the predictions of the individual models using a weighted average, where the weights are determined by the validation performance of each model.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Ensemble Combination</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def combine_ensemble_predictions(predictions, weights=None):
+    """
+    Combine predictions from multiple models.
+    
+    Args:
+        predictions: List of model predictions, each with shape (batch_size, output_dim)
+        weights: Optional weights for each model, shape (num_models,)
+        
+    Returns:
+        Combined predictions with shape (batch_size, output_dim)
+    """
+    if weights is None:
+        # Use equal weights if not provided
+        weights = torch.ones(len(predictions)) / len(predictions)
+    
+    # Ensure weights sum to 1
+    weights = weights / weights.sum()
+    
+    # Combine predictions
+    combined = torch.zeros_like(predictions[0])
+    for i, pred in enumerate(predictions):
+        combined += weights[i] * pred
+    
+    return combined
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="loss-functions">
+                <h2>Loss Functions</h2>
+                <p>Our solution uses a combination of loss functions to optimize for different aspects of the prediction task:</p>
+                
+                <h3>Mean Squared Error (MSE)</h3>
+                <p>The MSE loss measures the average squared difference between the predicted and actual gene expression values. It ensures that the predictions are close to the ground truth in absolute terms.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - MSE Loss</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def mse_loss(predictions, targets):
+    return F.mse_loss(predictions, targets)
+                    </code></pre>
+                </div>
+                
+                <h3>Pearson Correlation Loss</h3>
+                <p>The Pearson correlation loss measures the linear correlation between the predicted and actual gene expression values. It ensures that the predictions capture the relative patterns in the data.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Pearson Correlation Loss</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def pearson_correlation_loss(predictions, targets):
+    # Center the data
+    pred_centered = predictions - predictions.mean(dim=1, keepdim=True)
+    target_centered = targets - targets.mean(dim=1, keepdim=True)
+    
+    # Compute correlation
+    covariance = (pred_centered * target_centered).sum(dim=1)
+    pred_std = torch.sqrt((pred_centered ** 2).sum(dim=1))
+    target_std = torch.sqrt((target_centered ** 2).sum(dim=1))
+    
+    # Avoid division by zero
+    epsilon = 1e-8
+    correlation = covariance / (pred_std * target_std + epsilon)
+    
+    # Return loss (1 - correlation)
+    return 1 - correlation.mean()
+                    </code></pre>
+                </div>
+                
+                <h3>Differentiable Spearman Correlation Loss</h3>
+                <p>The Spearman correlation loss measures the rank correlation between the predicted and actual gene expression values. It's particularly important for our solution because it directly optimizes for the evaluation metric used in the challenge.</p>
+                
+                <p>Since the Spearman correlation involves a non-differentiable ranking operation, we use a differentiable approximation based on soft ranking.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Differentiable Spearman Correlation Loss</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def differentiable_spearman_loss(predictions, targets):
+    # Compute soft ranks
+    pred_ranks = soft_rank(predictions)
+    target_ranks = soft_rank(targets)
+    
+    # Normalize ranks to [0, 1]
+    pred_ranks = pred_ranks / (predictions.shape[1] - 1)
+    target_ranks = target_ranks / (targets.shape[1] - 1)
+    
+    # Compute Pearson correlation between ranks
+    pred_centered = pred_ranks - pred_ranks.mean(dim=1, keepdim=True)
+    target_centered = target_ranks - target_ranks.mean(dim=1, keepdim=True)
+    
+    covariance = (pred_centered * target_centered).sum(dim=1)
+    pred_std = torch.sqrt((pred_centered ** 2).sum(dim=1))
+    target_std = torch.sqrt((target_centered ** 2).sum(dim=1))
+    
+    # Avoid division by zero
+    epsilon = 1e-8
+    correlation = covariance / (pred_std * target_std + epsilon)
+    
+    # Return loss (1 - correlation)
+    return 1 - correlation.mean()
+
+def soft_rank(x, temperature=1.0):
+    """
+    Compute soft ranks using a differentiable approximation.
+    
+    Args:
+        x: Input tensor of shape (batch_size, seq_len)
+        temperature: Temperature parameter for softmax
+        
+    Returns:
+        Soft ranks of shape (batch_size, seq_len)
+    """
+    # Compute pairwise differences
+    diff = x.unsqueeze(2) - x.unsqueeze(1)
+    
+    # Apply sigmoid to get probabilities
+    prob = torch.sigmoid(diff / temperature)
+    
+    # Sum probabilities to get soft ranks
+    soft_ranks = prob.sum(dim=1)
+    
+    return soft_ranks
+                    </code></pre>
+                </div>
+                
+                <h3>Combined Loss</h3>
+                <p>We combine these loss functions with different weights to create a comprehensive loss function that optimizes for all aspects of the prediction task.</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Combined Loss</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def combined_loss(predictions, targets, mse_weight=1.0, pearson_weight=0.5, spearman_weight=0.5):
+    mse = mse_loss(predictions, targets)
+    pearson = pearson_correlation_loss(predictions, targets)
+    spearman = differentiable_spearman_loss(predictions, targets)
+    
+    return mse_weight * mse + pearson_weight * pearson + spearman_weight * spearman
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="model-implementation">
+                <h2>Model Implementation</h2>
+                <p>Here's a complete implementation of the DeepSpot model that we've integrated into our Catskills Solution for Crunch 3:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Complete DeepSpot Model</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+class DeepSpotModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(DeepSpotModel, self).__init__()
+        
+        # Phi networks
+        self.subspot_phi = SubspotPhiNetwork(input_dim, hidden_dim)
+        self.neighbor_phi = NeighborPhiNetwork(input_dim, hidden_dim)
+        
+        # Aggregation operations
+        self.subspot_aggregation = SubspotAggregation(hidden_dim)
+        self.neighbor_aggregation = NeighborAggregation(hidden_dim)
+        
+        # Rho networks
+        self.spot_rho = SpotRhoNetwork(input_dim, hidden_dim)
+        self.subspot_rho = SubspotRhoNetwork(hidden_dim, hidden_dim)
+        self.neighbor_rho = NeighborRhoNetwork(hidden_dim, hidden_dim)
+        self.final_rho = FinalRhoNetwork(hidden_dim, hidden_dim, output_dim)
+        
+    def forward(self, spot_features, subspot_features, neighbor_features, neighbor_distances=None):
+        # Process spot features
+        spot_output = self.spot_rho(spot_features)
+        
+        # Process subspot features
+        subspot_processed = self.subspot_phi(subspot_features)
+        subspot_aggregated = self.subspot_aggregation(subspot_processed)
+        subspot_output = self.subspot_rho(subspot_aggregated)
+        
+        # Process neighbor features
+        neighbor_processed = self.neighbor_phi(neighbor_features)
+        if neighbor_distances is None:
+            # Use dummy distances if not provided
+            neighbor_distances = torch.ones(neighbor_features.shape[0], neighbor_features.shape[1]).to(neighbor_features.device)
+        neighbor_aggregated = self.neighbor_aggregation(neighbor_processed, neighbor_distances)
+        neighbor_output = self.neighbor_rho(neighbor_aggregated)
+        
+        # Combine all outputs
+        final_output = self.final_rho(spot_output, subspot_output, neighbor_output)
+        
+        return final_output
+                    </code></pre>
+                </div>
+                
+                <p>This implementation captures all the key components of the DeepSpot architecture that we've integrated into our Catskills Solution for Crunch 3.</p>
+            </section>
+
+            <div class="page-navigation">
+                <a href="process_flow.html" class="prev-page">Previous: Process Flow</a>
+                <a href="implementation.html" class="next-page">Next: Implementation</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h3>
+                <p>Comprehensive documentation of our approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="process_flow.html">Process Flow</a></li>
+                    <li><a href="deepspot_architecture.html">DeepSpot Techniques</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Catskills Solution for Broad Institute IBD Challenge</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>

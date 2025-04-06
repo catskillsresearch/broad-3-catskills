@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Structure - Broad Institute IBD Challenge: Catskills Solution for Crunch 3</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/modal_styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="data_structure.html" class="active">Data Structure</a></li>
+                <li><a href="pipeline_flow.html">Pipeline Flow</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Techniques</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#streamlined-structure">Streamlined Structure</a></li>
+                    <li><a href="#directory-organization">Directory Organization</a></li>
+                    <li><a href="#data-formats">Data Formats</a></li>
+                    <li><a href="#processed-outputs">Processed Outputs</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Data Structure</span>
+            </div>
+
+            <section id="overview">
+                <h2>Data Structure Overview</h2>
+                <p>This page describes the streamlined data structure used in the Catskills Solution for Crunch 3. We've organized the data to clearly show the transformations from input to output, removing unused elements to simplify the pipeline.</p>
+                
+                <div class="info-box">
+                    <h3>Key Principles</h3>
+                    <p>Our data structure follows these key principles:</p>
+                    <ul>
+                        <li><strong>Simplicity</strong>: Only includes data elements that are actually used in the pipeline</li>
+                        <li><strong>Organization</strong>: Groups related data types together</li>
+                        <li><strong>Traceability</strong>: Makes data transformations clear and easy to follow</li>
+                        <li><strong>Efficiency</strong>: Optimizes for the specific needs of our approach</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="streamlined-structure">
+                <h2>Streamlined Data Structure</h2>
+                <p>The following diagram shows the complete data structure used in our solution. <strong>Click on the diagram to view a larger version.</strong></p>
+                
+                <div class="large-diagram-container">
+                    <div class="mermaid">
+flowchart TD
+    %% Main Data Directories
+    root["/data/"] --> images["images/"]
+    root --> spatial["spatial/"]
+    root --> scrna["scrna/"]
+    root --> annotations["annotations/"]
+    root --> processed["processed/"]
+    
+    %% Images Subdirectories
+    images --> he_reg["HE_registered/\n(H&E tissue images)"]
+    images --> he_nuc_reg["HE_nuc_registered/\n(nucleus segmentation masks)"]
+    
+    %% Spatial Data
+    spatial --> xenium["xenium_data.zarr\n(spatial gene expression)"]
+    spatial --> cell_positions["cell_positions.csv\n(x,y coordinates of cells)"]
+    spatial --> cell_metadata["cell_metadata.csv\n(cell type annotations)"]
+    
+    %% scRNA-seq Data
+    scrna --> scrna_counts["scrna_counts.h5ad\n(gene expression matrix)"]
+    scrna --> scrna_metadata["scrna_metadata.csv\n(cell annotations)"]
+    
+    %% Annotations
+    annotations --> regions["region_annotations.csv\n(dysplastic vs. non-dysplastic)"]
+    annotations --> cell_types["cell_type_annotations.csv\n(cell type labels)"]
+    
+    %% Processed Data
+    processed --> small_dataset["small_dataset/\n(subset for rapid experimentation)"]
+    processed --> features["features/\n(extracted image features)"]
+    processed --> hyperparameters["hyperparameters/\n(optimal parameter configs)"]
+    processed --> models["models/\n(trained model weights)"]
+    processed --> predictions["predictions/\n(gene expression predictions)"]
+    processed --> markers["markers/\n(ranked gene markers)"]
+    processed --> visualizations["visualizations/\n(quality assessment plots)"]
+    
+    %% Styling
+    classDef inputData fill:#f9f9f9,stroke:#999,stroke-width:2px,color:#333,font-size:14px
+    classDef processedData fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#2e7d32,font-size:14px
+    
+    class root,images,spatial,scrna,annotations inputData
+    class processed,small_dataset,features,hyperparameters,models,predictions,markers,visualizations processedData
+    class he_reg,he_nuc_reg,xenium,cell_positions,cell_metadata,scrna_counts,scrna_metadata,regions,cell_types inputData
+                    </div>
+                </div>
+                
+                <p>Note that we've removed unused data elements (such as unregistered images) to simplify the pipeline and make the transformations clearer.</p>
+            </section>
+
+            <section id="directory-organization">
+                <h2>Directory Organization</h2>
+                <p>The data is organized into the following main directories:</p>
+                
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Directory</th>
+                                <th>Contents</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>images/</code></td>
+                                <td>H&E images and nucleus masks</td>
+                                <td>Contains only the registered images that are used in the pipeline</td>
+                            </tr>
+                            <tr>
+                                <td><code>spatial/</code></td>
+                                <td>Spatial transcriptomics data</td>
+                                <td>Xenium data in .zarr format and associated metadata</td>
+                            </tr>
+                            <tr>
+                                <td><code>scrna/</code></td>
+                                <td>Single-cell RNA-seq data</td>
+                                <td>scRNA-seq data with ~18,615 genes and associated metadata</td>
+                            </tr>
+                            <tr>
+                                <td><code>annotations/</code></td>
+                                <td>Region and cell type annotations</td>
+                                <td>Labels for dysplastic/non-dysplastic regions and cell types</td>
+                            </tr>
+                            <tr>
+                                <td><code>processed/</code></td>
+                                <td>Pipeline outputs</td>
+                                <td>All outputs generated by the pipeline, organized by type</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h3>Images Directory</h3>
+                <p>The <code>images/</code> directory contains only the registered images that are used in the pipeline:</p>
+                <ul>
+                    <li><code>HE_registered/</code>: Registered H&E pathology images showing tissue morphology</li>
+                    <li><code>HE_nuc_registered/</code>: Registered nucleus segmentation masks identifying individual cell nuclei</li>
+                </ul>
+                
+                <div class="note-box">
+                    <h4>Note on Unregistered Images</h4>
+                    <p>The original dataset included unregistered (original) images, but these are not used in our pipeline. We've removed them from the streamlined data structure to simplify the workflow and make the transformations clearer.</p>
+                </div>
+            </section>
+
+            <section id="data-formats">
+                <h2>Data Formats</h2>
+                <p>The data is stored in various formats, each optimized for its specific content:</p>
+                
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data Type</th>
+                                <th>Format</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>H&E Images</td>
+                                <td>TIFF</td>
+                                <td>High-resolution tissue images with multiple channels</td>
+                            </tr>
+                            <tr>
+                                <td>Nucleus Masks</td>
+                                <td>TIFF</td>
+                                <td>Binary masks identifying individual nuclei</td>
+                            </tr>
+                            <tr>
+                                <td>Spatial Transcriptomics</td>
+                                <td>Zarr</td>
+                                <td>Chunked, compressed array format for efficient access</td>
+                            </tr>
+                            <tr>
+                                <td>scRNA-seq Data</td>
+                                <td>H5AD</td>
+                                <td>AnnData format for single-cell data with annotations</td>
+                            </tr>
+                            <tr>
+                                <td>Metadata</td>
+                                <td>CSV</td>
+                                <td>Tabular data with cell and region annotations</td>
+                            </tr>
+                            <tr>
+                                <td>Extracted Features</td>
+                                <td>NPY</td>
+                                <td>NumPy array format for efficient storage of numerical data</td>
+                            </tr>
+                            <tr>
+                                <td>Models</td>
+                                <td>PT</td>
+                                <td>PyTorch model format for saved weights and architecture</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="processed-outputs">
+                <h2>Processed Outputs</h2>
+                <p>The <code>processed/</code> directory contains all outputs generated by the pipeline, organized by type:</p>
+                
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Directory</th>
+                                <th>Contents</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>small_dataset/</code></td>
+                                <td>Subset of data</td>
+                                <td>Small dataset for rapid experimentation and hyperparameter optimization</td>
+                            </tr>
+                            <tr>
+                                <td><code>features/</code></td>
+                                <td>Image features</td>
+                                <td>Features extracted from H&E images using ResNet50</td>
+                            </tr>
+                            <tr>
+                                <td><code>hyperparameters/</code></td>
+                                <td>Parameter configurations</td>
+                                <td>Optimal hyperparameters found during search</td>
+                            </tr>
+                            <tr>
+                                <td><code>models/</code></td>
+                                <td>Trained models</td>
+                                <td>Saved model weights and configurations</td>
+                            </tr>
+                            <tr>
+                                <td><code>predictions/</code></td>
+                                <td>Gene expression predictions</td>
+                                <td>Predicted expression values for all genes</td>
+                            </tr>
+                            <tr>
+                                <td><code>markers/</code></td>
+                                <td>Gene markers</td>
+                                <td>Ranked list of gene markers with statistics</td>
+                            </tr>
+                            <tr>
+                                <td><code>visualizations/</code></td>
+                                <td>Quality assessment plots</td>
+                                <td>Visualizations for evaluating model performance</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <p>These outputs provide a complete record of the pipeline execution and results, allowing for analysis and interpretation of the findings.</p>
+            </section>
+
+            <div class="page-navigation">
+                <a href="input_data.html" class="prev-page">Previous: Input Data</a>
+                <a href="pipeline_flow.html" class="next-page">Next: Pipeline Flow</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h3>
+                <p>Comprehensive documentation of our approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="data_structure.html">Data Structure</a></li>
+                    <li><a href="pipeline_flow.html">Pipeline Flow</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Catskills Solution for Broad Institute IBD Challenge</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            securityLevel: 'loose'
+        });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>

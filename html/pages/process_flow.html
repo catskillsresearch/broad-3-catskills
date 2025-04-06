@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Flow - Spatial Transcriptomics Challenge Documentation</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Spatial Transcriptomics Challenge</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="process_flow.html" class="active">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#main-process-flow">Main Process Flow</a></li>
+                    <li><a href="#data-preprocessing">Data Preprocessing</a></li>
+                    <li><a href="#feature-extraction">Feature Extraction</a></li>
+                    <li><a href="#model-training">Model Training</a></li>
+                    <li><a href="#gene-expression-prediction">Gene Expression Prediction</a></li>
+                    <li><a href="#unmeasured-gene-prediction">Unmeasured Gene Prediction</a></li>
+                    <li><a href="#gene-ranking">Gene Ranking</a></li>
+                    <li><a href="#data-dimensions">Data Dimensions Throughout Pipeline</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Process Flow</span>
+            </div>
+
+            <section id="overview">
+                <h2>Process Flow Overview</h2>
+                <p>This page provides a comprehensive view of the data transformation process in the spatial transcriptomics challenge, from raw input data to final gene rankings. The process flow illustrates how data moves through different stages of the pipeline and how the DeepSpot approach integrates multiple data modalities.</p>
+                
+                <div class="info-box">
+                    <h3>Key Pipeline Stages</h3>
+                    <ul>
+                        <li><strong>Data Preprocessing</strong>: Preparing and organizing input data</li>
+                        <li><strong>Feature Extraction</strong>: Extracting features from H&E images</li>
+                        <li><strong>Model Training</strong>: Training the DeepSpot model</li>
+                        <li><strong>Gene Expression Prediction</strong>: Predicting expression of measured genes (Crunch 1)</li>
+                        <li><strong>Unmeasured Gene Prediction</strong>: Extending predictions to unmeasured genes (Crunch 2)</li>
+                        <li><strong>Gene Ranking</strong>: Identifying dysplasia-associated genes (Crunch 3)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="main-process-flow">
+                <h2>Main Process Flow Diagram</h2>
+                <p>The following diagram illustrates the complete pipeline from input data through all processing steps to the final output:</p>
+                
+                <div class="mermaid">
+                    graph TD
+                    subgraph Inputs
+                        A1[H&E Images] --> B1
+                        A2[Spatial Transcriptomics Data] --> B1
+                        A3[Nucleus Segmentation] --> B1
+                        A4[scRNA-seq Data] --> E1
+                        A5[Region Annotations] --> F1
+                    end
+                    
+                    subgraph "Data Preprocessing"
+                        B1[Data Loading & Organization] --> B2
+                        B2[Patch Extraction] --> B3
+                        B3[Train/Test Split] --> C1
+                    end
+                    
+                    subgraph "Feature Extraction"
+                        C1[Image Patch Processing] --> C2
+                        C2[ResNet Feature Extraction] --> C3
+                        C3[Feature Normalization] --> D1
+                    end
+                    
+                    subgraph "Model Training & Prediction (Crunch 1)"
+                        D1[DeepSpot Model Training] --> D2
+                        D2[Gene Expression Prediction] --> E1
+                    end
+                    
+                    subgraph "Unmeasured Gene Prediction (Crunch 2)"
+                        E1[Cell Type Matching] --> E2
+                        E2[Gene Expression Transfer] --> E3
+                        E3[Full Transcriptome Prediction] --> F1
+                    end
+                    
+                    subgraph "Gene Ranking (Crunch 3)"
+                        F1[Region-based Cell Grouping] --> F2
+                        F2[Differential Expression Analysis] --> F3
+                        F3[Gene Ranking by logFC] --> G1
+                    end
+                    
+                    subgraph Outputs
+                        G1[Ranked Gene List]
+                    end
+                    
+                    classDef input fill:#e1f5fe,stroke:#01579b
+                    classDef process fill:#e8f5e9,stroke:#2e7d32
+                    classDef output fill:#fce4ec,stroke:#c2185b
+                    
+                    class A1,A2,A3,A4,A5 input
+                    class B1,B2,B3,C1,C2,C3,D1,D2,E1,E2,E3,F1,F2,F3 process
+                    class G1 output
+                </div>
+                
+                <p>This diagram shows the logical flow of data through the pipeline, highlighting the key processing steps and the relationships between different components.</p>
+            </section>
+
+            <section id="data-preprocessing">
+                <h2>Data Preprocessing</h2>
+                <p>The data preprocessing stage prepares the raw input data for feature extraction and model training.</p>
+                
+                <h3>Data Loading & Organization</h3>
+                <p>The first step involves loading and organizing the various input data types:</p>
+                <ul>
+                    <li>Loading spatial transcriptomics data from Zarr files</li>
+                    <li>Loading H&E images and nucleus segmentation masks</li>
+                    <li>Aligning cell coordinates with image coordinates</li>
+                    <li>Organizing data by sample and region</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Data Loading</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import zarr
+import numpy as np
+import pandas as pd
+from PIL import Image
+
+def load_data(sample_id, data_dir):
+    """Load data for a single sample."""
+    # Load spatial transcriptomics data
+    zarr_path = f"{data_dir}/spatial/{sample_id}/xenium_data.zarr"
+    store = zarr.open(zarr_path, mode='r')
+    
+    # Extract cell positions
+    cell_positions = np.array([
+        store['cell_positions']['x'][:], 
+        store['cell_positions']['y'][:]
+    ]).T
+    
+    # Extract gene expression
+    gene_expression = store['gene_expression'][:]
+    gene_names = [gene.decode('utf-8') for gene in store['gene_names'][:]]
+    
+    # Create expression DataFrame
+    expression_df = pd.DataFrame(gene_expression, columns=gene_names)
+    expression_df['x'] = cell_positions[:, 0]
+    expression_df['y'] = cell_positions[:, 1]
+    expression_df['sample_id'] = sample_id
+    
+    # Load H&E image
+    image_path = f"{data_dir}/spatial/{sample_id}/HE_registered.tif"
+    he_image = np.array(Image.open(image_path))
+    
+    # Load nucleus segmentation
+    nuc_path = f"{data_dir}/spatial/{sample_id}/HE_nuc_registered.tif"
+    nuc_image = np.array(Image.open(nuc_path))
+    
+    return {
+        'expression_df': expression_df,
+        'he_image': he_image,
+        'nuc_image': nuc_image,
+        'cell_positions': cell_positions
+    }
+                    </code></pre>
+                </div>
+                
+                <h3>Patch Extraction</h3>
+                <p>The next step involves extracting image patches centered on each cell:</p>
+                <ul>
+                    <li>For each cell in the spatial data, extract a fixed-size patch from the H&E image</li>
+                    <li>Typical patch size is 64×64 or 128×128 pixels</li>
+                    <li>Patches capture the local tissue context around each cell</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Patch Extraction</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def extract_patches(image, cell_positions, patch_size=64):
+    """Extract image patches centered on cell positions."""
+    patches = []
+    half_size = patch_size // 2
+    
+    # Pad image to handle boundary cases
+    padded_image = np.pad(
+        image, 
+        ((half_size, half_size), (half_size, half_size), (0, 0)),
+        mode='reflect'
+    )
+    
+    # Extract patch for each cell
+    for x, y in cell_positions:
+        # Convert to integer coordinates
+        x_int, y_int = int(x), int(y)
+        
+        # Adjust coordinates for padding
+        x_pad = x_int + half_size
+        y_pad = y_int + half_size
+        
+        # Extract patch
+        patch = padded_image[
+            y_pad - half_size:y_pad + half_size,
+            x_pad - half_size:x_pad + half_size,
+            :
+        ]
+        
+        patches.append(patch)
+    
+    return np.array(patches)
+                    </code></pre>
+                </div>
+                
+                <h3>Train/Test Split</h3>
+                <p>The data is split into training and testing sets:</p>
+                <ul>
+                    <li>Typically split by sample (e.g., some samples for training, others for testing)</li>
+                    <li>Alternatively, split cells within samples (ensuring spatial separation)</li>
+                    <li>Training data includes both image patches and gene expression values</li>
+                    <li>Testing data includes only image patches (gene expression is the prediction target)</li>
+                </ul>
+                
+                <div class="info-box">
+                    <h3>Data Split Considerations</h3>
+                    <p>The DeepSpot approach uses a careful data splitting strategy to ensure that the model generalizes well to new samples. This includes:</p>
+                    <ul>
+                        <li>Ensuring that training and testing sets contain different tissue regions</li>
+                        <li>Balancing dysplastic and non-dysplastic regions in both sets</li>
+                        <li>Using cross-validation during development to assess generalization</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="feature-extraction">
+                <h2>Feature Extraction</h2>
+                <p>The feature extraction stage converts image patches into feature vectors that can be used for gene expression prediction.</p>
+                
+                <h3>Image Patch Processing</h3>
+                <p>Before feature extraction, image patches undergo preprocessing:</p>
+                <ul>
+                    <li>Normalization to standardize color distribution</li>
+                    <li>Resizing to match the input size of the feature extractor</li>
+                    <li>Data augmentation for training (rotation, flipping, color jittering)</li>
+                </ul>
+                
+                <h3>ResNet Feature Extraction</h3>
+                <p>The DeepSpot approach uses a pre-trained ResNet50 model to extract features from image patches:</p>
+                <ul>
+                    <li>The model is pre-trained on large pathology image datasets</li>
+                    <li>Features are extracted from multiple layers to capture different levels of abstraction</li>
+                    <li>The final convolutional layer provides a rich feature representation</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Feature Extraction</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import torch
+import torchvision.models as models
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader, Dataset
+
+class PatchDataset(Dataset):
+    """Dataset for image patches."""
+    def __init__(self, patches, transform=None):
+        self.patches = patches
+        self.transform = transform
+    
+    def __len__(self):
+        return len(self.patches)
+    
+    def __getitem__(self, idx):
+        patch = self.patches[idx]
+        
+        if self.transform:
+            patch = self.transform(patch)
+        
+        return patch
+
+def extract_features(patches, batch_size=32):
+    """Extract features from image patches using ResNet50."""
+    # Define transforms
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
+    ])
+    
+    # Create dataset and dataloader
+    dataset = PatchDataset(patches, transform=transform)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    
+    # Load pre-trained ResNet50
+    model = models.resnet50(pretrained=True)
+    # Remove the final fully connected layer
+    feature_extractor = torch.nn.Sequential(*list(model.children())[:-1])
+    feature_extractor.eval()
+    
+    # Extract features
+    features = []
+    with torch.no_grad():
+        for batch in dataloader:
+            batch_features = feature_extractor(batch)
+            # Flatten features
+            batch_features = batch_features.view(batch_features.size(0), -1)
+            features.append(batch_features)
+    
+    # Concatenate all features
+    features = torch.cat(features, dim=0)
+    
+    return features.numpy()
+                    </code></pre>
+                </div>
+                
+                <h3>Feature Normalization</h3>
+                <p>The extracted features are normalized to improve model training:</p>
+                <ul>
+                    <li>Standardization (zero mean, unit variance) across the dataset</li>
+                    <li>Optional dimensionality reduction (e.g., PCA) to reduce feature size</li>
+                    <li>Feature selection to focus on the most informative dimensions</li>
+                </ul>
+            </section>
+
+            <section id="model-training">
+                <h2>Model Training</h2>
+                <p>The model training stage uses the extracted features and gene expression data to train the DeepSpot model.</p>
+                
+                <h3>DeepSpot Architecture</h3>
+                <p>The DeepSpot model uses a deep-set neural network architecture:</p>
+                <ul>
+                    <li>Phi networks transform features from different spatial levels</li>
+                    <li>Aggregation operations combine information across levels</li>
+                    <li>Rho networks predict gene expression from aggregated features</li>
+                </ul>
+                
+                <p>For a detailed explanation of the architecture, see the <a href="deepspot_architecture.html">DeepSpot Architecture</a> page.</p>
+                
+                <h3>Training Process</h3>
+                <p>The training process involves:</p>
+                <ul>
+                    <li>Batching data by cells</li>
+                    <li>Forward pass through the model</li>
+                    <li>Computing loss (combination of MSE and Spearman correlation)</li>
+                    <li>Backpropagation and parameter updates</li>
+                    <li>Validation on held-out data</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Model Training Loop</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+def train_model(model, train_loader, val_loader, optimizer, num_epochs=50):
+    """Train the DeepSpot model."""
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    
+    # Define loss functions
+    mse_loss = torch.nn.MSELoss()
+    
+    # Training loop
+    for epoch in range(num_epochs):
+        # Training phase
+        model.train()
+        train_loss = 0.0
+        
+        for batch_idx, (features, targets) in enumerate(train_loader):
+            features = features.to(device)
+            targets = targets.to(device)
+            
+            # Forward pass
+            outputs = model(features)
+            
+            # Compute loss
+            loss = mse_loss(outputs, targets)
+            
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            train_loss += loss.item()
+        
+        # Validation phase
+        model.eval()
+        val_loss = 0.0
+        
+        with torch.no_grad():
+            for features, targets in val_loader:
+                features = features.to(device)
+                targets = targets.to(device)
+                
+                outputs = model(features)
+                loss = mse_loss(outputs, targets)
+                
+                val_loss += loss.item()
+        
+        # Print progress
+        print(f'Epoch {epoch+1}/{num_epochs}')
+        print(f'Train Loss: {train_loss/len(train_loader):.4f}')
+        print(f'Val Loss: {val_loss/len(val_loader):.4f}')
+    
+    return model
+                    </code></pre>
+                </div>
+                
+                <h3>Ensemble Learning</h3>
+                <p>The DeepSpot approach uses ensemble learning to improve prediction robustness:</p>
+                <ul>
+                    <li>Training multiple models with different initializations</li>
+                    <li>Using different subsets of the training data</li>
+                    <li>Combining predictions through averaging or weighted averaging</li>
+                </ul>
+            </section>
+
+            <section id="gene-expression-prediction">
+                <h2>Gene Expression Prediction (Crunch 1)</h2>
+                <p>The gene expression prediction stage uses the trained model to predict expression of the 460 measured genes from H&E images.</p>
+                
+                <h3>Prediction Process</h3>
+                <p>The prediction process involves:</p>
+                <ul>
+                    <li>Extracting features from test image patches</li>
+                    <li>Running the features through the trained model</li>
+                    <li>Generating predictions for all 460 genes</li>
+                    <li>Evaluating predictions using Spearman correlation</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Prediction and Evaluation</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+from scipy.stats import spearmanr
+import numpy as np
+
+def predict_and_evaluate(model, test_loader, gene_names):
+    """Predict gene expression and evaluate using Spearman correlation."""
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    model.eval()
+    
+    all_predictions = []
+    all_targets = []
+    
+    with torch.no_grad():
+        for features, targets in test_loader:
+            features = features.to(device)
+            
+            # Generate predictions
+            predictions = model(features)
+            
+            all_predictions.append(predictions.cpu().numpy())
+            all_targets.append(targets.numpy())
+    
+    # Concatenate all predictions and targets
+    all_predictions = np.concatenate(all_predictions, axis=0)
+    all_targets = np.concatenate(all_targets, axis=0)
+    
+    # Calculate Spearman correlation for each gene
+    gene_correlations = []
+    for i in range(all_predictions.shape[1]):
+        corr, _ = spearmanr(all_predictions[:, i], all_targets[:, i])
+        gene_correlations.append(corr)
+    
+    # Create results DataFrame
+    results_df = pd.DataFrame({
+        'Gene': gene_names,
+        'Spearman_Correlation': gene_correlations
+    })
+    
+    # Calculate average correlation
+    avg_correlation = np.mean(gene_correlations)
+    print(f'Average Spearman Correlation: {avg_correlation:.4f}')
+    
+    return results_df, all_predictions
+                    </code></pre>
+                </div>
+                
+                <h3>Output Format</h3>
+                <p>The output of this stage is a matrix of predicted gene expression values:</p>
+                <ul>
+                    <li>Rows represent cells</li>
+                    <li>Columns represent the 460 measured genes</li>
+                    <li>Values represent predicted expression levels</li>
+                </ul>
+                
+                <p>This matrix serves as the solution for Crunch 1 and as input for Crunch 2.</p>
+            </section>
+
+            <section id="unmeasured-gene-prediction">
+                <h2>Unmeasured Gene Prediction (Crunch 2)</h2>
+                <p>The unmeasured gene prediction stage extends the predictions to genes not measured in the spatial transcriptomics data.</p>
+                
+                <h3>Cell Type Matching</h3>
+                <p>The first step involves finding similar cells in the scRNA-seq data:</p>
+                <ul>
+                    <li>For each cell in the spatial data, find k-nearest neighbors in the scRNA-seq data</li>
+                    <li>Matching is based on the expression of the 460 genes common to both datasets</li>
+                    <li>Similarity is measured using correlation or distance metrics</li>
+                </ul>
+                
+                <h3>Gene Expression Transfer</h3>
+                <p>The next step transfers expression of unmeasured genes from scRNA-seq to spatial data:</p>
+                <ul>
+                    <li>For each spatial cell, take the average expression of its k-nearest neighbors in scRNA-seq</li>
+                    <li>Apply normalization to account for platform differences</li>
+                    <li>Integrate with the predicted expression of measured genes</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Unmeasured Gene Prediction</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+from sklearn.neighbors import NearestNeighbors
+import numpy as np
+import pandas as pd
+
+def predict_unmeasured_genes(spatial_expr, scrna_expr, common_genes, k=10):
+    """Predict unmeasured genes using k-nearest neighbors from scRNA-seq data."""
+    # Extract common genes for matching
+    spatial_common = spatial_expr[common_genes]
+    scrna_common = scrna_expr[common_genes]
+    
+    # Normalize expression values
+    spatial_common = (spatial_common - spatial_common.mean()) / spatial_common.std()
+    scrna_common = (scrna_common - scrna_common.mean()) / scrna_common.std()
+    
+    # Find k-nearest neighbors
+    nbrs = NearestNeighbors(n_neighbors=k).fit(scrna_common)
+    distances, indices = nbrs.kneighbors(spatial_common)
+    
+    # Calculate weights based on distances
+    weights = np.exp(-distances)
+    weights = weights / weights.sum(axis=1, keepdims=True)
+    
+    # Get all genes in scRNA-seq data
+    all_genes = scrna_expr.columns
+    unmeasured_genes = [g for g in all_genes if g not in common_genes]
+    
+    # Initialize DataFrame for all genes
+    full_expr = pd.DataFrame(index=spatial_expr.index, columns=all_genes)
+    
+    # Fill in measured genes with spatial expression
+    for gene in common_genes:
+        full_expr[gene] = spatial_expr[gene]
+    
+    # Predict unmeasured genes
+    for gene in unmeasured_genes:
+        # Get expression of this gene in scRNA-seq data
+        gene_expr = scrna_expr[gene].values
+        
+        # For each spatial cell, compute weighted average of its neighbors
+        for i, (idx, w) in enumerate(zip(indices, weights)):
+            neighbor_expr = gene_expr[idx]
+            full_expr.iloc[i][gene] = np.sum(neighbor_expr * w)
+    
+    return full_expr
+                    </code></pre>
+                </div>
+                
+                <h3>Full Transcriptome Prediction</h3>
+                <p>The final step produces a complete transcriptome prediction:</p>
+                <ul>
+                    <li>Combining predicted expression for measured genes (from Crunch 1)</li>
+                    <li>Adding transferred expression for unmeasured genes</li>
+                    <li>Ensuring consistency between the two sets of genes</li>
+                </ul>
+                
+                <p>The output is a matrix with cells as rows and all ~18,615 genes as columns.</p>
+            </section>
+
+            <section id="gene-ranking">
+                <h2>Gene Ranking (Crunch 3)</h2>
+                <p>The gene ranking stage identifies genes that distinguish dysplastic from non-dysplastic regions.</p>
+                
+                <h3>Region-based Cell Grouping</h3>
+                <p>The first step groups cells by region type:</p>
+                <ul>
+                    <li>Using region annotations to classify cells as dysplastic or non-dysplastic</li>
+                    <li>Aggregating gene expression within each region type</li>
+                    <li>Calculating summary statistics for each gene in each region type</li>
+                </ul>
+                
+                <h3>Differential Expression Analysis</h3>
+                <p>The next step calculates differential expression between region types:</p>
+                <ul>
+                    <li>Computing log fold change (logFC) for each gene</li>
+                    <li>Calculating statistical significance (p-values)</li>
+                    <li>Adjusting for multiple testing</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Differential Expression Analysis</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+def calculate_differential_expression(expr_df, region_labels):
+    """Calculate differential expression between dysplastic and non-dysplastic regions."""
+    # Split cells by region type
+    dysplastic_cells = expr_df[region_labels == 'dysplastic']
+    non_dysplastic_cells = expr_df[region_labels == 'non_dysplastic']
+    
+    # Initialize results DataFrame
+    results = []
+    
+    # Calculate statistics for each gene
+    for gene in expr_df.columns:
+        # Get expression values for this gene
+        dysplastic_expr = dysplastic_cells[gene].values
+        non_dysplastic_expr = non_dysplastic_cells[gene].values
+        
+        # Calculate mean expression in each region
+        mean_dysplastic = np.mean(dysplastic_expr)
+        mean_non_dysplastic = np.mean(non_dysplastic_expr)
+        
+        # Calculate log fold change
+        epsilon = 1e-10  # Small constant to avoid log(0)
+        logFC = np.log2((mean_dysplastic + epsilon) / (mean_non_dysplastic + epsilon))
+        
+        # Calculate p-value using t-test
+        t_stat, p_value = stats.ttest_ind(dysplastic_expr, non_dysplastic_expr)
+        
+        # Store results
+        results.append({
+            'Gene': gene,
+            'logFC': logFC,
+            'abs_logFC': abs(logFC),
+            'mean_dysplastic': mean_dysplastic,
+            'mean_non_dysplastic': mean_non_dysplastic,
+            'p_value': p_value
+        })
+    
+    # Create DataFrame and sort by absolute log fold change
+    results_df = pd.DataFrame(results)
+    results_df = results_df.sort_values('abs_logFC', ascending=False)
+    
+    # Add FDR-adjusted p-values
+    from statsmodels.stats.multitest import fdrcorrection
+    _, results_df['q_value'] = fdrcorrection(results_df['p_value'])
+    
+    return results_df
+                    </code></pre>
+                </div>
+                
+                <h3>Gene Ranking by logFC</h3>
+                <p>The final step ranks genes based on their ability to distinguish dysplastic regions:</p>
+                <ul>
+                    <li>Sorting genes by absolute log fold change</li>
+                    <li>Filtering for statistical significance</li>
+                    <li>Considering biological relevance and prior knowledge</li>
+                </ul>
+                
+                <p>The output is a ranked list of genes that are differentially expressed between dysplastic and non-dysplastic regions.</p>
+            </section>
+
+            <section id="data-dimensions">
+                <h2>Data Dimensions Throughout Pipeline</h2>
+                <p>The following diagram illustrates how data dimensions change throughout the pipeline:</p>
+                
+                <div class="mermaid">
+                    graph TD
+                    A[H&E Images<br>~20,000 × 20,000 × 3] --> B[Image Patches<br>~100,000 × 64 × 64 × 3]
+                    B --> C[Image Features<br>~100,000 × 2048]
+                    
+                    D[Spatial Data<br>~100,000 cells × 460 genes] --> E[Training Data<br>Features + Expression]
+                    C --> E
+                    
+                    E --> F[DeepSpot Model<br>Multi-level Integration]
+                    
+                    F --> G[Predicted Expression<br>~100,000 cells × 460 genes]
+                    
+                    H[scRNA-seq Data<br>~10,000 cells × 18,615 genes] --> I[Gene Transfer]
+                    G --> I
+                    
+                    I --> J[Full Transcriptome<br>~100,000 cells × 18,615 genes]
+                    
+                    K[Region Annotations] --> L[Region-based Analysis]
+                    J --> L
+                    
+                    L --> M[Ranked Gene List<br>18,615 genes]
+                    
+                    classDef input fill:#e1f5fe,stroke:#01579b
+                    classDef process fill:#e8f5e9,stroke:#2e7d32
+                    classDef output fill:#fce4ec,stroke:#c2185b
+                    
+                    class A,D,H,K input
+                    class B,C,E,F,G,I,J,L process
+                    class M output
+                </div>
+                
+                <p>This diagram shows the transformation of data dimensions at each stage of the pipeline, from raw input to final output.</p>
+                
+                <h3>Key Transformations</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Input Dimensions</th>
+                            <th>Output Dimensions</th>
+                            <th>Transformation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Patch Extraction</td>
+                            <td>~20,000 × 20,000 × 3</td>
+                            <td>~100,000 × 64 × 64 × 3</td>
+                            <td>Extracting fixed-size patches around each cell</td>
+                        </tr>
+                        <tr>
+                            <td>Feature Extraction</td>
+                            <td>~100,000 × 64 × 64 × 3</td>
+                            <td>~100,000 × 2048</td>
+                            <td>Converting images to feature vectors using ResNet</td>
+                        </tr>
+                        <tr>
+                            <td>Gene Expression Prediction</td>
+                            <td>~100,000 × 2048</td>
+                            <td>~100,000 × 460</td>
+                            <td>Predicting expression of measured genes</td>
+                        </tr>
+                        <tr>
+                            <td>Unmeasured Gene Prediction</td>
+                            <td>~100,000 × 460</td>
+                            <td>~100,000 × 18,615</td>
+                            <td>Extending predictions to all genes</td>
+                        </tr>
+                        <tr>
+                            <td>Gene Ranking</td>
+                            <td>~100,000 × 18,615</td>
+                            <td>18,615 × 1</td>
+                            <td>Ranking genes by differential expression</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="page-navigation">
+                <a href="input_data.html" class="prev-page">Previous: Input Data</a>
+                <a href="deepspot_architecture.html" class="next-page">Next: DeepSpot Architecture</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Spatial Transcriptomics Challenge Documentation</h3>
+                <p>Comprehensive documentation of the winning solutions for the Spatial Transcriptomics Challenge.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="process_flow.html">Process Flow</a></li>
+                    <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Spatial Transcriptomics Challenge Documentation</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>

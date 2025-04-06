@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Implementation - Spatial Transcriptomics Challenge Documentation</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Spatial Transcriptomics Challenge</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                <li><a href="implementation.html" class="active">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#luigi-pipeline">Luigi Pipeline</a></li>
+                    <li><a href="#pytorch-lightning">PyTorch Lightning Integration</a></li>
+                    <li><a href="#wandb-integration">Weights & Biases Integration</a></li>
+                    <li><a href="#small-dataset-approach">Small Dataset Approach</a></li>
+                    <li><a href="#hyperparameter-search">Hyperparameter Search</a></li>
+                    <li><a href="#model-training">Model Training</a></li>
+                    <li><a href="#evaluation-metrics">Evaluation Metrics</a></li>
+                    <li><a href="#deployment">Deployment</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Implementation</span>
+            </div>
+
+            <section id="overview">
+                <h2>Implementation Overview</h2>
+                <p>This page provides a comprehensive guide to implementing the spatial transcriptomics pipeline, focusing on the practical aspects of setting up, training, and evaluating the models. The implementation combines the DeepSpot architecture with modern ML engineering practices to create a robust, reproducible workflow.</p>
+                
+                <div class="info-box">
+                    <h3>Implementation Highlights</h3>
+                    <ul>
+                        <li><strong>Luigi Pipeline</strong>: Task-based workflow management for reproducibility</li>
+                        <li><strong>PyTorch Lightning</strong>: Clean, modular implementation of neural networks</li>
+                        <li><strong>Weights & Biases</strong>: Experiment tracking and hyperparameter optimization</li>
+                        <li><strong>Small Dataset Approach</strong>: Rapid iteration on a subset before scaling</li>
+                        <li><strong>Restartable Training</strong>: Checkpoint-based training that can be resumed</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="luigi-pipeline">
+                <h2>Luigi Pipeline</h2>
+                <p>The implementation uses Luigi to manage the workflow, providing dependency tracking, task scheduling, and reproducibility.</p>
+                
+                <h3>Pipeline Structure</h3>
+                <div class="mermaid">
+                    graph TD
+                    A[DataPreparationTask] --> B[FeatureExtractionTask]
+                    B --> C[ModelTrainingTask]
+                    C --> D[PredictionTask]
+                    D --> E[UnmeasuredGenePredictionTask]
+                    E --> F[GeneRankingTask]
+                    
+                    classDef task fill:#e8f5e9,stroke:#2e7d32
+                    class A,B,C,D,E,F task
+                </div>
+                
+                <h3>Key Luigi Tasks</h3>
+                <p>The pipeline consists of several key tasks:</p>
+                <ul>
+                    <li><strong>DataPreparationTask</strong>: Loads and organizes the input data</li>
+                    <li><strong>FeatureExtractionTask</strong>: Extracts features from H&E images</li>
+                    <li><strong>ModelTrainingTask</strong>: Trains the DeepSpot model</li>
+                    <li><strong>PredictionTask</strong>: Generates predictions for test cells</li>
+                    <li><strong>UnmeasuredGenePredictionTask</strong>: Extends predictions to unmeasured genes</li>
+                    <li><strong>GeneRankingTask</strong>: Ranks genes based on differential expression</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Luigi Pipeline Implementation</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import luigi
+import os
+import pickle
+import numpy as np
+import pandas as pd
+import torch
+from lightning_modules import DeepSpotLightningModule
+
+class DataPreparationTask(luigi.Task):
+    """Task for loading and preparing data."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    
+    def output(self):
+        return {
+            'train_data': luigi.LocalTarget(os.path.join(self.output_dir, 'train_data.pkl')),
+            'test_data': luigi.LocalTarget(os.path.join(self.output_dir, 'test_data.pkl'))
+        }
+    
+    def run(self):
+        # Load and prepare data
+        print("Loading and preparing data...")
+        
+        # Create small dataset if requested
+        if self.small_dataset:
+            print("Creating small dataset for rapid experimentation...")
+            # Code to create small dataset
+        
+        # Save prepared data
+        os.makedirs(self.output_dir, exist_ok=True)
+        with self.output()['train_data'].open('wb') as f:
+            pickle.dump(train_data, f)
+        with self.output()['test_data'].open('wb') as f:
+            pickle.dump(test_data, f)
+
+class FeatureExtractionTask(luigi.Task):
+    """Task for extracting features from H&E images."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    
+    def requires(self):
+        return DataPreparationTask(
+            data_dir=self.data_dir,
+            output_dir=self.output_dir,
+            small_dataset=self.small_dataset
+        )
+    
+    def output(self):
+        return {
+            'train_features': luigi.LocalTarget(os.path.join(self.output_dir, 'train_features.pkl')),
+            'test_features': luigi.LocalTarget(os.path.join(self.output_dir, 'test_features.pkl'))
+        }
+    
+    def run(self):
+        # Load prepared data
+        with self.input()['train_data'].open('rb') as f:
+            train_data = pickle.load(f)
+        with self.input()['test_data'].open('rb') as f:
+            test_data = pickle.load(f)
+        
+        # Extract features
+        print("Extracting features from H&E images...")
+        # Code to extract features
+        
+        # Save extracted features
+        with self.output()['train_features'].open('wb') as f:
+            pickle.dump(train_features, f)
+        with self.output()['test_features'].open('wb') as f:
+            pickle.dump(test_features, f)
+
+class ModelTrainingTask(luigi.Task):
+    """Task for training the DeepSpot model."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    model_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    max_epochs = luigi.IntParameter(default=50)
+    batch_size = luigi.IntParameter(default=32)
+    learning_rate = luigi.FloatParameter(default=0.001)
+    
+    def requires(self):
+        return FeatureExtractionTask(
+            data_dir=self.data_dir,
+            output_dir=self.output_dir,
+            small_dataset=self.small_dataset
+        )
+    
+    def output(self):
+        return luigi.LocalTarget(os.path.join(self.model_dir, 'model.ckpt'))
+    
+    def run(self):
+        # Load features
+        with self.input()['train_features'].open('rb') as f:
+            train_features = pickle.load(f)
+        
+        # Create and train model
+        print("Training DeepSpot model...")
+        model = DeepSpotLightningModule(
+            learning_rate=self.learning_rate,
+            # Other model parameters
+        )
+        
+        # Train model using PyTorch Lightning
+        # Code to train model
+        
+        # Save trained model
+        os.makedirs(self.model_dir, exist_ok=True)
+        torch.save(model.state_dict(), self.output().path)
+
+class PredictionTask(luigi.Task):
+    """Task for generating predictions for test cells."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    model_dir = luigi.Parameter()
+    results_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    
+    def requires(self):
+        return {
+            'features': FeatureExtractionTask(
+                data_dir=self.data_dir,
+                output_dir=self.output_dir,
+                small_dataset=self.small_dataset
+            ),
+            'model': ModelTrainingTask(
+                data_dir=self.data_dir,
+                output_dir=self.output_dir,
+                model_dir=self.model_dir,
+                small_dataset=self.small_dataset
+            )
+        }
+    
+    def output(self):
+        return luigi.LocalTarget(os.path.join(self.results_dir, 'predictions.pkl'))
+    
+    def run(self):
+        # Load test features
+        with self.input()['features']['test_features'].open('rb') as f:
+            test_features = pickle.load(f)
+        
+        # Load trained model
+        model = DeepSpotLightningModule.load_from_checkpoint(self.input()['model'].path)
+        
+        # Generate predictions
+        print("Generating predictions for test cells...")
+        # Code to generate predictions
+        
+        # Save predictions
+        os.makedirs(self.results_dir, exist_ok=True)
+        with self.output().open('wb') as f:
+            pickle.dump(predictions, f)
+
+class UnmeasuredGenePredictionTask(luigi.Task):
+    """Task for predicting unmeasured genes."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    model_dir = luigi.Parameter()
+    results_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    
+    def requires(self):
+        return PredictionTask(
+            data_dir=self.data_dir,
+            output_dir=self.output_dir,
+            model_dir=self.model_dir,
+            results_dir=self.results_dir,
+            small_dataset=self.small_dataset
+        )
+    
+    def output(self):
+        return luigi.LocalTarget(os.path.join(self.results_dir, 'full_predictions.pkl'))
+    
+    def run(self):
+        # Load predictions for measured genes
+        with self.input().open('rb') as f:
+            predictions = pickle.load(f)
+        
+        # Predict unmeasured genes
+        print("Predicting unmeasured genes...")
+        # Code to predict unmeasured genes
+        
+        # Save full predictions
+        with self.output().open('wb') as f:
+            pickle.dump(full_predictions, f)
+
+class GeneRankingTask(luigi.Task):
+    """Task for ranking genes based on differential expression."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    model_dir = luigi.Parameter()
+    results_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    
+    def requires(self):
+        return UnmeasuredGenePredictionTask(
+            data_dir=self.data_dir,
+            output_dir=self.output_dir,
+            model_dir=self.model_dir,
+            results_dir=self.results_dir,
+            small_dataset=self.small_dataset
+        )
+    
+    def output(self):
+        return luigi.LocalTarget(os.path.join(self.results_dir, 'ranked_genes.csv'))
+    
+    def run(self):
+        # Load full predictions
+        with self.input().open('rb') as f:
+            full_predictions = pickle.load(f)
+        
+        # Rank genes based on differential expression
+        print("Ranking genes based on differential expression...")
+        # Code to rank genes
+        
+        # Save ranked genes
+        ranked_genes_df.to_csv(self.output().path, index=False)
+
+if __name__ == "__main__":
+    luigi.build([
+        GeneRankingTask(
+            data_dir="/path/to/data",
+            output_dir="/path/to/output",
+            model_dir="/path/to/models",
+            results_dir="/path/to/results",
+            small_dataset=True  # Set to False for full dataset
+        )
+    ], local_scheduler=True)
+                    </code></pre>
+                </div>
+                
+                <h3>Benefits of the Luigi Pipeline</h3>
+                <p>Using Luigi for workflow management provides several benefits:</p>
+                <ul>
+                    <li><strong>Dependency Management</strong>: Luigi automatically handles task dependencies, ensuring that tasks are executed in the correct order</li>
+                    <li><strong>Restartability</strong>: If a task fails, the pipeline can be restarted from that point without redoing completed tasks</li>
+                    <li><strong>Parallelization</strong>: Independent tasks can be executed in parallel</li>
+                    <li><strong>Reproducibility</strong>: The pipeline structure ensures that the workflow is reproducible</li>
+                    <li><strong>Visibility</strong>: Luigi provides a web interface for monitoring task execution</li>
+                </ul>
+            </section>
+
+            <section id="pytorch-lightning">
+                <h2>PyTorch Lightning Integration</h2>
+                <p>The implementation uses PyTorch Lightning to provide a clean, modular structure for the neural network models.</p>
+                
+                <h3>Lightning Module Structure</h3>
+                <p>The DeepSpot model is implemented as a Lightning Module, which encapsulates:</p>
+                <ul>
+                    <li>Model architecture definition</li>
+                    <li>Forward pass logic</li>
+                    <li>Training step implementation</li>
+                    <li>Validation step implementation</li>
+                    <li>Test step implementation</li>
+                    <li>Optimizer configuration</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - PyTorch Lightning Module</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import pytorch_lightning as pl
+import torchmetrics
+from scipy.stats import spearmanr
+import numpy as np
+
+class DeepSpotLightningModule(pl.LightningModule):
+    """PyTorch Lightning module for DeepSpot model."""
+    def __init__(
+        self,
+        spot_feature_dim=2048,
+        subspot_feature_dim=2048,
+        neighbor_feature_dim=2048,
+        embedding_dim=256,
+        hidden_dims=[512, 256],
+        num_genes=460,
+        learning_rate=0.001,
+        weight_decay=1e-5,
+        mse_weight=1.0,
+        pearson_weight=0.5,
+        spearman_weight=1.0
+    ):
+        super(DeepSpotLightningModule, self).__init__()
+        
+        # Save hyperparameters
+        self.save_hyperparameters()
+        
+        # Model components
+        self.spot_phi = self._create_phi_network(spot_feature_dim, hidden_dims, embedding_dim)
+        self.subspot_phi = self._create_phi_network(subspot_feature_dim, hidden_dims, embedding_dim)
+        self.neighbor_phi = self._create_phi_network(neighbor_feature_dim, hidden_dims, embedding_dim)
+        
+        self.subspot_aggregation = self._create_aggregation_module(embedding_dim)
+        self.neighbor_aggregation = self._create_aggregation_module(embedding_dim)
+        
+        self.rho = self._create_rho_network(embedding_dim * 3, hidden_dims, num_genes)
+        
+        # Metrics
+        self.train_mse = torchmetrics.MeanSquaredError()
+        self.val_mse = torchmetrics.MeanSquaredError()
+        self.test_mse = torchmetrics.MeanSquaredError()
+    
+    def _create_phi_network(self, input_dim, hidden_dims, output_dim):
+        """Create a phi network."""
+        layers = []
+        prev_dim = input_dim
+        
+        for hidden_dim in hidden_dims:
+            layers.append(nn.Linear(prev_dim, hidden_dim))
+            layers.append(nn.BatchNorm1d(hidden_dim))
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(0.2))
+            prev_dim = hidden_dim
+        
+        layers.append(nn.Linear(prev_dim, output_dim))
+        
+        return nn.Sequential(*layers)
+    
+    def _create_aggregation_module(self, embedding_dim):
+        """Create an aggregation module."""
+        # Implementation of aggregation module
+        # (simplified for brevity)
+        return nn.Identity()  # Placeholder
+    
+    def _create_rho_network(self, input_dim, hidden_dims, output_dim):
+        """Create a rho network."""
+        layers = []
+        prev_dim = input_dim
+        
+        for hidden_dim in hidden_dims:
+            layers.append(nn.Linear(prev_dim, hidden_dim))
+            layers.append(nn.BatchNorm1d(hidden_dim))
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(0.2))
+            prev_dim = hidden_dim
+        
+        layers.append(nn.Linear(prev_dim, output_dim))
+        
+        return nn.Sequential(*layers)
+    
+    def forward(self, spot_features, subspot_features, neighbor_features):
+        """Forward pass through the model."""
+        # Process spot features
+        spot_embedding = self.spot_phi(spot_features)
+        
+        # Process sub-spot features
+        # (simplified for brevity)
+        subspot_embedding = torch.zeros_like(spot_embedding)  # Placeholder
+        
+        # Process neighbor features
+        # (simplified for brevity)
+        neighbor_embedding = torch.zeros_like(spot_embedding)  # Placeholder
+        
+        # Concatenate embeddings
+        combined_embedding = torch.cat([
+            spot_embedding,
+            subspot_embedding,
+            neighbor_embedding
+        ], dim=1)
+        
+        # Predict gene expression
+        gene_expression = self.rho(combined_embedding)
+        
+        return gene_expression
+    
+    def training_step(self, batch, batch_idx):
+        """Training step."""
+        spot_features, subspot_features, neighbor_features, targets = batch
+        
+        # Forward pass
+        predictions = self(spot_features, subspot_features, neighbor_features)
+        
+        # Compute losses
+        mse_loss = F.mse_loss(predictions, targets)
+        pearson_loss = self._pearson_correlation_loss(predictions, targets)
+        spearman_loss = self._spearman_correlation_loss(predictions, targets)
+        
+        # Combine losses
+        loss = (
+            self.hparams.mse_weight * mse_loss +
+            self.hparams.pearson_weight * pearson_loss +
+            self.hparams.spearman_weight * spearman_loss
+        )
+        
+        # Log metrics
+        self.train_mse(predictions, targets)
+        self.log('train_mse', self.train_mse, on_step=True, on_epoch=True)
+        self.log('train_pearson_loss', pearson_loss, on_step=True, on_epoch=True)
+        self.log('train_spearman_loss', spearman_loss, on_step=True, on_epoch=True)
+        self.log('train_loss', loss, on_step=True, on_epoch=True)
+        
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        """Validation step."""
+        spot_features, subspot_features, neighbor_features, targets = batch
+        
+        # Forward pass
+        predictions = self(spot_features, subspot_features, neighbor_features)
+        
+        # Compute losses
+        mse_loss = F.mse_loss(predictions, targets)
+        pearson_loss = self._pearson_correlation_loss(predictions, targets)
+        spearman_loss = self._spearman_correlation_loss(predictions, targets)
+        
+        # Combine losses
+        loss = (
+            self.hparams.mse_weight * mse_loss +
+            self.hparams.pearson_weight * pearson_loss +
+            self.hparams.spearman_weight * spearman_loss
+        )
+        
+        # Log metrics
+        self.val_mse(predictions, targets)
+        self.log('val_mse', self.val_mse, on_step=False, on_epoch=True)
+        self.log('val_pearson_loss', pearson_loss, on_step=False, on_epoch=True)
+        self.log('val_spearman_loss', spearman_loss, on_step=False, on_epoch=True)
+        self.log('val_loss', loss, on_step=False, on_epoch=True)
+        
+        # Store predictions and targets for computing Spearman correlation
+        self.validation_step_outputs.append({
+            'predictions': predictions.detach().cpu().numpy(),
+            'targets': targets.detach().cpu().numpy()
+        })
+        
+        return loss
+    
+    def on_validation_epoch_end(self):
+        """Compute Spearman correlation at the end of validation epoch."""
+        if not hasattr(self, 'validation_step_outputs') or len(self.validation_step_outputs) == 0:
+            return
+        
+        # Concatenate predictions and targets from all validation steps
+        all_predictions = np.concatenate([x['predictions'] for x in self.validation_step_outputs], axis=0)
+        all_targets = np.concatenate([x['targets'] for x in self.validation_step_outputs], axis=0)
+        
+        # Compute Spearman correlation for each gene
+        gene_correlations = []
+        for i in range(all_predictions.shape[1]):
+            corr, _ = spearmanr(all_predictions[:, i], all_targets[:, i])
+            gene_correlations.append(corr)
+        
+        # Compute average correlation
+        avg_correlation = np.mean(gene_correlations)
+        
+        # Log metric
+        self.log('val_spearman_correlation', avg_correlation)
+        
+        # Clear outputs
+        self.validation_step_outputs.clear()
+    
+    def test_step(self, batch, batch_idx):
+        """Test step."""
+        spot_features, subspot_features, neighbor_features, targets = batch
+        
+        # Forward pass
+        predictions = self(spot_features, subspot_features, neighbor_features)
+        
+        # Compute MSE
+        mse_loss = F.mse_loss(predictions, targets)
+        
+        # Log metrics
+        self.test_mse(predictions, targets)
+        self.log('test_mse', self.test_mse, on_step=False, on_epoch=True)
+        
+        # Store predictions and targets for computing Spearman correlation
+        self.test_step_outputs.append({
+            'predictions': predictions.detach().cpu().numpy(),
+            'targets': targets.detach().cpu().numpy()
+        })
+        
+        return mse_loss
+    
+    def on_test_epoch_end(self):
+        """Compute Spearman correlation at the end of test epoch."""
+        if not hasattr(self, 'test_step_outputs') or len(self.test_step_outputs) == 0:
+            return
+        
+        # Concatenate predictions and targets from all test steps
+        all_predictions = np.concatenate([x['predictions'] for x in self.test_step_outputs], axis=0)
+        all_targets = np.concatenate([x['targets'] for x in self.test_step_outputs], axis=0)
+        
+        # Compute Spearman correlation for each gene
+        gene_correlations = []
+        for i in range(all_predictions.shape[1]):
+            corr, _ = spearmanr(all_predictions[:, i], all_targets[:, i])
+            gene_correlations.append(corr)
+        
+        # Compute average correlation
+        avg_correlation = np.mean(gene_correlations)
+        
+        # Log metric
+        self.log('test_spearman_correlation', avg_correlation)
+        
+        # Clear outputs
+        self.test_step_outputs.clear()
+    
+    def configure_optimizers(self):
+        """Configure optimizer."""
+        optimizer = torch.optim.Adam(
+            self.parameters(),
+            lr=self.hparams.learning_rate,
+            weight_decay=self.hparams.weight_decay
+        )
+        
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            verbose=True
+        )
+        
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'monitor': 'val_loss',
+                'interval': 'epoch',
+                'frequency': 1
+            }
+        }
+    
+    def _pearson_correlation_loss(self, predictions, targets):
+        """Compute Pearson correlation loss."""
+        # Implementation of Pearson correlation loss
+        # (simplified for brevity)
+        return torch.tensor(0.0, device=predictions.device)  # Placeholder
+    
+    def _spearman_correlation_loss(self, predictions, targets):
+        """Compute differentiable approximation of Spearman correlation loss."""
+        # Implementation of Spearman correlation loss
+        # (simplified for brevity)
+        return torch.tensor(0.0, device=predictions.device)  # Placeholder
+                    </code></pre>
+                </div>
+                
+                <h3>Benefits of PyTorch Lightning</h3>
+                <p>Using PyTorch Lightning provides several benefits:</p>
+                <ul>
+                    <li><strong>Code Organization</strong>: Separates research code from engineering boilerplate</li>
+                    <li><strong>Reproducibility</strong>: Standardized training loop and configuration</li>
+                    <li><strong>Scalability</strong>: Easy transition from single-GPU to multi-GPU training</li>
+                    <li><strong>Integration</strong>: Built-in support for logging, checkpointing, and early stopping</li>
+                    <li><strong>Extensibility</strong>: Easy to add custom callbacks and hooks</li>
+                </ul>
+            </section>
+
+            <section id="wandb-integration">
+                <h2>Weights & Biases Integration</h2>
+                <p>The implementation integrates with Weights & Biases (W&B) for experiment tracking and hyperparameter optimization.</p>
+                
+                <h3>Experiment Tracking</h3>
+                <p>W&B is used to track experiments, including:</p>
+                <ul>
+                    <li>Training and validation metrics</li>
+                    <li>Model hyperparameters</li>
+                    <li>System metrics (GPU usage, memory, etc.)</li>
+                    <li>Model checkpoints</li>
+                    <li>Visualizations of results</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - W&B Integration</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+import wandb
+
+def train_model(model, train_dataloader, val_dataloader, config):
+    """Train model with W&B integration."""
+    # Initialize W&B logger
+    wandb_logger = WandbLogger(
+        project="spatial-transcriptomics",
+        name=config.get("run_name", "deepspot-model"),
+        config=config
+    )
+    
+    # Define callbacks
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=config["model_dir"],
+        filename="deepspot-{epoch:02d}-{val_spearman_correlation:.4f}",
+        monitor="val_spearman_correlation",
+        mode="max",
+        save_top_k=3,
+        save_last=True
+    )
+    
+    early_stopping_callback = EarlyStopping(
+        monitor="val_spearman_correlation",
+        mode="max",
+        patience=10,
+        verbose=True
+    )
+    
+    # Create trainer
+    trainer = pl.Trainer(
+        max_epochs=config["max_epochs"],
+        logger=wandb_logger,
+        callbacks=[checkpoint_callback, early_stopping_callback],
+        gpus=1 if torch.cuda.is_available() else 0,
+        log_every_n_steps=10,
+        deterministic=True
+    )
+    
+    # Train model
+    trainer.fit(
+        model,
+        train_dataloaders=train_dataloader,
+        val_dataloaders=val_dataloader
+    )
+    
+    # Close W&B run
+    wandb.finish()
+    
+    return model, trainer
+                    </code></pre>
+                </div>
+                
+                <h3>Hyperparameter Optimization</h3>
+                <p>W&B Sweeps are used for hyperparameter optimization:</p>
+                <ul>
+                    <li>Defining hyperparameter search space</li>
+                    <li>Running multiple experiments with different hyperparameters</li>
+                    <li>Tracking and comparing results</li>
+                    <li>Identifying optimal hyperparameter configurations</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - W&B Hyperparameter Sweep</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import wandb
+from pytorch_lightning.loggers import WandbLogger
+import pytorch_lightning as pl
+from lightning_modules import DeepSpotLightningModule
+
+def run_hyperparameter_sweep():
+    """Run hyperparameter sweep using W&B."""
+    # Define sweep configuration
+    sweep_config = {
+        'method': 'bayes',  # Bayesian optimization
+        'metric': {
+            'name': 'val_spearman_correlation',
+            'goal': 'maximize'
+        },
+        'parameters': {
+            'learning_rate': {
+                'min': 1e-4,
+                'max': 1e-2,
+                'distribution': 'log_uniform'
+            },
+            'weight_decay': {
+                'min': 1e-6,
+                'max': 1e-3,
+                'distribution': 'log_uniform'
+            },
+            'embedding_dim': {
+                'values': [128, 256, 512]
+            },
+            'mse_weight': {
+                'min': 0.1,
+                'max': 2.0,
+                'distribution': 'uniform'
+            },
+            'pearson_weight': {
+                'min': 0.1,
+                'max': 2.0,
+                'distribution': 'uniform'
+            },
+            'spearman_weight': {
+                'min': 0.1,
+                'max': 2.0,
+                'distribution': 'uniform'
+            },
+            'batch_size': {
+                'values': [16, 32, 64]
+            }
+        }
+    }
+    
+    # Initialize sweep
+    sweep_id = wandb.sweep(sweep_config, project="spatial-transcriptomics")
+    
+    # Define training function
+    def train_sweep():
+        # Initialize W&B run
+        wandb.init()
+        
+        # Get hyperparameters from W&B
+        config = wandb.config
+        
+        # Create model with hyperparameters
+        model = DeepSpotLightningModule(
+            learning_rate=config.learning_rate,
+            weight_decay=config.weight_decay,
+            embedding_dim=config.embedding_dim,
+            mse_weight=config.mse_weight,
+            pearson_weight=config.pearson_weight,
+            spearman_weight=config.spearman_weight
+        )
+        
+        # Create data loaders
+        train_dataloader, val_dataloader = create_dataloaders(
+            batch_size=config.batch_size
+        )
+        
+        # Create W&B logger
+        wandb_logger = WandbLogger()
+        
+        # Create trainer
+        trainer = pl.Trainer(
+            max_epochs=50,
+            logger=wandb_logger,
+            gpus=1 if torch.cuda.is_available() else 0,
+            log_every_n_steps=10,
+            deterministic=True
+        )
+        
+        # Train model
+        trainer.fit(
+            model,
+            train_dataloaders=train_dataloader,
+            val_dataloaders=val_dataloader
+        )
+    
+    # Run sweep
+    wandb.agent(sweep_id, train_sweep, count=20)
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="small-dataset-approach">
+                <h2>Small Dataset Approach</h2>
+                <p>The implementation uses a small dataset approach for rapid experimentation and validation before scaling to the full dataset.</p>
+                
+                <h3>Creating a Small Dataset</h3>
+                <p>The small dataset is created by:</p>
+                <ul>
+                    <li>Selecting a subset of samples (e.g., 1-2 samples)</li>
+                    <li>Selecting a subset of cells from each sample (e.g., 1000-5000 cells)</li>
+                    <li>Ensuring balanced representation of different tissue regions</li>
+                    <li>Including both dysplastic and non-dysplastic regions</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Creating Small Dataset</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import numpy as np
+import pandas as pd
+import os
+import zarr
+from sklearn.model_selection import train_test_split
+
+def create_small_dataset(data_dir, output_dir, num_samples=2, cells_per_sample=2000, seed=42):
+    """Create a small dataset for rapid experimentation."""
+    np.random.seed(seed)
+    
+    # Get list of samples
+    samples = [d for d in os.listdir(os.path.join(data_dir, 'spatial')) if os.path.isdir(os.path.join(data_dir, 'spatial', d))]
+    
+    # Select subset of samples
+    selected_samples = np.random.choice(samples, size=min(num_samples, len(samples)), replace=False)
+    
+    small_dataset = {
+        'train': {'cells': [], 'expression': [], 'images': []},
+        'test': {'cells': [], 'expression': [], 'images': []}
+    }
+    
+    for sample in selected_samples:
+        # Load sample data
+        zarr_path = os.path.join(data_dir, 'spatial', sample, 'xenium_data.zarr')
+        store = zarr.open(zarr_path, mode='r')
+        
+        # Extract cell positions
+        cell_positions = np.array([
+            store['cell_positions']['x'][:], 
+            store['cell_positions']['y'][:]
+        ]).T
+        
+        # Extract gene expression
+        gene_expression = store['gene_expression'][:]
+        gene_names = [gene.decode('utf-8') for gene in store['gene_names'][:]]
+        
+        # Extract region annotations
+        region_annotations = store['region_annotations'][:]
+        
+        # Create DataFrame with cell data
+        cells_df = pd.DataFrame({
+            'x': cell_positions[:, 0],
+            'y': cell_positions[:, 1],
+            'region': region_annotations
+        })
+        
+        # Group by region
+        region_groups = cells_df.groupby('region')
+        
+        # Select cells from each region
+        selected_cells = []
+        for region, group in region_groups:
+            # Calculate number of cells to select from this region
+            n_cells = min(int(cells_per_sample * len(group) / len(cells_df)), len(group))
+            
+            # Select random cells from this region
+            region_cells = group.sample(n=n_cells, random_state=seed).index.tolist()
+            selected_cells.extend(region_cells)
+        
+        # Ensure we have at most cells_per_sample cells
+        if len(selected_cells) > cells_per_sample:
+            selected_cells = np.random.choice(selected_cells, size=cells_per_sample, replace=False)
+        
+        # Extract data for selected cells
+        selected_positions = cell_positions[selected_cells]
+        selected_expression = gene_expression[selected_cells]
+        
+        # Split into train and test
+        train_idx, test_idx = train_test_split(
+            np.arange(len(selected_cells)),
+            test_size=0.2,
+            random_state=seed,
+            stratify=region_annotations[selected_cells]
+        )
+        
+        # Add to small dataset
+        small_dataset['train']['cells'].extend(selected_cells[train_idx])
+        small_dataset['train']['expression'].append(selected_expression[train_idx])
+        
+        small_dataset['test']['cells'].extend(selected_cells[test_idx])
+        small_dataset['test']['expression'].append(selected_expression[test_idx])
+    
+    # Concatenate expression data
+    small_dataset['train']['expression'] = np.concatenate(small_dataset['train']['expression'], axis=0)
+    small_dataset['test']['expression'] = np.concatenate(small_dataset['test']['expression'], axis=0)
+    
+    # Create expression DataFrames
+    train_expr_df = pd.DataFrame(
+        small_dataset['train']['expression'],
+        columns=gene_names
+    )
+    
+    test_expr_df = pd.DataFrame(
+        small_dataset['test']['expression'],
+        columns=gene_names
+    )
+    
+    # Save small dataset
+    os.makedirs(output_dir, exist_ok=True)
+    train_expr_df.to_csv(os.path.join(output_dir, 'small_train_expression.csv'), index=False)
+    test_expr_df.to_csv(os.path.join(output_dir, 'small_test_expression.csv'), index=False)
+    
+    # Save cell indices
+    np.save(os.path.join(output_dir, 'small_train_cells.npy'), np.array(small_dataset['train']['cells']))
+    np.save(os.path.join(output_dir, 'small_test_cells.npy'), np.array(small_dataset['test']['cells']))
+    
+    print(f"Created small dataset with {len(train_expr_df)} training cells and {len(test_expr_df)} test cells")
+    
+    return small_dataset
+                    </code></pre>
+                </div>
+                
+                <h3>Benefits of the Small Dataset Approach</h3>
+                <p>Using a small dataset for initial development provides several benefits:</p>
+                <ul>
+                    <li><strong>Faster Iteration</strong>: Reduced training time allows for more rapid experimentation</li>
+                    <li><strong>Quick Validation</strong>: Quickly validate model architecture and training procedure</li>
+                    <li><strong>Hyperparameter Exploration</strong>: Explore hyperparameter space more efficiently</li>
+                    <li><strong>Debugging</strong>: Easier to debug issues with a smaller dataset</li>
+                    <li><strong>Resource Efficiency</strong>: Reduced computational and memory requirements</li>
+                </ul>
+            </section>
+
+            <section id="hyperparameter-search">
+                <h2>Hyperparameter Search</h2>
+                <p>The implementation uses W&B Sweeps for systematic hyperparameter optimization.</p>
+                
+                <h3>Hyperparameter Search Space</h3>
+                <p>The hyperparameter search space includes:</p>
+                <ul>
+                    <li><strong>Learning Rate</strong>: Controls the step size during optimization</li>
+                    <li><strong>Weight Decay</strong>: Controls the strength of L2 regularization</li>
+                    <li><strong>Embedding Dimension</strong>: Controls the size of the embedding vectors</li>
+                    <li><strong>Loss Weights</strong>: Controls the balance between different loss components</li>
+                    <li><strong>Batch Size</strong>: Controls the number of samples processed in each batch</li>
+                    <li><strong>Network Architecture</strong>: Controls the structure of the neural networks</li>
+                </ul>
+                
+                <h3>Search Strategies</h3>
+                <p>The implementation uses several search strategies:</p>
+                <ul>
+                    <li><strong>Bayesian Optimization</strong>: Efficient exploration of the hyperparameter space</li>
+                    <li><strong>Grid Search</strong>: Systematic exploration of discrete hyperparameters</li>
+                    <li><strong>Random Search</strong>: Random sampling of the hyperparameter space</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>YAML - Hyperparameter Search Configuration</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="yaml">
+# hyperparameter_search.yaml
+method: bayes
+metric:
+  name: val_spearman_correlation
+  goal: maximize
+parameters:
+  learning_rate:
+    min: 0.0001
+    max: 0.01
+    distribution: log_uniform
+  weight_decay:
+    min: 0.000001
+    max: 0.001
+    distribution: log_uniform
+  embedding_dim:
+    values: [128, 256, 512]
+  hidden_dims:
+    values: [[512, 256], [1024, 512, 256], [512, 512, 256]]
+  mse_weight:
+    min: 0.1
+    max: 2.0
+    distribution: uniform
+  pearson_weight:
+    min: 0.1
+    max: 2.0
+    distribution: uniform
+  spearman_weight:
+    min: 0.1
+    max: 2.0
+    distribution: uniform
+  batch_size:
+    values: [16, 32, 64]
+  dropout_rate:
+    min: 0.1
+    max: 0.5
+    distribution: uniform
+  aggregation_type:
+    values: ["mean", "max", "attention"]
+                    </code></pre>
+                </div>
+                
+                <h3>Evaluation Metrics</h3>
+                <p>The hyperparameter search is guided by several evaluation metrics:</p>
+                <ul>
+                    <li><strong>Validation Spearman Correlation</strong>: Primary metric for model selection</li>
+                    <li><strong>Validation MSE</strong>: Secondary metric for model evaluation</li>
+                    <li><strong>Training Loss</strong>: Monitored to detect overfitting</li>
+                    <li><strong>Training Time</strong>: Considered for practical deployment</li>
+                </ul>
+            </section>
+
+            <section id="model-training">
+                <h2>Model Training</h2>
+                <p>The implementation uses PyTorch Lightning for model training, with several advanced techniques to improve performance.</p>
+                
+                <h3>Training Procedure</h3>
+                <p>The training procedure includes:</p>
+                <ul>
+                    <li><strong>Data Loading</strong>: Efficient loading of training data</li>
+                    <li><strong>Batch Processing</strong>: Processing data in batches</li>
+                    <li><strong>Forward Pass</strong>: Computing model predictions</li>
+                    <li><strong>Loss Calculation</strong>: Computing multi-component loss</li>
+                    <li><strong>Backward Pass</strong>: Computing gradients</li>
+                    <li><strong>Optimization</strong>: Updating model parameters</li>
+                    <li><strong>Validation</strong>: Evaluating model on validation data</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Training Script</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import os
+import torch
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
+import yaml
+import argparse
+from lightning_modules import DeepSpotLightningModule
+from data_modules import SpatialTranscriptomicsDataModule
+
+def train_model(config_path, small_dataset=True):
+    """Train DeepSpot model using PyTorch Lightning."""
+    # Load configuration
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Create data module
+    data_module = SpatialTranscriptomicsDataModule(
+        data_dir=config['data_dir'],
+        batch_size=config['batch_size'],
+        small_dataset=small_dataset,
+        num_workers=config.get('num_workers', 4)
+    )
+    
+    # Create model
+    model = DeepSpotLightningModule(
+        spot_feature_dim=config['spot_feature_dim'],
+        subspot_feature_dim=config['subspot_feature_dim'],
+        neighbor_feature_dim=config['neighbor_feature_dim'],
+        embedding_dim=config['embedding_dim'],
+        hidden_dims=config['hidden_dims'],
+        num_genes=config['num_genes'],
+        learning_rate=config['learning_rate'],
+        weight_decay=config['weight_decay'],
+        mse_weight=config['mse_weight'],
+        pearson_weight=config['pearson_weight'],
+        spearman_weight=config['spearman_weight']
+    )
+    
+    # Create logger
+    logger = WandbLogger(
+        project=config['project_name'],
+        name=config['run_name'],
+        config=config
+    )
+    
+    # Create callbacks
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=os.path.join(config['output_dir'], 'checkpoints'),
+        filename='deepspot-{epoch:02d}-{val_spearman_correlation:.4f}',
+        monitor='val_spearman_correlation',
+        mode='max',
+        save_top_k=3,
+        save_last=True
+    )
+    
+    early_stopping_callback = EarlyStopping(
+        monitor='val_spearman_correlation',
+        mode='max',
+        patience=config.get('patience', 10),
+        verbose=True
+    )
+    
+    lr_monitor = LearningRateMonitor(logging_interval='epoch')
+    
+    # Create trainer
+    trainer = pl.Trainer(
+        max_epochs=config['max_epochs'],
+        logger=logger,
+        callbacks=[checkpoint_callback, early_stopping_callback, lr_monitor],
+        gpus=1 if torch.cuda.is_available() else 0,
+        log_every_n_steps=10,
+        deterministic=True,
+        precision=16 if config.get('use_mixed_precision', False) else 32
+    )
+    
+    # Train model
+    trainer.fit(model, datamodule=data_module)
+    
+    # Test model
+    trainer.test(model, datamodule=data_module)
+    
+    return model, trainer
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Train DeepSpot model')
+    parser.add_argument('--config', type=str, required=True, help='Path to configuration file')
+    parser.add_argument('--small_dataset', action='store_true', help='Use small dataset')
+    args = parser.parse_args()
+    
+    train_model(args.config, args.small_dataset)
+                    </code></pre>
+                </div>
+                
+                <h3>Advanced Training Techniques</h3>
+                <p>The implementation uses several advanced training techniques:</p>
+                <ul>
+                    <li><strong>Learning Rate Scheduling</strong>: Adjusting learning rate during training</li>
+                    <li><strong>Early Stopping</strong>: Stopping training when validation performance plateaus</li>
+                    <li><strong>Gradient Clipping</strong>: Preventing exploding gradients</li>
+                    <li><strong>Mixed Precision Training</strong>: Using 16-bit precision to speed up training</li>
+                    <li><strong>Checkpoint Saving</strong>: Saving model checkpoints for later use</li>
+                </ul>
+            </section>
+
+            <section id="evaluation-metrics">
+                <h2>Evaluation Metrics</h2>
+                <p>The implementation uses several metrics to evaluate model performance.</p>
+                
+                <h3>Primary Metrics</h3>
+                <p>The primary evaluation metrics are:</p>
+                <ul>
+                    <li><strong>Spearman Rank Correlation</strong>: Measures the monotonic relationship between predicted and actual gene expression</li>
+                    <li><strong>Cell-wise Spearman Correlation</strong>: Measures correlation across genes for each cell</li>
+                    <li><strong>Gene-wise Spearman Correlation</strong>: Measures correlation across cells for each gene</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Evaluation Metrics</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import numpy as np
+from scipy.stats import spearmanr
+
+def evaluate_predictions(predictions, targets):
+    """Evaluate predictions using multiple metrics."""
+    num_cells, num_genes = predictions.shape
+    
+    # Cell-wise Spearman correlation
+    cell_correlations = []
+    for i in range(num_cells):
+        corr, _ = spearmanr(predictions[i, :], targets[i, :])
+        cell_correlations.append(corr)
+    
+    # Gene-wise Spearman correlation
+    gene_correlations = []
+    for i in range(num_genes):
+        corr, _ = spearmanr(predictions[:, i], targets[:, i])
+        gene_correlations.append(corr)
+    
+    # Average correlations
+    avg_cell_correlation = np.mean(cell_correlations)
+    avg_gene_correlation = np.mean(gene_correlations)
+    
+    # Mean squared error
+    mse = np.mean((predictions - targets) ** 2)
+    
+    # Create results dictionary
+    results = {
+        'avg_cell_correlation': avg_cell_correlation,
+        'avg_gene_correlation': avg_gene_correlation,
+        'mse': mse,
+        'cell_correlations': cell_correlations,
+        'gene_correlations': gene_correlations
+    }
+    
+    return results
+                    </code></pre>
+                </div>
+                
+                <h3>Secondary Metrics</h3>
+                <p>The implementation also uses several secondary metrics:</p>
+                <ul>
+                    <li><strong>Mean Squared Error (MSE)</strong>: Measures the average squared difference between predicted and actual values</li>
+                    <li><strong>Pearson Correlation</strong>: Measures the linear relationship between predicted and actual values</li>
+                    <li><strong>R-squared</strong>: Measures the proportion of variance explained by the model</li>
+                </ul>
+            </section>
+
+            <section id="deployment">
+                <h2>Deployment</h2>
+                <p>The implementation includes scripts for deploying the trained model for inference.</p>
+                
+                <h3>Inference Pipeline</h3>
+                <p>The inference pipeline includes:</p>
+                <ul>
+                    <li><strong>Data Loading</strong>: Loading test data</li>
+                    <li><strong>Feature Extraction</strong>: Extracting features from test images</li>
+                    <li><strong>Model Loading</strong>: Loading trained model</li>
+                    <li><strong>Prediction Generation</strong>: Generating predictions for test cells</li>
+                    <li><strong>Post-processing</strong>: Processing predictions for downstream analysis</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Inference Script</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import os
+import torch
+import numpy as np
+import pandas as pd
+import argparse
+import yaml
+from lightning_modules import DeepSpotLightningModule
+from data_modules import SpatialTranscriptomicsDataModule
+
+def run_inference(config_path, checkpoint_path, output_dir):
+    """Run inference using trained model."""
+    # Load configuration
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Create data module
+    data_module = SpatialTranscriptomicsDataModule(
+        data_dir=config['data_dir'],
+        batch_size=config['batch_size'],
+        small_dataset=False,  # Use full dataset for inference
+        num_workers=config.get('num_workers', 4)
+    )
+    
+    # Prepare data
+    data_module.setup(stage='test')
+    test_dataloader = data_module.test_dataloader()
+    
+    # Load model
+    model = DeepSpotLightningModule.load_from_checkpoint(checkpoint_path)
+    model.eval()
+    
+    # Move model to GPU if available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    
+    # Run inference
+    all_predictions = []
+    all_cell_ids = []
+    
+    with torch.no_grad():
+        for batch in test_dataloader:
+            spot_features, subspot_features, neighbor_features, cell_ids = batch
+            
+            # Move data to device
+            spot_features = spot_features.to(device)
+            subspot_features = subspot_features.to(device)
+            neighbor_features = neighbor_features.to(device)
+            
+            # Generate predictions
+            predictions = model(spot_features, subspot_features, neighbor_features)
+            
+            # Store predictions and cell IDs
+            all_predictions.append(predictions.cpu().numpy())
+            all_cell_ids.extend(cell_ids)
+    
+    # Concatenate predictions
+    all_predictions = np.concatenate(all_predictions, axis=0)
+    
+    # Create DataFrame with predictions
+    gene_names = data_module.gene_names
+    predictions_df = pd.DataFrame(all_predictions, columns=gene_names)
+    predictions_df['cell_id'] = all_cell_ids
+    
+    # Save predictions
+    os.makedirs(output_dir, exist_ok=True)
+    predictions_df.to_csv(os.path.join(output_dir, 'predictions.csv'), index=False)
+    
+    print(f"Saved predictions for {len(predictions_df)} cells to {os.path.join(output_dir, 'predictions.csv')}")
+    
+    return predictions_df
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Run inference using trained DeepSpot model')
+    parser.add_argument('--config', type=str, required=True, help='Path to configuration file')
+    parser.add_argument('--checkpoint', type=str, required=True, help='Path to model checkpoint')
+    parser.add_argument('--output_dir', type=str, required=True, help='Directory to save predictions')
+    args = parser.parse_args()
+    
+    run_inference(args.config, args.checkpoint, args.output_dir)
+                    </code></pre>
+                </div>
+                
+                <h3>Ensemble Prediction</h3>
+                <p>The implementation supports ensemble prediction by combining predictions from multiple models:</p>
+                <ul>
+                    <li><strong>Model Selection</strong>: Selecting multiple trained models</li>
+                    <li><strong>Individual Prediction</strong>: Generating predictions from each model</li>
+                    <li><strong>Prediction Aggregation</strong>: Combining predictions (e.g., averaging)</li>
+                    <li><strong>Ensemble Evaluation</strong>: Evaluating ensemble performance</li>
+                </ul>
+            </section>
+
+            <div class="page-navigation">
+                <a href="deepspot_architecture.html" class="prev-page">Previous: DeepSpot Architecture</a>
+                <a href="visualizations.html" class="next-page">Next: Visualizations</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Spatial Transcriptomics Challenge Documentation</h3>
+                <p>Comprehensive documentation of the winning solutions for the Spatial Transcriptomics Challenge.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="process_flow.html">Process Flow</a></li>
+                    <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Spatial Transcriptomics Challenge Documentation</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>

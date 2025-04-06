@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizations - Spatial Transcriptomics Challenge Documentation</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Spatial Transcriptomics Challenge</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html" class="active">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#data-exploration">Data Exploration Visualizations</a></li>
+                    <li><a href="#feature-extraction">Feature Extraction Visualizations</a></li>
+                    <li><a href="#model-performance">Model Performance Visualizations</a></li>
+                    <li><a href="#gene-expression">Gene Expression Visualizations</a></li>
+                    <li><a href="#spatial-patterns">Spatial Pattern Visualizations</a></li>
+                    <li><a href="#differential-expression">Differential Expression Visualizations</a></li>
+                    <li><a href="#implementation">Implementation in Code</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Visualizations</span>
+            </div>
+
+            <section id="overview">
+                <h2>Visualization Overview</h2>
+                <p>Visualizations play a crucial role in understanding, evaluating, and interpreting the results of the spatial transcriptomics challenge. This page presents a comprehensive collection of visualization techniques used throughout the pipeline, from data exploration to final gene ranking.</p>
+                
+                <div class="info-box">
+                    <h3>Key Visualization Categories</h3>
+                    <ul>
+                        <li><strong>Data Exploration</strong>: Visualizing input data characteristics</li>
+                        <li><strong>Feature Extraction</strong>: Visualizing extracted image features</li>
+                        <li><strong>Model Performance</strong>: Visualizing model training and evaluation</li>
+                        <li><strong>Gene Expression</strong>: Visualizing predicted gene expression patterns</li>
+                        <li><strong>Spatial Patterns</strong>: Visualizing spatial distribution of gene expression</li>
+                        <li><strong>Differential Expression</strong>: Visualizing differences between tissue regions</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="data-exploration">
+                <h2>Data Exploration Visualizations</h2>
+                <p>Data exploration visualizations help understand the characteristics of the input data and identify patterns or issues that might affect model performance.</p>
+                
+                <h3>H&E Image Visualization</h3>
+                <p>Visualizing H&E images provides insights into tissue morphology and cellular organization:</p>
+                <ul>
+                    <li>Original H&E images showing tissue structure</li>
+                    <li>Overlay of cell positions on H&E images</li>
+                    <li>Zoomed-in views of specific tissue regions</li>
+                    <li>Comparison of dysplastic and non-dysplastic regions</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/he_visualization.png" alt="H&E Image Visualization">
+                    <p class="caption">Example H&E image with overlay of cell positions. Different colors represent different cell types or regions.</p>
+                </div>
+                
+                <h3>Gene Expression Distribution</h3>
+                <p>Visualizing the distribution of gene expression values helps understand the data characteristics:</p>
+                <ul>
+                    <li>Histograms of gene expression values</li>
+                    <li>Box plots showing expression distribution across genes</li>
+                    <li>Violin plots comparing expression in different tissue regions</li>
+                    <li>Density plots of expression values</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Gene Expression Distribution Visualization</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import pandas as pd
+
+def visualize_expression_distribution(expression_df, gene_names=None, n_genes=10, figsize=(12, 8)):
+    """Visualize distribution of gene expression values."""
+    if gene_names is None:
+        # Select random genes if not specified
+        gene_names = np.random.choice(expression_df.columns, size=min(n_genes, len(expression_df.columns)), replace=False)
+    
+    # Create figure
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    
+    # Histogram of expression values
+    ax = axes[0, 0]
+    for gene in gene_names:
+        sns.histplot(expression_df[gene], kde=True, ax=ax, label=gene)
+    ax.set_title('Gene Expression Distribution')
+    ax.set_xlabel('Expression Value')
+    ax.set_ylabel('Frequency')
+    ax.legend()
+    
+    # Box plot of expression values
+    ax = axes[0, 1]
+    data_to_plot = expression_df[gene_names].melt()
+    sns.boxplot(x='variable', y='value', data=data_to_plot, ax=ax)
+    ax.set_title('Expression Distribution by Gene')
+    ax.set_xlabel('Gene')
+    ax.set_ylabel('Expression Value')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    
+    # Violin plot of expression values
+    ax = axes[1, 0]
+    sns.violinplot(x='variable', y='value', data=data_to_plot, ax=ax)
+    ax.set_title('Expression Distribution by Gene (Violin Plot)')
+    ax.set_xlabel('Gene')
+    ax.set_ylabel('Expression Value')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    
+    # Density plot of expression values
+    ax = axes[1, 1]
+    for gene in gene_names:
+        sns.kdeplot(expression_df[gene], ax=ax, label=gene)
+    ax.set_title('Gene Expression Density')
+    ax.set_xlabel('Expression Value')
+    ax.set_ylabel('Density')
+    ax.legend()
+    
+    plt.tight_layout()
+    return fig
+                    </code></pre>
+                </div>
+                
+                <h3>Cell Type Distribution</h3>
+                <p>Visualizing the distribution of cell types helps understand tissue composition:</p>
+                <ul>
+                    <li>Pie charts showing proportion of different cell types</li>
+                    <li>Bar plots comparing cell type distribution across samples</li>
+                    <li>Spatial plots showing cell type distribution within tissue</li>
+                </ul>
+            </section>
+
+            <section id="feature-extraction">
+                <h2>Feature Extraction Visualizations</h2>
+                <p>Feature extraction visualizations help understand the features extracted from H&E images and their relationship to gene expression.</p>
+                
+                <h3>Dimensionality Reduction</h3>
+                <p>Dimensionality reduction techniques help visualize high-dimensional feature spaces:</p>
+                <ul>
+                    <li><strong>PCA (Principal Component Analysis)</strong>: Visualizing the principal components of image features</li>
+                    <li><strong>t-SNE (t-Distributed Stochastic Neighbor Embedding)</strong>: Visualizing local relationships between features</li>
+                    <li><strong>UMAP (Uniform Manifold Approximation and Projection)</strong>: Visualizing global and local structure of feature space</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/umap_features.png" alt="UMAP Visualization of Image Features">
+                    <p class="caption">UMAP visualization of image features colored by tissue region. Clusters indicate similar morphological patterns.</p>
+                </div>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Dimensionality Reduction Visualization</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+import umap
+
+def visualize_dimensionality_reduction(features, labels=None, figsize=(18, 6)):
+    """Visualize dimensionality reduction of features using PCA, t-SNE, and UMAP."""
+    # Create figure
+    fig, axes = plt.subplots(1, 3, figsize=figsize)
+    
+    # PCA
+    pca = PCA(n_components=2)
+    pca_result = pca.fit_transform(features)
+    
+    ax = axes[0]
+    if labels is not None:
+        scatter = ax.scatter(pca_result[:, 0], pca_result[:, 1], c=labels, cmap='viridis', alpha=0.7)
+        legend = ax.legend(*scatter.legend_elements(), title="Regions")
+        ax.add_artist(legend)
+    else:
+        ax.scatter(pca_result[:, 0], pca_result[:, 1], alpha=0.7)
+    ax.set_title(f'PCA (explained variance: {pca.explained_variance_ratio_.sum():.2f})')
+    ax.set_xlabel('Principal Component 1')
+    ax.set_ylabel('Principal Component 2')
+    
+    # t-SNE
+    tsne = TSNE(n_components=2, random_state=42)
+    tsne_result = tsne.fit_transform(features)
+    
+    ax = axes[1]
+    if labels is not None:
+        scatter = ax.scatter(tsne_result[:, 0], tsne_result[:, 1], c=labels, cmap='viridis', alpha=0.7)
+        legend = ax.legend(*scatter.legend_elements(), title="Regions")
+        ax.add_artist(legend)
+    else:
+        ax.scatter(tsne_result[:, 0], tsne_result[:, 1], alpha=0.7)
+    ax.set_title('t-SNE')
+    ax.set_xlabel('t-SNE 1')
+    ax.set_ylabel('t-SNE 2')
+    
+    # UMAP
+    reducer = umap.UMAP(random_state=42)
+    umap_result = reducer.fit_transform(features)
+    
+    ax = axes[2]
+    if labels is not None:
+        scatter = ax.scatter(umap_result[:, 0], umap_result[:, 1], c=labels, cmap='viridis', alpha=0.7)
+        legend = ax.legend(*scatter.legend_elements(), title="Regions")
+        ax.add_artist(legend)
+    else:
+        ax.scatter(umap_result[:, 0], umap_result[:, 1], alpha=0.7)
+    ax.set_title('UMAP')
+    ax.set_xlabel('UMAP 1')
+    ax.set_ylabel('UMAP 2')
+    
+    plt.tight_layout()
+    return fig, (pca_result, tsne_result, umap_result)
+                    </code></pre>
+                </div>
+                
+                <h3>Feature Importance</h3>
+                <p>Visualizing feature importance helps understand which features contribute most to gene expression prediction:</p>
+                <ul>
+                    <li>Bar plots of feature importance scores</li>
+                    <li>Heatmaps showing feature importance across genes</li>
+                    <li>Network diagrams showing relationships between features and genes</li>
+                </ul>
+            </section>
+
+            <section id="model-performance">
+                <h2>Model Performance Visualizations</h2>
+                <p>Model performance visualizations help evaluate the quality of gene expression predictions and track model training progress.</p>
+                
+                <h3>Training Metrics</h3>
+                <p>Visualizing training metrics helps track model training progress:</p>
+                <ul>
+                    <li>Line plots of training and validation loss over epochs</li>
+                    <li>Line plots of Spearman correlation over epochs</li>
+                    <li>Learning rate schedules</li>
+                    <li>Gradient norms during training</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/training_metrics.png" alt="Training Metrics Visualization">
+                    <p class="caption">Training and validation metrics over epochs, showing loss and Spearman correlation.</p>
+                </div>
+                
+                <h3>Prediction Accuracy</h3>
+                <p>Visualizing prediction accuracy helps evaluate model performance:</p>
+                <ul>
+                    <li>Scatter plots of predicted vs. actual expression values</li>
+                    <li>Histograms of prediction errors</li>
+                    <li>Box plots of prediction accuracy across genes</li>
+                    <li>Heatmaps of correlation matrices</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Prediction Accuracy Visualization</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from scipy.stats import spearmanr
+
+def visualize_prediction_accuracy(predictions, targets, gene_names=None, n_genes=5, figsize=(15, 12)):
+    """Visualize prediction accuracy for gene expression."""
+    if gene_names is None:
+        # Select random genes if not specified
+        gene_names = np.random.choice(range(predictions.shape[1]), size=min(n_genes, predictions.shape[1]), replace=False)
+        gene_labels = [f'Gene {i}' for i in gene_names]
+    else:
+        gene_labels = gene_names
+        gene_names = [list(gene_names).index(g) for g in gene_names[:n_genes]]
+    
+    # Create figure
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    
+    # Scatter plots of predicted vs. actual values
+    ax = axes[0, 0]
+    for i, gene_idx in enumerate(gene_names):
+        ax.scatter(
+            targets[:, gene_idx],
+            predictions[:, gene_idx],
+            alpha=0.5,
+            label=gene_labels[i]
+        )
+    
+    # Add diagonal line
+    min_val = min(targets.min(), predictions.min())
+    max_val = max(targets.max(), predictions.max())
+    ax.plot([min_val, max_val], [min_val, max_val], 'k--')
+    
+    ax.set_title('Predicted vs. Actual Expression')
+    ax.set_xlabel('Actual Expression')
+    ax.set_ylabel('Predicted Expression')
+    ax.legend()
+    
+    # Histogram of prediction errors
+    ax = axes[0, 1]
+    for i, gene_idx in enumerate(gene_names):
+        errors = predictions[:, gene_idx] - targets[:, gene_idx]
+        sns.histplot(errors, kde=True, ax=ax, label=gene_labels[i], alpha=0.5)
+    
+    ax.set_title('Prediction Error Distribution')
+    ax.set_xlabel('Prediction Error')
+    ax.set_ylabel('Frequency')
+    ax.legend()
+    
+    # Box plot of Spearman correlations across genes
+    ax = axes[1, 0]
+    
+    # Compute cell-wise Spearman correlations
+    cell_correlations = []
+    for i in range(predictions.shape[0]):
+        corr, _ = spearmanr(predictions[i, :], targets[i, :])
+        cell_correlations.append(corr)
+    
+    # Compute gene-wise Spearman correlations
+    gene_correlations = []
+    for i in range(predictions.shape[1]):
+        corr, _ = spearmanr(predictions[:, i], targets[:, i])
+        gene_correlations.append(corr)
+    
+    # Create box plots
+    data = [cell_correlations, gene_correlations]
+    labels = ['Cell-wise', 'Gene-wise']
+    
+    sns.boxplot(data=data, ax=ax)
+    ax.set_title('Spearman Correlation Distribution')
+    ax.set_xticklabels(labels)
+    ax.set_ylabel('Spearman Correlation')
+    
+    # Heatmap of correlation matrix for selected genes
+    ax = axes[1, 1]
+    
+    # Compute correlation matrix
+    corr_matrix = np.zeros((len(gene_names), len(gene_names)))
+    for i, gene_i in enumerate(gene_names):
+        for j, gene_j in enumerate(gene_names):
+            corr, _ = spearmanr(predictions[:, gene_i], predictions[:, gene_j])
+            corr_matrix[i, j] = corr
+    
+    # Plot heatmap
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1, ax=ax,
+                xticklabels=gene_labels, yticklabels=gene_labels)
+    ax.set_title('Correlation Matrix of Predicted Expression')
+    
+    plt.tight_layout()
+    return fig
+                    </code></pre>
+                </div>
+                
+                <h3>Hyperparameter Visualization</h3>
+                <p>Visualizing hyperparameter effects helps understand their impact on model performance:</p>
+                <ul>
+                    <li>Parallel coordinates plots showing hyperparameter combinations</li>
+                    <li>Scatter plots of hyperparameter values vs. performance metrics</li>
+                    <li>Heatmaps showing interaction between hyperparameters</li>
+                    <li>Importance plots showing which hyperparameters have the most impact</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/hyperparameter_visualization.png" alt="Hyperparameter Visualization">
+                    <p class="caption">Parallel coordinates plot showing hyperparameter combinations and their impact on model performance.</p>
+                </div>
+            </section>
+
+            <section id="gene-expression">
+                <h2>Gene Expression Visualizations</h2>
+                <p>Gene expression visualizations help understand the patterns and relationships in gene expression data.</p>
+                
+                <h3>Expression Heatmaps</h3>
+                <p>Heatmaps provide a comprehensive view of gene expression patterns:</p>
+                <ul>
+                    <li>Heatmaps of gene expression across cells</li>
+                    <li>Clustered heatmaps showing gene modules</li>
+                    <li>Heatmaps comparing predicted and actual expression</li>
+                    <li>Heatmaps showing expression differences between tissue regions</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Expression Heatmap Visualization</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import pdist
+
+def visualize_expression_heatmap(expression_data, gene_names=None, cell_labels=None, 
+                                n_genes=50, n_cells=100, cluster_genes=True, 
+                                cluster_cells=True, figsize=(12, 10)):
+    """Visualize gene expression heatmap with optional clustering."""
+    # Select subset of genes and cells if needed
+    if expression_data.shape[1] > n_genes:
+        # Select genes with highest variance
+        gene_var = np.var(expression_data, axis=0)
+        top_genes = np.argsort(gene_var)[-n_genes:]
+        expression_subset = expression_data[:, top_genes]
+        if gene_names is not None:
+            gene_names = [gene_names[i] for i in top_genes]
+        else:
+            gene_names = [f'Gene {i}' for i in top_genes]
+    else:
+        expression_subset = expression_data
+        if gene_names is None:
+            gene_names = [f'Gene {i}' for i in range(expression_data.shape[1])]
+    
+    if expression_subset.shape[0] > n_cells:
+        # Select random cells
+        cell_idx = np.random.choice(expression_subset.shape[0], size=n_cells, replace=False)
+        expression_subset = expression_subset[cell_idx, :]
+        if cell_labels is not None:
+            cell_labels = [cell_labels[i] for i in cell_idx]
+    elif cell_labels is None:
+        cell_labels = [f'Cell {i}' for i in range(expression_subset.shape[0])]
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Compute linkage for clustering
+    if cluster_genes:
+        gene_linkage = linkage(pdist(expression_subset.T), method='average')
+        gene_order = dendrogram(gene_linkage, no_plot=True)['leaves']
+        expression_subset = expression_subset[:, gene_order]
+        gene_names = [gene_names[i] for i in gene_order]
+    
+    if cluster_cells:
+        cell_linkage = linkage(pdist(expression_subset), method='average')
+        cell_order = dendrogram(cell_linkage, no_plot=True)['leaves']
+        expression_subset = expression_subset[cell_order, :]
+        cell_labels = [cell_labels[i] for i in cell_order]
+    
+    # Plot heatmap
+    sns.heatmap(expression_subset, cmap='viridis', xticklabels=gene_names, 
+                yticklabels=cell_labels, ax=ax)
+    
+    ax.set_title('Gene Expression Heatmap')
+    ax.set_xlabel('Genes')
+    ax.set_ylabel('Cells')
+    
+    # Rotate x-axis labels for readability
+    plt.xticks(rotation=90)
+    
+    plt.tight_layout()
+    return fig
+                    </code></pre>
+                </div>
+                
+                <h3>Gene Co-expression Networks</h3>
+                <p>Network visualizations help understand relationships between genes:</p>
+                <ul>
+                    <li>Network diagrams showing gene co-expression patterns</li>
+                    <li>Force-directed layouts highlighting gene modules</li>
+                    <li>Circular layouts showing gene relationships</li>
+                    <li>Hierarchical layouts showing gene ontology relationships</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/gene_network.png" alt="Gene Co-expression Network">
+                    <p class="caption">Gene co-expression network showing relationships between genes. Nodes represent genes, and edges represent co-expression relationships.</p>
+                </div>
+                
+                <h3>Gene Expression Clustering</h3>
+                <p>Clustering visualizations help identify groups of genes with similar expression patterns:</p>
+                <ul>
+                    <li>Dendrograms showing hierarchical clustering of genes</li>
+                    <li>t-SNE plots of gene expression space</li>
+                    <li>UMAP plots colored by gene modules</li>
+                    <li>PCA plots showing principal components of gene expression</li>
+                </ul>
+            </section>
+
+            <section id="spatial-patterns">
+                <h2>Spatial Pattern Visualizations</h2>
+                <p>Spatial pattern visualizations help understand the spatial distribution of gene expression within tissue.</p>
+                
+                <h3>Spatial Expression Maps</h3>
+                <p>Spatial maps show the distribution of gene expression across tissue:</p>
+                <ul>
+                    <li>Scatter plots of cells colored by expression level</li>
+                    <li>Heatmaps overlaid on tissue images</li>
+                    <li>Contour plots showing expression gradients</li>
+                    <li>3D surface plots of expression landscapes</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Spatial Expression Map Visualization</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import Normalize
+from scipy.ndimage import gaussian_filter
+
+def visualize_spatial_expression(cell_positions, expression_values, he_image=None, 
+                                gene_names=None, n_genes=4, figsize=(15, 12)):
+    """Visualize spatial distribution of gene expression."""
+    if gene_names is None:
+        # Select genes with highest spatial variance
+        spatial_var = []
+        for i in range(expression_values.shape[1]):
+            # Compute spatial autocorrelation or variance
+            spatial_var.append(np.var(expression_values[:, i]))
+        
+        top_genes = np.argsort(spatial_var)[-n_genes:]
+        gene_labels = [f'Gene {i}' for i in top_genes]
+    else:
+        if len(gene_names) > n_genes:
+            # Select first n_genes
+            gene_names = gene_names[:n_genes]
+        top_genes = range(len(gene_names))
+        gene_labels = gene_names
+    
+    # Create figure
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    axes = axes.flatten()
+    
+    for i, (gene_idx, gene_label) in enumerate(zip(top_genes, gene_labels)):
+        ax = axes[i]
+        
+        # Get expression values for this gene
+        expr = expression_values[:, gene_idx]
+        
+        # Normalize expression values
+        norm = Normalize(vmin=np.percentile(expr, 1), vmax=np.percentile(expr, 99))
+        
+        # If H&E image is provided, show it as background
+        if he_image is not None:
+            ax.imshow(he_image, alpha=0.5)
+        
+        # Plot cells colored by expression
+        scatter = ax.scatter(
+            cell_positions[:, 0],
+            cell_positions[:, 1],
+            c=expr,
+            cmap='viridis',
+            norm=norm,
+            alpha=0.7,
+            s=10
+        )
+        
+        # Add colorbar
+        cbar = plt.colorbar(scatter, ax=ax)
+        cbar.set_label('Expression')
+        
+        ax.set_title(f'{gene_label} Expression')
+        ax.set_xlabel('X Position')
+        ax.set_ylabel('Y Position')
+        ax.set_aspect('equal')
+    
+    plt.tight_layout()
+    return fig
+
+def visualize_expression_contours(cell_positions, expression_values, he_image=None,
+                                 gene_names=None, n_genes=4, resolution=100, sigma=3,
+                                 figsize=(15, 12)):
+    """Visualize spatial distribution of gene expression using contour plots."""
+    if gene_names is None:
+        # Select genes with highest spatial variance
+        spatial_var = []
+        for i in range(expression_values.shape[1]):
+            spatial_var.append(np.var(expression_values[:, i]))
+        
+        top_genes = np.argsort(spatial_var)[-n_genes:]
+        gene_labels = [f'Gene {i}' for i in top_genes]
+    else:
+        if len(gene_names) > n_genes:
+            gene_names = gene_names[:n_genes]
+        top_genes = range(len(gene_names))
+        gene_labels = gene_names
+    
+    # Create figure
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    axes = axes.flatten()
+    
+    # Create grid for interpolation
+    x_min, x_max = np.min(cell_positions[:, 0]), np.max(cell_positions[:, 0])
+    y_min, y_max = np.min(cell_positions[:, 1]), np.max(cell_positions[:, 1])
+    
+    x_grid = np.linspace(x_min, x_max, resolution)
+    y_grid = np.linspace(y_min, y_max, resolution)
+    xx, yy = np.meshgrid(x_grid, y_grid)
+    
+    for i, (gene_idx, gene_label) in enumerate(zip(top_genes, gene_labels)):
+        ax = axes[i]
+        
+        # Get expression values for this gene
+        expr = expression_values[:, gene_idx]
+        
+        # Create empty grid
+        grid = np.zeros((resolution, resolution))
+        
+        # Fill grid with expression values
+        for j, (x, y) in enumerate(cell_positions):
+            # Find nearest grid point
+            x_idx = np.argmin(np.abs(x_grid - x))
+            y_idx = np.argmin(np.abs(y_grid - y))
+            
+            # Add expression value to grid
+            grid[y_idx, x_idx] = expr[j]
+        
+        # Smooth grid
+        grid = gaussian_filter(grid, sigma=sigma)
+        
+        # If H&E image is provided, show it as background
+        if he_image is not None:
+            ax.imshow(he_image, extent=[x_min, x_max, y_max, y_min], alpha=0.5)
+        
+        # Plot contours
+        contour = ax.contourf(xx, yy, grid, cmap='viridis', alpha=0.7, levels=20)
+        
+        # Add colorbar
+        cbar = plt.colorbar(contour, ax=ax)
+        cbar.set_label('Expression')
+        
+        ax.set_title(f'{gene_label} Expression Contours')
+        ax.set_xlabel('X Position')
+        ax.set_ylabel('Y Position')
+        ax.set_aspect('equal')
+    
+    plt.tight_layout()
+    return fig
+                    </code></pre>
+                </div>
+                
+                <h3>Spatial Clustering</h3>
+                <p>Spatial clustering visualizations help identify regions with similar gene expression patterns:</p>
+                <ul>
+                    <li>Spatial plots colored by cluster assignment</li>
+                    <li>Boundary plots showing cluster borders</li>
+                    <li>Region segmentation overlaid on tissue images</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/spatial_clustering.png" alt="Spatial Clustering Visualization">
+                    <p class="caption">Spatial clustering of cells based on gene expression patterns. Different colors represent different clusters or tissue regions.</p>
+                </div>
+                
+                <h3>Spatial Correlation</h3>
+                <p>Spatial correlation visualizations help understand how gene expression varies with spatial distance:</p>
+                <ul>
+                    <li>Correlograms showing correlation vs. distance</li>
+                    <li>Variograms showing spatial variance</li>
+                    <li>Moran's I plots showing spatial autocorrelation</li>
+                </ul>
+            </section>
+
+            <section id="differential-expression">
+                <h2>Differential Expression Visualizations</h2>
+                <p>Differential expression visualizations help identify genes that are differentially expressed between tissue regions.</p>
+                
+                <h3>Volcano Plots</h3>
+                <p>Volcano plots show the relationship between statistical significance and fold change:</p>
+                <ul>
+                    <li>Scatter plots of -log10(p-value) vs. log2(fold change)</li>
+                    <li>Highlighted points for significantly differentially expressed genes</li>
+                    <li>Labeled points for top genes</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Volcano Plot Visualization</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+def visualize_volcano_plot(expression_df, region_labels, gene_names=None, 
+                          p_threshold=0.05, fc_threshold=1.0, figsize=(10, 8)):
+    """Visualize volcano plot for differential expression analysis."""
+    # Split cells by region
+    dysplastic_cells = expression_df[region_labels == 'dysplastic']
+    non_dysplastic_cells = expression_df[region_labels == 'non_dysplastic']
+    
+    # Initialize results
+    results = []
+    
+    # Calculate statistics for each gene
+    for gene in expression_df.columns:
+        # Get expression values for this gene
+        dysplastic_expr = dysplastic_cells[gene].values
+        non_dysplastic_expr = non_dysplastic_cells[gene].values
+        
+        # Calculate mean expression in each region
+        mean_dysplastic = np.mean(dysplastic_expr)
+        mean_non_dysplastic = np.mean(non_dysplastic_expr)
+        
+        # Calculate log fold change
+        epsilon = 1e-10  # Small constant to avoid log(0)
+        logFC = np.log2((mean_dysplastic + epsilon) / (mean_non_dysplastic + epsilon))
+        
+        # Calculate p-value using t-test
+        t_stat, p_value = stats.ttest_ind(dysplastic_expr, non_dysplastic_expr)
+        
+        # Store results
+        results.append({
+            'Gene': gene,
+            'logFC': logFC,
+            'p_value': p_value,
+            'mean_dysplastic': mean_dysplastic,
+            'mean_non_dysplastic': mean_non_dysplastic
+        })
+    
+    # Create DataFrame
+    results_df = pd.DataFrame(results)
+    
+    # Add -log10(p-value)
+    results_df['-log10(p)'] = -np.log10(results_df['p_value'])
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Plot all points
+    ax.scatter(
+        results_df['logFC'],
+        results_df['-log10(p)'],
+        alpha=0.7,
+        s=10,
+        color='gray'
+    )
+    
+    # Highlight significant points
+    significant = (results_df['p_value'] < p_threshold) & (np.abs(results_df['logFC']) > fc_threshold)
+    
+    ax.scatter(
+        results_df.loc[significant, 'logFC'],
+        results_df.loc[significant, '-log10(p)'],
+        alpha=0.7,
+        s=20,
+        color='red'
+    )
+    
+    # Add threshold lines
+    ax.axhline(-np.log10(p_threshold), color='blue', linestyle='--')
+    ax.axvline(fc_threshold, color='blue', linestyle='--')
+    ax.axvline(-fc_threshold, color='blue', linestyle='--')
+    
+    # Label top genes
+    top_genes = results_df.loc[significant].sort_values('-log10(p)', ascending=False).head(10)
+    
+    for _, row in top_genes.iterrows():
+        ax.text(
+            row['logFC'],
+            row['-log10(p)'],
+            row['Gene'],
+            fontsize=8,
+            ha='center',
+            va='bottom'
+        )
+    
+    ax.set_title('Volcano Plot: Dysplastic vs. Non-dysplastic Regions')
+    ax.set_xlabel('log2(Fold Change)')
+    ax.set_ylabel('-log10(p-value)')
+    
+    # Add text annotations for quadrants
+    ax.text(
+        np.max(results_df['logFC']) * 0.8,
+        np.max(results_df['-log10(p)']) * 0.8,
+        'Up in Dysplastic',
+        fontsize=10,
+        ha='center',
+        va='center',
+        bbox=dict(facecolor='white', alpha=0.7)
+    )
+    
+    ax.text(
+        np.min(results_df['logFC']) * 0.8,
+        np.max(results_df['-log10(p)']) * 0.8,
+        'Down in Dysplastic',
+        fontsize=10,
+        ha='center',
+        va='center',
+        bbox=dict(facecolor='white', alpha=0.7)
+    )
+    
+    plt.tight_layout()
+    return fig, results_df
+                    </code></pre>
+                </div>
+                
+                <h3>MA Plots</h3>
+                <p>MA plots show the relationship between mean expression and fold change:</p>
+                <ul>
+                    <li>Scatter plots of log2(fold change) vs. log2(mean expression)</li>
+                    <li>Highlighted points for significantly differentially expressed genes</li>
+                    <li>Smoothed trend lines showing overall patterns</li>
+                </ul>
+                
+                <div class="image-container">
+                    <img src="../images/ma_plot.png" alt="MA Plot Visualization">
+                    <p class="caption">MA plot showing the relationship between mean expression and fold change. Red points indicate significantly differentially expressed genes.</p>
+                </div>
+                
+                <h3>Gene Set Enrichment</h3>
+                <p>Gene set enrichment visualizations help understand the biological significance of differentially expressed genes:</p>
+                <ul>
+                    <li>Bar plots of enriched gene ontology terms</li>
+                    <li>Network diagrams showing relationships between enriched pathways</li>
+                    <li>Heatmaps showing expression of genes in enriched pathways</li>
+                </ul>
+            </section>
+
+            <section id="implementation">
+                <h2>Implementation in Code</h2>
+                <p>The implementation includes a comprehensive set of visualization functions that can be used throughout the pipeline.</p>
+                
+                <h3>Visualization Module</h3>
+                <p>The visualization module provides a unified interface for creating visualizations:</p>
+                <ul>
+                    <li>Functions for each visualization type</li>
+                    <li>Consistent parameter naming and defaults</li>
+                    <li>Support for saving visualizations to files</li>
+                    <li>Integration with Weights & Biases for experiment tracking</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Visualization Module</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import pandas as pd
+from scipy import stats
+import umap
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+import wandb
+
+class VisualizationModule:
+    """Module for creating visualizations throughout the pipeline."""
+    
+    def __init__(self, save_dir=None, use_wandb=False):
+        """Initialize visualization module."""
+        self.save_dir = save_dir
+        self.use_wandb = use_wandb
+        
+        # Create save directory if needed
+        if save_dir is not None:
+            os.makedirs(save_dir, exist_ok=True)
+    
+    def save_figure(self, fig, filename):
+        """Save figure to file and optionally log to W&B."""
+        if self.save_dir is not None:
+            filepath = os.path.join(self.save_dir, filename)
+            fig.savefig(filepath, dpi=300, bbox_inches='tight')
+            
+            if self.use_wandb:
+                wandb.log({filename: wandb.Image(filepath)})
+    
+    def visualize_expression_distribution(self, expression_df, gene_names=None, n_genes=10, figsize=(12, 8)):
+        """Visualize distribution of gene expression values."""
+        # Implementation as shown earlier
+        fig = ...
+        
+        self.save_figure(fig, 'expression_distribution.png')
+        return fig
+    
+    def visualize_dimensionality_reduction(self, features, labels=None, figsize=(18, 6)):
+        """Visualize dimensionality reduction of features using PCA, t-SNE, and UMAP."""
+        # Implementation as shown earlier
+        fig, results = ...
+        
+        self.save_figure(fig, 'dimensionality_reduction.png')
+        return fig, results
+    
+    def visualize_prediction_accuracy(self, predictions, targets, gene_names=None, n_genes=5, figsize=(15, 12)):
+        """Visualize prediction accuracy for gene expression."""
+        # Implementation as shown earlier
+        fig = ...
+        
+        self.save_figure(fig, 'prediction_accuracy.png')
+        return fig
+    
+    def visualize_expression_heatmap(self, expression_data, gene_names=None, cell_labels=None, 
+                                    n_genes=50, n_cells=100, cluster_genes=True, 
+                                    cluster_cells=True, figsize=(12, 10)):
+        """Visualize gene expression heatmap with optional clustering."""
+        # Implementation as shown earlier
+        fig = ...
+        
+        self.save_figure(fig, 'expression_heatmap.png')
+        return fig
+    
+    def visualize_spatial_expression(self, cell_positions, expression_values, he_image=None, 
+                                    gene_names=None, n_genes=4, figsize=(15, 12)):
+        """Visualize spatial distribution of gene expression."""
+        # Implementation as shown earlier
+        fig = ...
+        
+        self.save_figure(fig, 'spatial_expression.png')
+        return fig
+    
+    def visualize_volcano_plot(self, expression_df, region_labels, gene_names=None, 
+                              p_threshold=0.05, fc_threshold=1.0, figsize=(10, 8)):
+        """Visualize volcano plot for differential expression analysis."""
+        # Implementation as shown earlier
+        fig, results_df = ...
+        
+        self.save_figure(fig, 'volcano_plot.png')
+        return fig, results_df
+    
+    def visualize_training_metrics(self, metrics_df, figsize=(12, 8)):
+        """Visualize training metrics over epochs."""
+        fig, axes = plt.subplots(2, 1, figsize=figsize, sharex=True)
+        
+        # Plot loss
+        ax = axes[0]
+        ax.plot(metrics_df['epoch'], metrics_df['train_loss'], label='Train Loss')
+        ax.plot(metrics_df['epoch'], metrics_df['val_loss'], label='Validation Loss')
+        ax.set_ylabel('Loss')
+        ax.set_title('Training and Validation Loss')
+        ax.legend()
+        
+        # Plot Spearman correlation
+        ax = axes[1]
+        ax.plot(metrics_df['epoch'], metrics_df['train_spearman'], label='Train Spearman')
+        ax.plot(metrics_df['epoch'], metrics_df['val_spearman'], label='Validation Spearman')
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Spearman Correlation')
+        ax.set_title('Training and Validation Spearman Correlation')
+        ax.legend()
+        
+        plt.tight_layout()
+        
+        self.save_figure(fig, 'training_metrics.png')
+        return fig
+    
+    def visualize_all(self, data_dict):
+        """Create all visualizations for a given dataset."""
+        # Create and save all visualizations
+        self.visualize_expression_distribution(
+            data_dict['expression_df'],
+            gene_names=data_dict.get('gene_names'),
+            n_genes=10
+        )
+        
+        self.visualize_dimensionality_reduction(
+            data_dict['features'],
+            labels=data_dict.get('region_labels')
+        )
+        
+        if 'predictions' in data_dict and 'targets' in data_dict:
+            self.visualize_prediction_accuracy(
+                data_dict['predictions'],
+                data_dict['targets'],
+                gene_names=data_dict.get('gene_names')
+            )
+        
+        self.visualize_expression_heatmap(
+            data_dict['expression_df'].values,
+            gene_names=data_dict.get('gene_names'),
+            cell_labels=data_dict.get('cell_labels')
+        )
+        
+        if 'cell_positions' in data_dict:
+            self.visualize_spatial_expression(
+                data_dict['cell_positions'],
+                data_dict['expression_df'].values,
+                he_image=data_dict.get('he_image'),
+                gene_names=data_dict.get('gene_names')
+            )
+        
+        if 'region_labels' in data_dict:
+            self.visualize_volcano_plot(
+                data_dict['expression_df'],
+                data_dict['region_labels'],
+                gene_names=data_dict.get('gene_names')
+            )
+        
+        if 'metrics_df' in data_dict:
+            self.visualize_training_metrics(
+                data_dict['metrics_df']
+            )
+                    </code></pre>
+                </div>
+                
+                <h3>Integration with Pipeline</h3>
+                <p>The visualization module is integrated with the Luigi pipeline:</p>
+                <ul>
+                    <li>Visualization tasks for each pipeline stage</li>
+                    <li>Automatic generation of visualizations during pipeline execution</li>
+                    <li>Storage of visualizations in the results directory</li>
+                </ul>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Python - Visualization Tasks in Luigi Pipeline</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="python">
+import luigi
+import os
+import pickle
+import pandas as pd
+import numpy as np
+from visualization_module import VisualizationModule
+
+class VisualizationTask(luigi.Task):
+    """Task for generating visualizations."""
+    data_dir = luigi.Parameter()
+    output_dir = luigi.Parameter()
+    model_dir = luigi.Parameter()
+    results_dir = luigi.Parameter()
+    visualization_dir = luigi.Parameter()
+    small_dataset = luigi.BoolParameter(default=False)
+    
+    def requires(self):
+        return {
+            'predictions': PredictionTask(
+                data_dir=self.data_dir,
+                output_dir=self.output_dir,
+                model_dir=self.model_dir,
+                results_dir=self.results_dir,
+                small_dataset=self.small_dataset
+            ),
+            'features': FeatureExtractionTask(
+                data_dir=self.data_dir,
+                output_dir=self.output_dir,
+                small_dataset=self.small_dataset
+            ),
+            'data': DataPreparationTask(
+                data_dir=self.data_dir,
+                output_dir=self.output_dir,
+                small_dataset=self.small_dataset
+            )
+        }
+    
+    def output(self):
+        return luigi.LocalTarget(os.path.join(self.visualization_dir, 'visualizations_complete.txt'))
+    
+    def run(self):
+        # Load data
+        with self.input()['predictions'].open('rb') as f:
+            predictions = pickle.load(f)
+        
+        with self.input()['features']['test_features'].open('rb') as f:
+            test_features = pickle.load(f)
+        
+        with self.input()['data']['test_data'].open('rb') as f:
+            test_data = pickle.load(f)
+        
+        # Create visualization module
+        vis_module = VisualizationModule(
+            save_dir=self.visualization_dir,
+            use_wandb=True
+        )
+        
+        # Create data dictionary
+        data_dict = {
+            'expression_df': pd.DataFrame(test_data['expression']),
+            'gene_names': test_data['gene_names'],
+            'cell_labels': test_data['cell_ids'],
+            'region_labels': test_data['region_labels'],
+            'cell_positions': test_data['cell_positions'],
+            'he_image': test_data.get('he_image'),
+            'features': test_features,
+            'predictions': predictions,
+            'targets': test_data['expression']
+        }
+        
+        # Generate all visualizations
+        vis_module.visualize_all(data_dict)
+        
+        # Create output file
+        os.makedirs(self.visualization_dir, exist_ok=True)
+        with self.output().open('w') as f:
+            f.write('Visualizations complete')
+                    </code></pre>
+                </div>
+            </section>
+
+            <div class="page-navigation">
+                <a href="implementation.html" class="prev-page">Previous: Implementation</a>
+                <a href="crunch_approaches.html" class="next-page">Next: Crunch Approaches</a>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Spatial Transcriptomics Challenge Documentation</h3>
+                <p>Comprehensive documentation of the winning solutions for the Spatial Transcriptomics Challenge.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="input_data.html">Input Data</a></li>
+                    <li><a href="process_flow.html">Process Flow</a></li>
+                    <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="implementation.html">Implementation</a></li>
+                    <li><a href="visualizations.html">Visualizations</a></li>
+                    <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+                    <li><a href="getting_started.html">Getting Started</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Spatial Transcriptomics Challenge Documentation</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>
+        // Initialize Mermaid for diagrams
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Initialize Highlight.js for code syntax highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightBlock(block);
+            });
+        });
+    </script>
+</body>
+</html>
