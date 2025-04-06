@@ -63,7 +63,7 @@ class CreateSmallDataset(luigi.Task):
         
         # Run the create_small_dataset.py script
         cmd = [
-            'python', 'create_small_dataset.py',
+            'python', 'scripts/create_small_dataset.py',
             '--config', self.config_path,
             '--output_dir', small_dataset_dir,
             '--seed', str(config.get('seed', 42))

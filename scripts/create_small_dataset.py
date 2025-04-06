@@ -107,14 +107,16 @@ def extract_small_dataset(config, output_dir, seed=42):
     # Load spatial data
     spatial_data = zarr.open(config['data_path'], mode='r')
     
-    # Load gene expression data
-    gene_expression = np.array(spatial_data['gene_expression'])
+    # Load gene expression data from tables/anucleus/X
+    gene_expression = np.array(spatial_data['tables']['anucleus']['X'])
     
-    # Load cell coordinates
-    cell_coordinates = np.array(spatial_data['cell_coordinates'])
+    # Load cell coordinates from tables/anucleus/obsm/spatial
+    cell_coordinates = np.array(spatial_data['tables']['anucleus']['obsm']['spatial'])
     
-    # Load gene names
-    gene_names = np.array(spatial_data['gene_names'])
+    # Load gene names from tables/anucleus/var/gene_symbols
+    gene_names = np.array(spatial_data['tables']['anucleus']['var']['gene_symbols'])
+    
+    print(f"Loaded data: {gene_expression.shape} gene expressions, {cell_coordinates.shape} coordinates, {gene_names.shape} genes")
     
     # Load region annotations if available
     if 'region_annotations' in config and os.path.exists(config['region_annotations']):
