@@ -144,16 +144,22 @@ python scripts/run_pipeline.py --config config/config.yaml --step data
                     <h3>Data Structure Verification</h3>
                     <p>After running the data preparation script, verify that the data structure matches the expected structure:</p>
                     <pre><code class="plaintext">
-data/
-├── images/
-│   ├── HE_registered/
-│   └── HE_nuc_registered/
-├── spatial/
-├── scrna/
-├── annotations/
-└── processed/
+output/
+└── data
+    └── small_dataset
+        ├── cell_coordinates.npy
+        ├── config.yaml
+        ├── gene_expression.npy
+        ├── gene_names.npy
+        ├── metadata.yaml
+        ├── original_indices.npy
+        ├── quality_scores.npy
+        ├── region_labels.npy
+        ├── test_indices.npy
+        ├── train_indices.npy
+        └── val_indices.npy
                     </code></pre>
-                    <p>If any directories are missing or empty, check the logs for errors.</p>
+                    <p>If any files are missing or directories are empty, check the logs for errors.</p>
                 </div>
             </section>
 
@@ -170,16 +176,11 @@ data/
                         <button class="copy-button">Copy</button>
                     </div>
                     <pre><code class="bash">
-python scripts/create_small_dataset.py --data_dir data --output_dir data/processed/small_dataset --num_samples 2 --num_cells 1000 --num_genes 100
+python scripts/create_small_dataset.py --config config/config.yaml --output_dir output/data/small_dataset --seed 42
                     </code></pre>
                 </div>
                 
-                <p>You can adjust the parameters to control the size of the small dataset:</p>
-                <ul>
-                    <li><code>--num_samples</code>: Number of samples to include (default: 2)</li>
-                    <li><code>--num_cells</code>: Number of cells per sample (default: 1000)</li>
-                    <li><code>--num_genes</code>: Number of genes to include (default: 100)</li>
-                </ul>
+                <p>You can adjust the parameters in the config file to control the size of the small dataset.</p>
                 
                 <p>A smaller dataset will run faster but may not capture all the complexity of the full dataset. We recommend starting with the default values and adjusting as needed.</p>
                 
@@ -205,7 +206,7 @@ python scripts/run_pipeline.py --config config/config.yaml --small_dataset
                     <li>Gene ranking</li>
                 </ol>
                 
-                <p>The results will be saved in the <code>data/processed/</code> directory with a <code>small_dataset</code> prefix to distinguish them from full dataset results.</p>
+                <p>The results will be saved in the <code>output/</code> directory structure as shown above.</p>
             </section>
 
             <section id="hyperparameter-search">
@@ -269,7 +270,7 @@ python scripts/run_hyperparameter_search.py --config config/hyperparameter_searc
                     </li>
                 </ol>
                 
-                <p>The optimal hyperparameters will be automatically saved to <code>data/processed/hyperparameters/optimal_params.json</code> for use in the full pipeline.</p>
+                <p>The optimal hyperparameters will be automatically saved to <code>output/features/hyperparameters/optimal_params.json</code> for use in the full pipeline.</p>
             </section>
 
             <section id="full-pipeline">
@@ -306,120 +307,104 @@ python scripts/run_pipeline.py --config config/config.yaml
                 
                 <p>This will run the entire pipeline on the full dataset, using the optimal hyperparameters found during the hyperparameter search.</p>
                 
-                <h3>Running Individual Pipeline Steps</h3>
-                <p>You can also run individual steps of the pipeline:</p>
-                
-                <div class="code-container">
-                    <div class="code-header">
-                        <span>Running Individual Pipeline Steps</span>
-                        <button class="copy-button">Copy</button>
-                    </div>
-                    <pre><code class="bash">
-# Extract features
-python scripts/run_pipeline.py --task ExtractFeatures --config config/config.yaml
-
-# Train model
-python scripts/run_pipeline.py --task TrainModel --config config/config.yaml
-
-# Predict genes
-python scripts/run_pipeline.py --task PredictGenes --config config/config.yaml
-
-# Rank genes
-python scripts/run_pipeline.py --task RankGenes --config config/config.yaml
-                    </code></pre>
+                <div class="warning-box">
+                    <h3>Warning: Resource Requirements</h3>
+                    <p>Running the full pipeline on the complete dataset requires significant computational resources:</p>
+                    <ul>
+                        <li>At least 32GB RAM</li>
+                        <li>CUDA-compatible GPU with at least 8GB VRAM</li>
+                        <li>Several hours of computation time</li>
+                    </ul>
+                    <p>Consider running on a machine with adequate resources or using cloud computing.</p>
                 </div>
-                
-                <p>Luigi will automatically run any dependencies that haven't been completed yet.</p>
-                
-                <h3>Monitoring Pipeline Progress</h3>
-                <p>You can monitor the progress of the pipeline using the Luigi web interface:</p>
-                
-                <div class="code-container">
-                    <div class="code-header">
-                        <span>Starting Luigi Web Interface</span>
-                        <button class="copy-button">Copy</button>
-                    </div>
-                    <pre><code class="bash">
-# In a separate terminal
-luigid
-                    </code></pre>
-                </div>
-                
-                <p>Then open <a href="http://localhost:8082" target="_blank">http://localhost:8082</a> in your web browser to view the pipeline status.</p>
             </section>
 
             <section id="troubleshooting">
                 <h2>Troubleshooting</h2>
-                <p>Here are some common issues and their solutions:</p>
+                <p>This section provides solutions to common issues that may arise when running the pipeline.</p>
+                
+                <h3>Common Issues</h3>
                 
                 <div class="accordion">
                     <div class="accordion-item">
-                        <div class="accordion-header">Data Preparation Fails</div>
-                        <div class="accordion-content">
-                            <p>If the data preparation script fails, check the following:</p>
-                            <ul>
-                                <li>Ensure the raw data directory exists and contains the expected files</li>
-                                <li>Check that you have sufficient disk space</li>
-                                <li>Verify that you have write permissions for the output directory</li>
-                                <li>Check the logs for specific error messages</li>
-                            </ul>
+                        <div class="accordion-header">
+                            <h4>Out of Memory Errors</h4>
+                            <span class="accordion-icon">+</span>
                         </div>
-                    </div>
-                    
-                    <div class="accordion-item">
-                        <div class="accordion-header">Out of Memory Errors</div>
                         <div class="accordion-content">
-                            <p>If you encounter out of memory errors:</p>
+                            <p>If you encounter out of memory errors, try the following:</p>
                             <ul>
                                 <li>Reduce the batch size in the configuration file</li>
-                                <li>Use a smaller small dataset (fewer cells or genes)</li>
-                                <li>Ensure you're not running other memory-intensive processes</li>
-                                <li>Consider using a machine with more RAM</li>
+                                <li>Use a smaller subset of the data</li>
+                                <li>Run on a machine with more RAM or GPU memory</li>
                             </ul>
                         </div>
                     </div>
                     
                     <div class="accordion-item">
-                        <div class="accordion-header">CUDA Errors</div>
+                        <div class="accordion-header">
+                            <h4>Missing Dependencies</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
                         <div class="accordion-content">
-                            <p>If you encounter CUDA errors:</p>
-                            <ul>
-                                <li>Ensure you have a compatible GPU</li>
-                                <li>Verify that CUDA is installed correctly</li>
-                                <li>Check that the PyTorch version matches your CUDA version</li>
-                                <li>Try running with CPU only by setting <code>--device cpu</code></li>
-                            </ul>
+                            <p>If you encounter missing dependency errors, ensure that you've installed all required packages:</p>
+                            <pre><code class="bash">
+pip install -r requirements.txt
+                            </code></pre>
+                            <p>If you're still encountering issues, try installing the specific missing package:</p>
+                            <pre><code class="bash">
+pip install package_name
+                            </code></pre>
                         </div>
                     </div>
                     
                     <div class="accordion-item">
-                        <div class="accordion-header">Luigi Task Failures</div>
+                        <div class="accordion-header">
+                            <h4>CUDA Errors</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
                         <div class="accordion-content">
-                            <p>If Luigi tasks fail:</p>
+                            <p>If you encounter CUDA errors, ensure that:</p>
                             <ul>
-                                <li>Check the logs in the <code>logs/</code> directory for specific error messages</li>
-                                <li>Verify that all dependencies are installed correctly</li>
-                                <li>Ensure that the input files for the task exist</li>
-                                <li>Try running the task with <code>--local-scheduler</code> for more detailed output</li>
+                                <li>You have a CUDA-compatible GPU</li>
+                                <li>You have installed the correct version of CUDA for your GPU</li>
+                                <li>You have installed the correct version of PyTorch for your CUDA version</li>
                             </ul>
+                            <p>You can check your CUDA version with:</p>
+                            <pre><code class="bash">
+nvcc --version
+                            </code></pre>
+                            <p>And install the appropriate version of PyTorch from the <a href="https://pytorch.org/get-started/locally/" target="_blank">PyTorch website</a>.</p>
                         </div>
                     </div>
                     
                     <div class="accordion-item">
-                        <div class="accordion-header">Weights & Biases Issues</div>
+                        <div class="accordion-header">
+                            <h4>Data Loading Errors</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
                         <div class="accordion-content">
-                            <p>If you encounter issues with Weights & Biases:</p>
+                            <p>If you encounter errors loading the data, ensure that:</p>
                             <ul>
-                                <li>Verify that you're logged in with <code>wandb login</code></li>
-                                <li>Check your internet connection</li>
-                                <li>Try running offline with <code>--wandb offline</code></li>
-                                <li>Check the W&B documentation for specific error messages</li>
+                                <li>The data paths in the configuration file are correct</li>
+                                <li>The data files exist and are not corrupted</li>
+                                <li>You have sufficient disk space</li>
                             </ul>
+                            <p>You can check the data paths in the configuration file:</p>
+                            <pre><code class="bash">
+cat config/config.yaml
+                            </code></pre>
                         </div>
                     </div>
                 </div>
                 
-                <p>If you encounter other issues, please check the logs and consult the <a href="https://github.com/catskills/ibd-challenge-crunch3/issues" target="_blank">GitHub issues</a> for the project.</p>
+                <h3>Getting Help</h3>
+                <p>If you encounter issues that are not covered in this troubleshooting guide, please:</p>
+                <ol>
+                    <li>Check the logs for error messages</li>
+                    <li>Search for the error message online</li>
+                    <li>Open an issue on the GitHub repository with a detailed description of the problem and the steps to reproduce it</li>
+                </ol>
             </section>
 
             <div class="page-navigation">
@@ -462,7 +447,16 @@ luigid
     <script src="../js/scripts.js"></script>
     <script>
         // Initialize Mermaid for diagrams
-        mermaid.initialize({ startOnLoad: true });
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            securityLevel: 'loose'
+        });
         
         // Initialize Highlight.js for code syntax highlighting
         document.addEventListener('DOMContentLoaded', (event) => {
@@ -473,19 +467,20 @@ luigid
         
         // Accordion functionality
         document.addEventListener('DOMContentLoaded', () => {
-            const accordionItems = document.querySelectorAll('.accordion-item');
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
             
-            accordionItems.forEach(item => {
-                const header = item.querySelector('.accordion-header');
-                const content = item.querySelector('.accordion-content');
-                
+            accordionHeaders.forEach(header => {
                 header.addEventListener('click', () => {
-                    header.classList.toggle('active');
+                    const accordionItem = header.parentElement;
+                    const accordionContent = header.nextElementSibling;
+                    const accordionIcon = header.querySelector('.accordion-icon');
                     
-                    if (header.classList.contains('active')) {
-                        content.style.maxHeight = content.scrollHeight + 'px';
+                    accordionItem.classList.toggle('active');
+                    
+                    if (accordionItem.classList.contains('active')) {
+                        accordionIcon.textContent = '-';
                     } else {
-                        content.style.maxHeight = '0';
+                        accordionIcon.textContent = '+';
                     }
                 });
             });

@@ -21,7 +21,7 @@ class TrainModel(luigi.Task):
     experiment_name = luigi.Parameter(default='default_experiment')
     
     def requires(self):
-        from pipeline_data_preparation import PrepareTrainingData
+        from .pipeline_data_preparation import PrepareTrainingData
         return PrepareTrainingData(config_path=self.config_path)
     
     def output(self):
@@ -120,7 +120,7 @@ class PredictGeneExpression(luigi.Task):
     experiment_name = luigi.Parameter(default='default_experiment')
     
     def requires(self):
-        from pipeline_data_preparation import PrepareTrainingData
+        from .pipeline_data_preparation import PrepareTrainingData
         return {
             'model': TrainModel(config_path=self.config_path, experiment_name=self.experiment_name),
             'data': PrepareTrainingData(config_path=self.config_path)
@@ -185,7 +185,7 @@ class EvaluateModel(luigi.Task):
     experiment_name = luigi.Parameter(default='default_experiment')
     
     def requires(self):
-        from pipeline_data_preparation import PrepareTrainingData
+        from .pipeline_data_preparation import PrepareTrainingData
         return {
             'predictions': PredictGeneExpression(config_path=self.config_path, experiment_name=self.experiment_name),
             'data': PrepareTrainingData(config_path=self.config_path)
@@ -282,14 +282,13 @@ class EvaluateModel(luigi.Task):
         # Close W&B run
         wandb.finish()
 
-
 class RunHyperparameterSearch(luigi.Task):
     """Run hyperparameter search using W&B Sweeps."""
     config_path = luigi.Parameter()
     sweep_config_path = luigi.Parameter()
     
     def requires(self):
-        from pipeline_data_preparation import PrepareTrainingData
+        from .pipeline_data_preparation import PrepareTrainingData
         return PrepareTrainingData(config_path=self.config_path)
     
     def output(self):
@@ -340,7 +339,6 @@ class RunHyperparameterSearch(luigi.Task):
             yaml.dump(sweep_results, f)
         
         print(f"Hyperparameter search complete. Results saved to {self.output().path}")
-
 
 class RunFullPipeline(luigi.Task):
     """Run the complete pipeline from data preparation to evaluation."""
