@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Approach - Spatial Transcriptomics</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Unified Approach for Spatial Transcriptomics Analysis</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="getting_started.html">Getting Started</a></li>
+            <li><a href="data_structure.html">Data Structure</a></li>
+            <li><a href="synthetic_datasets.html">Synthetic Datasets</a></li>
+            <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+            <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+            <li><a href="unified_approach.html" class="active">Unified Approach</a></li>
+            <li><a href="process_flow.html">Process Flow</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p>
+                This page provides detailed information about the unified solution for spatial transcriptomics analysis. 
+                This implementation combines the sophisticated neural network architecture from the DeepSpot approach with 
+                the comprehensive framework of the Tarandros approach, creating a single integrated solution that leverages 
+                the best aspects of both approaches, along with the logFC method for gene ranking.
+            </p>
+        </section>
+
+        <section>
+            <h2>Key Components</h2>
+            <p>The unified solution consists of the following key components:</p>
+            
+            <h3>1. Advanced Neural Network Architecture</h3>
+            <ul>
+                <li><strong>GraphAttentionLayer</strong>: Sophisticated graph attention network for modeling gene-gene relationships</li>
+                <li><strong>SpatialAttention</strong>: Advanced attention mechanism for integrating multi-level spatial context</li>
+                <li><strong>EnhancedCellEmbedding</strong>: Transformer-like architecture with multi-head attention for cell embedding</li>
+                <li><strong>CellTypeEmbedding</strong>: Cell type prediction and embedding for cell-specific patterns</li>
+            </ul>
+
+            <h3>2. Comprehensive Pipeline Framework</h3>
+            <ul>
+                <li><strong>UnifiedDeepSpotModel</strong>: Core model that combines DeepSpot and Tarandros approaches</li>
+                <li><strong>UnifiedPipeline</strong>: Complete pipeline that runs all three crunches sequentially</li>
+                <li><strong>UnifiedLightningModule</strong>: PyTorch Lightning module for training and evaluation</li>
+                <li><strong>LogFCGeneRanking</strong>: Implementation of the logFC method for gene ranking</li>
+            </ul>
+
+            <h3>3. Specialized Loss Functions</h3>
+            <ul>
+                <li><strong>spearman_correlation_loss</strong>: Differentiable approximation of Spearman correlation loss</li>
+                <li><strong>cell_wise_spearman_loss</strong>: Cell-wise focused Spearman correlation loss</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Architecture Details</h2>
+            
+            <h3>UnifiedDeepSpotModel</h3>
+            <p>
+                The <code>UnifiedDeepSpotModel</code> is the core of the unified solution, combining the best aspects of DeepSpot and Tarandros approaches:
+            </p>
+            
+            <h4>1. Multi-level Feature Processing</h4>
+            <ul>
+                <li>Processes spot-level features with <code>phi_spot</code></li>
+                <li>Processes sub-spot features with <code>phi_subspot</code></li>
+                <li>Processes neighbor features with <code>phi_neighbor</code></li>
+            </ul>
+            
+            <h4>2. Spatial Context Integration</h4>
+            <ul>
+                <li>Uses <code>SpatialAttention</code> to integrate sub-spot context</li>
+                <li>Uses <code>SpatialAttention</code> with distance weighting to integrate neighbor context</li>
+            </ul>
+            
+            <h4>3. Cell-specific Processing</h4>
+            <ul>
+                <li>Uses <code>CellTypeEmbedding</code> to predict cell types and generate cell-specific embeddings</li>
+                <li>Uses <code>EnhancedCellEmbedding</code> with transformer-like architecture for sophisticated cell representation</li>
+            </ul>
+            
+            <h4>4. Gene-gene Relationship Modeling</h4>
+            <ul>
+                <li>Uses <code>GraphAttentionLayer</code> to model relationships between genes</li>
+                <li>Refines gene predictions based on gene-gene relationships</li>
+            </ul>
+            
+            <h4>5. Two-stage Prediction</h4>
+            <ul>
+                <li>First predicts measured genes using cell embeddings</li>
+                <li>Then predicts unmeasured genes using both cell embeddings and measured gene predictions</li>
+            </ul>
+            
+            <h4>6. Reference-based Refinement</h4>
+            <ul>
+                <li>Uses similarity between predicted measured gene expressions and reference data</li>
+                <li>Refines unmeasured gene predictions based on cell type probabilities and expression similarity</li>
+            </ul>
+
+            <h3>UnifiedPipeline</h3>
+            <p>
+                The <code>UnifiedPipeline</code> provides a comprehensive framework for running the full analysis:
+            </p>
+            
+            <h4>1. Crunch 1 & 2 Integration</h4>
+            <ul>
+                <li>Runs both measured and unmeasured gene prediction in a single step</li>
+                <li>Uses the unified model for both tasks</li>
+                <li>Evaluates both gene-wise and cell-wise Spearman correlation</li>
+            </ul>
+            
+            <h4>2. Crunch 3 Implementation</h4>
+            <ul>
+                <li>Uses <code>LogFCGeneRanking</code> to rank genes based on log fold change</li>
+                <li>Identifies genes that differentiate between dysplastic and non-dysplastic regions</li>
+            </ul>
+            
+            <h4>3. Full Pipeline Integration</h4>
+            <ul>
+                <li>Runs all three crunches sequentially</li>
+                <li>Combines results into a comprehensive output</li>
+            </ul>
+
+            <h3>UnifiedLightningModule</h3>
+            <p>
+                The <code>UnifiedLightningModule</code> provides a PyTorch Lightning interface for training and evaluation:
+            </p>
+            
+            <h4>1. Balanced Loss Function</h4>
+            <ul>
+                <li>Combines gene-wise and cell-wise Spearman correlation losses</li>
+                <li>Uses configurable weights to balance the two metrics</li>
+            </ul>
+            
+            <h4>2. Comprehensive Metrics Logging</h4>
+            <ul>
+                <li>Logs separate metrics for measured and unmeasured genes</li>
+                <li>Logs both gene-wise and cell-wise performance</li>
+            </ul>
+            
+            <h4>3. Optimizer and Scheduler Configuration</h4>
+            <ul>
+                <li>Uses AdamW optimizer with configurable learning rate and weight decay</li>
+                <li>Uses ReduceLROnPlateau scheduler for adaptive learning rate</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Implementation Highlights</h2>
+            
+            <h3>1. Sophisticated Attention Mechanisms</h3>
+            <p>The unified solution uses advanced attention mechanisms throughout:</p>
+            <pre><code>
+# Spatial attention for context integration
+scores = torch.matmul(q, k.transpose(-2, -1)) / (self.feature_dim ** 0.5)
+if distances is not None:
+    distance_weights = 1.0 / (distances.unsqueeze(1) + 1.0)
+    scores = scores * distance_weights
+attn_weights = F.softmax(scores, dim=-1)
+context = torch.matmul(attn_weights, v).squeeze(1)
+            </code></pre>
+            
+            <h3>2. Graph Attention for Gene-Gene Relationships</h3>
+            <p>The solution models gene-gene relationships using graph attention networks:</p>
+            <pre><code>
+# Apply graph attention to refine predictions
+if self.use_gene_graph:
+    initial_predictions = self.measured_gene_predictor(cell_embedding)
+    measured_predictions = initial_predictions + 0.1 * self.gene_graph_layer(
+        initial_predictions, self.gene_adj
+    )
+            </code></pre>
+            
+            <h3>3. Cell-wise Optimization</h3>
+            <p>The solution prioritizes cell-wise Spearman correlation through specialized components and loss functions:</p>
+            <pre><code>
+# Cell-wise Spearman loss
+pred_ranks = _to_ranks(predictions)
+target_ranks = _to_ranks(targets)
+pred_mean = pred_ranks.mean(dim=1, keepdim=True)
+target_mean = target_ranks.mean(dim=1, keepdim=True)
+pred_diff = pred_ranks - pred_mean
+target_diff = target_ranks - target_mean
+cov = (pred_diff * target_diff).sum(dim=1)
+pred_std = torch.sqrt((pred_diff ** 2).sum(dim=1) + eps)
+target_std = torch.sqrt((target_diff ** 2).sum(dim=1) + eps)
+correlation = cov / (pred_std * target_std + eps)
+return 1.0 - correlation.mean()
+            </code></pre>
+            
+            <h3>4. Reference-based Refinement</h3>
+            <p>The solution uses reference data to refine unmeasured gene predictions:</p>
+            <pre><code>
+# Apply similarity-based refinement using reference data
+measured_similarity = self._compute_expression_similarity(
+    measured_predictions, 
+    self.reference_measured_expressions
+)
+cell_type_probs = F.softmax(cell_type_logits, dim=-1)
+combined_weights = cell_type_probs * measured_similarity
+combined_weights = combined_weights / (combined_weights.sum(dim=-1, keepdim=True) + 1e-8)
+reference_predictions = torch.matmul(combined_weights, self.reference_expressions)
+unmeasured_predictions = alpha * unmeasured_predictions + (1 - alpha) * reference_predictions
+            </code></pre>
+        </section>
+
+        <section>
+            <h2>Configuration Parameters</h2>
+            <p>The unified solution uses the following configuration parameters:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th>Default Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>feature_dim</td>
+                        <td>Dimension of input features</td>
+                        <td>512</td>
+                    </tr>
+                    <tr>
+                        <td>phi_dim</td>
+                        <td>Dimension of processed features</td>
+                        <td>256</td>
+                    </tr>
+                    <tr>
+                        <td>embedding_dim</td>
+                        <td>Dimension of cell embeddings</td>
+                        <td>512</td>
+                    </tr>
+                    <tr>
+                        <td>n_heads</td>
+                        <td>Number of attention heads</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>n_cell_types</td>
+                        <td>Number of cell types</td>
+                        <td>10</td>
+                    </tr>
+                    <tr>
+                        <td>n_measured_genes</td>
+                        <td>Number of measured genes</td>
+                        <td>460</td>
+                    </tr>
+                    <tr>
+                        <td>n_unmeasured_genes</td>
+                        <td>Number of unmeasured genes</td>
+                        <td>18157</td>
+                    </tr>
+                    <tr>
+                        <td>gene_wise_weight</td>
+                        <td>Weight for gene-wise Spearman loss</td>
+                        <td>0.3</td>
+                    </tr>
+                    <tr>
+                        <td>cell_wise_weight</td>
+                        <td>Weight for cell-wise Spearman loss</td>
+                        <td>0.7</td>
+                    </tr>
+                    <tr>
+                        <td>learning_rate</td>
+                        <td>Learning rate for optimizer</td>
+                        <td>0.001</td>
+                    </tr>
+                    <tr>
+                        <td>weight_decay</td>
+                        <td>Weight decay for optimizer</td>
+                        <td>0.0001</td>
+                    </tr>
+                    <tr>
+                        <td>dropout</td>
+                        <td>Dropout rate</td>
+                        <td>0.3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>Usage</h2>
+            
+            <h3>Basic Usage</h3>
+            <pre><code>
+from broad_3_catskills.models.unified_approach import UnifiedPipeline
+
+# Create pipeline
+pipeline = UnifiedPipeline(config)
+
+# Run full pipeline
+results = pipeline.run_full_pipeline(
+    spot_features,
+    subspot_features,
+    neighbor_features,
+    neighbor_distances,
+    measured_gene_expression,
+    cell_labels,
+    measured_gene_names,
+    unmeasured_gene_names,
+    reference_data
+)
+
+# Access results
+measured_predictions = results['measured_predictions']
+unmeasured_predictions = results['unmeasured_predictions']
+combined_expression = results['combined_expression']
+gene_rankings = results['gene_rankings']
+            </code></pre>
+            
+            <h3>Training with PyTorch Lightning</h3>
+            <pre><code>
+from broad_3_catskills.models.unified_approach import UnifiedLightningModule
+import pytorch_lightning as pl
+
+# Create model
+model = UnifiedLightningModule(config)
+
+# Create trainer
+trainer = pl.Trainer(
+    max_epochs=100,
+    gpus=1,
+    callbacks=[
+        pl.callbacks.EarlyStopping(monitor='val_loss', patience=10),
+        pl.callbacks.ModelCheckpoint(monitor='val_loss')
+    ]
+)
+
+# Train model
+trainer.fit(model, train_dataloader, val_dataloader)
+
+# Test model
+trainer.test(model, test_dataloader)
+            </code></pre>
+        </section>
+
+        <section>
+            <h2>Advantages Over Previous Implementations</h2>
+            
+            <h3>Compared to DeepSpot (Crunch 1)</h3>
+            <ul>
+                <li><strong>More Comprehensive Pipeline</strong>: Includes all three crunches in a unified framework</li>
+                <li><strong>Better Cell-wise Optimization</strong>: Prioritizes cell-wise Spearman correlation</li>
+                <li><strong>Reference-based Refinement</strong>: Uses reference data to improve unmeasured gene predictions</li>
+                <li><strong>Gene Ranking</strong>: Includes logFC method for gene ranking</li>
+            </ul>
+            
+            <h3>Compared to Tarandros (Crunch 2)</h3>
+            <ul>
+                <li><strong>More Sophisticated Architecture</strong>: Uses advanced attention mechanisms and transformer-like components</li>
+                <li><strong>Better Gene-Gene Relationship Modeling</strong>: Uses graph attention networks</li>
+                <li><strong>More Integrated Approach</strong>: Combines all components in a single model</li>
+                <li><strong>More Efficient Pipeline</strong>: Runs Crunch 1 and 2 in a single step</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Conclusion</h2>
+            <p>
+                This unified solution combines the best aspects of both previous implementations:
+            </p>
+            <ul>
+                <li>The sophisticated neural network architecture from the DeepSpot implementation (Crunch 1)</li>
+                <li>The cell-wise optimization focus from the Tarandros implementation (Crunch 2)</li>
+                <li>The gene ranking capabilities from the logFC method (Crunch 3)</li>
+            </ul>
+            <p>
+                The result is a single, integrated solution that provides state-of-the-art performance for spatial transcriptomics analysis, 
+                with a focus on both gene-wise and cell-wise metrics, and a complete pipeline for all three crunches of the Broad Institute IBD Challenge.
+            </p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Catskills Research. All rights reserved.</p>
+    </footer>
+</body>
+</html>

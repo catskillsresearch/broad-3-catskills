@@ -1,4 +1,10 @@
 program: scripts/run_hyperparameter_search.py
+
+# Data paths
+data_path: data/UC9_I.zarr
+region_annotations: input/raw/region_annotations.csv
+output_dir: output
+
 method: bayes
 metric:
   name: val_cell_wise_spearman

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogFC Method - Spatial Transcriptomics</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>LogFC Method for Gene Ranking</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="getting_started.html">Getting Started</a></li>
+            <li><a href="data_structure.html">Data Structure</a></li>
+            <li><a href="synthetic_datasets.html">Synthetic Datasets</a></li>
+            <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+            <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+            <li><a href="tarandros_approach.html">Tarandros Approach</a></li>
+            <li><a href="logfc_method.html" class="active">LogFC Method</a></li>
+            <li><a href="unified_approach.html">Unified Approach</a></li>
+            <li><a href="process_flow.html">Process Flow</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p>
+                The LogFC (Log Fold Change) method was developed for Crunch 3 of the Broad Institute IBD Challenge, focusing on 
+                ranking genes based on their ability to differentiate between dysplastic and non-dysplastic tissue regions. 
+                This page provides a detailed explanation of the LogFC method and its application in identifying gene markers 
+                for inflammatory bowel disease.
+            </p>
+            <div class="info-box">
+                <h3>LogFC Method at a Glance</h3>
+                <p>Key characteristics:</p>
+                <ul>
+                    <li><strong>Purpose</strong>: Identify genes that distinguish dysplastic from non-dysplastic regions</li>
+                    <li><strong>Approach</strong>: Calculate log fold change in gene expression between tissue types</li>
+                    <li><strong>Output</strong>: Ranked list of genes with associated statistical significance</li>
+                    <li><strong>Applications</strong>: Biomarker discovery, disease mechanism understanding, therapeutic target identification</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>Key Concepts</h2>
+            <p>The LogFC method is based on several key concepts in differential gene expression analysis:</p>
+            
+            <h3>1. Log Fold Change</h3>
+            <p>
+                Log fold change (logFC) is a measure of how much a gene's expression changes between two conditions. 
+                It is calculated as the logarithm (usually base 2) of the ratio of expression values:
+            </p>
+            <pre><code>
+logFC = log2(expression_in_dysplastic / expression_in_non_dysplastic)
+            </code></pre>
+            <p>
+                A positive logFC indicates higher expression in dysplastic regions, while a negative logFC indicates 
+                higher expression in non-dysplastic regions. The magnitude of the logFC indicates the strength of the 
+                differential expression.
+            </p>
+            
+            <h3>2. Statistical Significance</h3>
+            <p>
+                While logFC measures the magnitude of differential expression, it's also important to assess whether 
+                this difference is statistically significant. This is typically done using statistical tests such as 
+                t-tests or their variants, which calculate a p-value for each gene.
+            </p>
+            <p>
+                The p-value represents the probability of observing the measured difference (or a more extreme one) 
+                by chance if there were no actual difference between the conditions. A lower p-value indicates stronger 
+                evidence for differential expression.
+            </p>
+            
+            <h3>3. Multiple Testing Correction</h3>
+            <p>
+                When testing thousands of genes simultaneously, there's a high risk of false positives due to multiple 
+                testing. To address this, various correction methods are applied, such as the Benjamini-Hochberg procedure 
+                to control the false discovery rate (FDR).
+            </p>
+            <p>
+                After correction, we obtain adjusted p-values (q-values) that represent the expected proportion of false 
+                positives among the genes called significant at that threshold.
+            </p>
+            
+            <h3>4. Volcano Plots</h3>
+            <p>
+                Volcano plots are a common visualization technique for differential expression results. They plot the 
+                negative logarithm of the p-value against the logFC, allowing for easy identification of genes that are 
+                both highly differentially expressed and statistically significant.
+            </p>
+        </section>
+
+        <section>
+            <h2>LogFC Method Implementation</h2>
+            <div class="mermaid">
+                graph TD
+                    A[Gene Expression Data] --> B[Group Definition]
+                    B --> C[Expression Aggregation]
+                    C --> D[Log Fold Change Calculation]
+                    D --> E[Statistical Testing]
+                    E --> F[Multiple Testing Correction]
+                    F --> G[Gene Ranking]
+                    G --> H[Visualization]
+                    
+                    classDef primary fill:#e1f5fe,stroke:#01579b
+                    classDef secondary fill:#e8f5e9,stroke:#2e7d32
+                    classDef tertiary fill:#fff9c4,stroke:#fbc02d
+                    
+                    class A primary
+                    class B,C,D,E,F,G secondary
+                    class H tertiary
+            </div>
+            
+            <h3>1. Group Definition</h3>
+            <p>
+                The first step in the LogFC method is to define the groups for comparison. In the context of the 
+                IBD Challenge, these groups are:
+            </p>
+            <ul>
+                <li><strong>Dysplastic</strong>: Cells from regions showing pre-cancerous changes</li>
+                <li><strong>Non-dysplastic</strong>: Cells from normal or inflamed (but not dysplastic) regions</li>
+            </ul>
+            <p>
+                Group assignment can be based on pathologist annotations, image analysis, or a combination of both.
+            </p>
+            <pre><code>
+# Define groups based on cell labels
+dysplastic_mask = cell_labels == 'dysplastic'
+non_dysplastic_mask = cell_labels == 'non_dysplastic'
+
+# Get expression data for each group
+dysplastic_expr = gene_expression[dysplastic_mask]
+non_dysplastic_expr = gene_expression[non_dysplastic_mask]
+            </code></pre>
+            
+            <h3>2. Expression Aggregation</h3>
+            <p>
+                Once the groups are defined, gene expression values are aggregated within each group. This typically 
+                involves calculating the mean or median expression for each gene in each group.
+            </p>
+            <pre><code>
+# Aggregate expression within each group
+dysplastic_mean = np.mean(dysplastic_expr, axis=0)
+non_dysplastic_mean = np.mean(non_dysplastic_expr, axis=0)
+            </code></pre>
+            
+            <h3>3. Log Fold Change Calculation</h3>
+            <p>
+                The log fold change is calculated for each gene by taking the logarithm (base 2) of the ratio of 
+                mean expression values between the two groups.
+            </p>
+            <pre><code>
+# Calculate log fold change
+# Add small constant to avoid division by zero
+epsilon = 1e-10
+log_fold_change = np.log2((dysplastic_mean + epsilon) / (non_dysplastic_mean + epsilon))
+            </code></pre>
+            
+            <h3>4. Statistical Testing</h3>
+            <p>
+                Statistical tests are performed to assess the significance of the observed differences. Common tests 
+                include t-tests, Wilcoxon rank-sum tests, or more sophisticated methods like those implemented in 
+                DESeq2 or edgeR.
+            </p>
+            <pre><code>
+# Perform t-tests for each gene
+p_values = []
+for i in range(gene_expression.shape[1]):
+    t_stat, p_val = stats.ttest_ind(
+        dysplastic_expr[:, i],
+        non_dysplastic_expr[:, i],
+        equal_var=False  # Welch's t-test
+    )
+    p_values.append(p_val)
+p_values = np.array(p_values)
+            </code></pre>
+            
+            <h3>5. Multiple Testing Correction</h3>
+            <p>
+                To account for multiple testing, p-values are adjusted using methods like Benjamini-Hochberg to 
+                control the false discovery rate.
+            </p>
+            <pre><code>
+# Apply Benjamini-Hochberg correction
+from statsmodels.stats.multitest import multipletests
+_, q_values, _, _ = multipletests(p_values, method='fdr_bh')
+            </code></pre>
+            
+            <h3>6. Gene Ranking</h3>
+            <p>
+                Genes are ranked based on a combination of their logFC magnitude and statistical significance. 
+                Common approaches include:
+            </p>
+            <ul>
+                <li>Ranking by absolute logFC among statistically significant genes</li>
+                <li>Ranking by statistical significance among genes with logFC above a threshold</li>
+                <li>Ranking by a combined score that considers both logFC and significance</li>
+            </ul>
+            <pre><code>
+# Create results dataframe
+import pandas as pd
+results = pd.DataFrame({
+    'gene': gene_names,
+    'log_fold_change': log_fold_change,
+    'p_value': p_values,
+    'q_value': q_values
+})
+
+# Filter for significant genes
+significant_genes = results[results['q_value'] < 0.05]
+
+# Rank by absolute log fold change
+ranked_genes = significant_genes.sort_values(by='log_fold_change', key=abs, ascending=False)
+            </code></pre>
+            
+            <h3>7. Visualization</h3>
+            <p>
+                The results are visualized using techniques like volcano plots, heatmaps, or bar plots to facilitate 
+                interpretation and communication.
+            </p>
+            <pre><code>
+# Create volcano plot
+import matplotlib.pyplot as plt
+plt.figure(figsize=(10, 8))
+plt.scatter(
+    results['log_fold_change'],
+    -np.log10(results['p_value']),
+    alpha=0.5
+)
+plt.axhline(-np.log10(0.05), color='red', linestyle='--')
+plt.axvline(-1, color='blue', linestyle='--')
+plt.axvline(1, color='blue', linestyle='--')
+plt.xlabel('Log2 Fold Change')
+plt.ylabel('-Log10 P-value')
+plt.title('Volcano Plot of Differential Expression')
+plt.savefig('volcano_plot.png')
+            </code></pre>
+        </section>
+
+        <section>
+            <h2>Advanced Techniques</h2>
+            <p>
+                Our implementation of the LogFC method includes several advanced techniques to improve the accuracy 
+                and interpretability of the results:
+            </p>
+            
+            <h3>1. Robust Statistics</h3>
+            <p>
+                Instead of using simple means and t-tests, we employ robust statistics that are less sensitive to 
+                outliers and non-normal distributions:
+            </p>
+            <ul>
+                <li><strong>Median</strong> instead of mean for expression aggregation</li>
+                <li><strong>Wilcoxon rank-sum test</strong> instead of t-test for statistical testing</li>
+                <li><strong>Robust estimation of variance</strong> using methods like median absolute deviation (MAD)</li>
+            </ul>
+            
+            <h3>2. Spatial Context Integration</h3>
+            <p>
+                We integrate spatial context into the LogFC analysis to account for tissue heterogeneity and spatial 
+                patterns of gene expression:
+            </p>
+            <ul>
+                <li><strong>Spatial weighting</strong> of cells based on their proximity to region boundaries</li>
+                <li><strong>Spatial clustering</strong> to identify coherent regions with similar expression patterns</li>
+                <li><strong>Spatial smoothing</strong> of expression values to reduce noise</li>
+            </ul>
+            
+            <h3>3. Pathway Analysis</h3>
+            <p>
+                We extend the gene-level analysis to pathway-level insights using gene set enrichment analysis (GSEA) 
+                and related techniques:
+            </p>
+            <ul>
+                <li><strong>Gene set enrichment analysis</strong> to identify pathways enriched in dysplastic regions</li>
+                <li><strong>Pathway activity scoring</strong> to quantify pathway activation in individual cells</li>
+                <li><strong>Network analysis</strong> to identify key regulatory genes and their targets</li>
+            </ul>
+            
+            <h3>4. Machine Learning Integration</h3>
+            <p>
+                We integrate machine learning techniques to improve gene ranking and identify complex patterns:
+            </p>
+            <ul>
+                <li><strong>Feature importance</strong> from random forests or gradient boosting models</li>
+                <li><strong>Regularized regression</strong> (e.g., LASSO) for feature selection</li>
+                <li><strong>Deep learning</strong> for capturing complex, non-linear relationships</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Applications in IBD Research</h2>
+            <p>
+                The LogFC method has several important applications in inflammatory bowel disease research:
+            </p>
+            
+            <h3>1. Biomarker Discovery</h3>
+            <p>
+                By identifying genes that are differentially expressed between dysplastic and non-dysplastic regions, 
+                the LogFC method can help discover biomarkers for early detection of pre-cancerous changes in IBD patients.
+            </p>
+            <p>
+                These biomarkers could be used for:
+            </p>
+            <ul>
+                <li>Non-invasive screening tests (e.g., blood or stool tests)</li>
+                <li>Targeted biopsies during colonoscopy</li>
+                <li>Risk stratification of patients</li>
+            </ul>
+            
+            <h3>2. Disease Mechanism Understanding</h3>
+            <p>
+                The differentially expressed genes identified by the LogFC method can provide insights into the 
+                molecular mechanisms underlying the progression from inflammation to dysplasia and cancer in IBD.
+            </p>
+            <p>
+                This understanding can help:
+            </p>
+            <ul>
+                <li>Identify key pathways involved in dysplasia development</li>
+                <li>Understand the role of inflammation in cancer progression</li>
+                <li>Discover new therapeutic targets</li>
+            </ul>
+            
+            <h3>3. Therapeutic Target Identification</h3>
+            <p>
+                Genes with high logFC values may represent potential therapeutic targets for preventing or treating 
+                dysplasia in IBD patients.
+            </p>
+            <p>
+                These targets could be used for:
+            </p>
+            <ul>
+                <li>Drug development</li>
+                <li>Repurposing existing drugs</li>
+                <li>Personalized treatment approaches</li>
+            </ul>
+            
+            <h3>4. Patient Stratification</h3>
+            <p>
+                The gene expression patterns identified by the LogFC method can be used to stratify patients based on 
+                their molecular profiles, potentially identifying those at higher risk of developing dysplasia or cancer.
+            </p>
+            <p>
+                This stratification could inform:
+            </p>
+            <ul>
+                <li>Surveillance strategies</li>
+                <li>Preventive interventions</li>
+                <li>Treatment decisions</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Integration with Unified Approach</h2>
+            <p>
+                In our unified approach, we integrate the LogFC method with DeepSpot's sophisticated neural network 
+                architecture and Tarandros's cell-wise optimization to create a comprehensive solution for spatial 
+                transcriptomics analysis.
+            </p>
+            
+            <h3>Key Integration Points</h3>
+            <ol>
+                <li>
+                    <strong>Gene Expression Prediction</strong>: We use DeepSpot and Tarandros to predict gene expression 
+                    from H&E images and infer unmeasured genes.
+                </li>
+                <li>
+                    <strong>Differential Expression Analysis</strong>: We apply the LogFC method to the predicted gene 
+                    expressions to identify differentially expressed genes between dysplastic and non-dysplastic regions.
+                </li>
+                <li>
+                    <strong>Spatial Context Integration</strong>: We leverage the spatial information from DeepSpot to 
+                    improve the LogFC analysis.
+                </li>
+                <li>
+                    <strong>Cell Type Information</strong>: We use the cell type information from Tarandros to refine 
+                    the LogFC analysis.
+                </li>
+            </ol>
+            
+            <h3>Benefits of Integration</h3>
+            <p>
+                By integrating the LogFC method with DeepSpot and Tarandros, we achieve:
+            </p>
+            <ul>
+                <li>More accurate gene expression predictions as input to the LogFC analysis</li>
+                <li>Improved spatial context integration for more precise differential expression analysis</li>
+                <li>Cell type-aware analysis that accounts for cellular heterogeneity</li>
+                <li>A comprehensive solution that spans from raw data to biological insights</li>
+            </ul>
+            
+            <p>
+                For more details on how we integrate these approaches, please see the <a href="unified_approach.html">Unified Approach</a> page.
+            </p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Catskills Research. All rights reserved.</p>
+    </footer>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

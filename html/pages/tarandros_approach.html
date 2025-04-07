@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarandros Approach - Spatial Transcriptomics</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Tarandros Approach for Cell-wise Optimization</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="getting_started.html">Getting Started</a></li>
+            <li><a href="data_structure.html">Data Structure</a></li>
+            <li><a href="synthetic_datasets.html">Synthetic Datasets</a></li>
+            <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+            <li><a href="crunch_approaches.html">Crunch Approaches</a></li>
+            <li><a href="tarandros_approach.html" class="active">Tarandros Approach</a></li>
+            <li><a href="logfc_method.html">LogFC Method</a></li>
+            <li><a href="unified_approach.html">Unified Approach</a></li>
+            <li><a href="process_flow.html">Process Flow</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p>
+                The Tarandros approach was developed for Crunch 2 of the Broad Institute IBD Challenge, focusing on inferring 
+                the expression of unmeasured genes based on measured gene predictions and reference datasets. This page provides 
+                a detailed explanation of the Tarandros approach and its key innovations that led to superior cell-wise Spearman 
+                correlation performance.
+            </p>
+            <div class="info-box">
+                <h3>Tarandros at a Glance</h3>
+                <p>Key performance metrics from Crunch 2 evaluation:</p>
+                <ul>
+                    <li><strong>Cell-wise Spearman correlation</strong>: 52.792 (compared to DeepSpot's 45.937)</li>
+                    <li><strong>Gene-wise Spearman correlation</strong>: 14.8 (compared to DeepSpot's 16.168)</li>
+                </ul>
+                <p>These metrics highlight Tarandros's strength in preserving cell-specific expression patterns, which is crucial for accurate cell type identification and functional analysis.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Key Innovations</h2>
+            <p>The Tarandros approach introduced several key innovations that contributed to its superior cell-wise performance:</p>
+            
+            <h3>1. Cell-wise Optimization</h3>
+            <p>
+                Unlike DeepSpot, which primarily focused on gene-wise metrics, Tarandros explicitly optimizes for cell-wise 
+                Spearman correlation. This means it prioritizes preserving the relative expression levels of different genes 
+                within each cell, which better captures cellular state and function.
+            </p>
+            
+            <h3>2. Similarity-based Gene Inference</h3>
+            <p>
+                Tarandros uses a similarity-based approach to infer unmeasured gene expression. It calculates the similarity 
+                between predicted measured gene expressions and reference data, then uses these similarities to transfer 
+                unmeasured gene expressions from the reference to the target cells.
+            </p>
+            
+            <h3>3. Cell Type Classification</h3>
+            <p>
+                Tarandros incorporates explicit cell type classification to improve prediction accuracy. By identifying 
+                cell types, it can leverage cell type-specific expression patterns from reference datasets.
+            </p>
+            
+            <h3>4. Reference Dataset Integration</h3>
+            <p>
+                Tarandros effectively integrates single-cell RNA sequencing reference data to guide the prediction of 
+                unmeasured genes. This reference data provides valuable information about gene co-expression patterns 
+                and cell type-specific expression profiles.
+            </p>
+            
+            <h3>5. Spatial Context Preservation</h3>
+            <p>
+                While leveraging reference data, Tarandros maintains spatial context by refining predictions based on 
+                local spatial relationships. This ensures that the predicted gene expressions are consistent with the 
+                spatial organization of the tissue.
+            </p>
+        </section>
+
+        <section>
+            <h2>Tarandros Architecture</h2>
+            <div class="mermaid">
+                graph TD
+                    A[Measured Gene Predictions] --> B[Cell Type Classification]
+                    A --> C[Expression Similarity Calculation]
+                    D[Reference Dataset] --> C
+                    D --> E[Reference Gene Expressions]
+                    B --> F[Cell Type Probabilities]
+                    C --> G[Expression Similarities]
+                    F --> H[Combined Weights]
+                    G --> H
+                    H --> I[Weighted Reference Expression]
+                    E --> I
+                    I --> J[Unmeasured Gene Predictions]
+                    K[Spatial Context] --> L[Spatial Refinement]
+                    J --> L
+                    L --> M[Final Predictions]
+                    
+                    classDef primary fill:#e1f5fe,stroke:#01579b
+                    classDef secondary fill:#e8f5e9,stroke:#2e7d32
+                    classDef tertiary fill:#fff9c4,stroke:#fbc02d
+                    
+                    class A,D,K primary
+                    class B,C,E,F,G,H,I,J,L secondary
+                    class M tertiary
+            </div>
+            
+            <h3>Cell Type Classification</h3>
+            <p>
+                The first step in the Tarandros approach is to classify cells based on their measured gene expression profiles. 
+                This is done using a neural network that takes measured gene expressions as input and outputs cell type probabilities.
+            </p>
+            <pre><code>
+# Cell type classification
+cell_type_logits = self.cell_type_classifier(measured_gene_expressions)
+cell_type_probs = F.softmax(cell_type_logits, dim=-1)
+            </code></pre>
+            
+            <h3>Expression Similarity Calculation</h3>
+            <p>
+                Tarandros calculates the similarity between predicted measured gene expressions and reference data. 
+                This similarity is used to identify reference cells that are most similar to each target cell.
+            </p>
+            <pre><code>
+# Calculate expression similarity
+def _compute_expression_similarity(pred_expressions, ref_expressions):
+    # Normalize expressions
+    pred_norm = F.normalize(pred_expressions, p=2, dim=1)
+    ref_norm = F.normalize(ref_expressions, p=2, dim=1)
+    
+    # Calculate cosine similarity
+    similarity = torch.matmul(pred_norm, ref_norm.transpose(0, 1))
+    return similarity
+            </code></pre>
+            
+            <h3>Combined Weighting</h3>
+            <p>
+                Tarandros combines cell type probabilities and expression similarities to create weights for transferring 
+                unmeasured gene expressions from reference to target cells.
+            </p>
+            <pre><code>
+# Combine cell type probabilities and expression similarities
+combined_weights = cell_type_probs * measured_similarity
+combined_weights = combined_weights / (combined_weights.sum(dim=-1, keepdim=True) + 1e-8)
+            </code></pre>
+            
+            <h3>Weighted Reference Expression</h3>
+            <p>
+                Using the combined weights, Tarandros calculates a weighted average of reference unmeasured gene expressions 
+                for each target cell.
+            </p>
+            <pre><code>
+# Calculate weighted reference expression
+reference_predictions = torch.matmul(combined_weights, self.reference_expressions)
+            </code></pre>
+            
+            <h3>Spatial Refinement</h3>
+            <p>
+                Finally, Tarandros refines the predictions using spatial context. It adjusts the predictions based on the 
+                expressions of neighboring cells, ensuring spatial coherence.
+            </p>
+            <pre><code>
+# Refine predictions using spatial context
+spatial_weights = self._compute_spatial_weights(spatial_coordinates)
+spatial_context = torch.matmul(spatial_weights, unmeasured_predictions)
+refined_predictions = alpha * unmeasured_predictions + (1 - alpha) * spatial_context
+            </code></pre>
+        </section>
+
+        <section>
+            <h2>Cell-wise Spearman Optimization</h2>
+            <p>
+                A key innovation in Tarandros is its explicit optimization for cell-wise Spearman correlation. This is 
+                achieved through a specialized loss function that directly optimizes for preserving the relative expression 
+                levels of different genes within each cell.
+            </p>
+            
+            <h3>Cell-wise Spearman Loss</h3>
+            <p>
+                The cell-wise Spearman loss function calculates the Spearman correlation coefficient for each cell and 
+                then averages across cells. This encourages the model to preserve the relative expression levels of 
+                different genes within each cell.
+            </p>
+            <pre><code>
+def cell_wise_spearman_loss(predictions, targets, eps=1e-8):
+    # Convert to ranks along gene dimension (dim=1)
+    def _to_ranks(x):
+        ranks = torch.argsort(torch.argsort(x, dim=1), dim=1).float()
+        return ranks
+    
+    pred_ranks = _to_ranks(predictions)
+    target_ranks = _to_ranks(targets)
+    
+    # Calculate mean rank for each cell
+    pred_mean = pred_ranks.mean(dim=1, keepdim=True)
+    target_mean = target_ranks.mean(dim=1, keepdim=True)
+    
+    # Calculate differences from mean
+    pred_diff = pred_ranks - pred_mean
+    target_diff = target_ranks - target_mean
+    
+    # Calculate covariance
+    cov = (pred_diff * target_diff).sum(dim=1)
+    
+    # Calculate standard deviations
+    pred_std = torch.sqrt((pred_diff ** 2).sum(dim=1) + eps)
+    target_std = torch.sqrt((target_diff ** 2).sum(dim=1) + eps)
+    
+    # Calculate correlation
+    correlation = cov / (pred_std * target_std + eps)
+    
+    # Return loss (1 - mean correlation)
+    return 1.0 - correlation.mean()
+            </code></pre>
+            
+            <h3>Comparison with Gene-wise Optimization</h3>
+            <p>
+                In contrast to cell-wise optimization, gene-wise optimization (as used in DeepSpot) calculates the 
+                Spearman correlation coefficient for each gene and then averages across genes. This encourages the 
+                model to preserve the relative expression levels of each gene across different cells.
+            </p>
+            <p>
+                The choice between cell-wise and gene-wise optimization depends on the specific application:
+            </p>
+            <ul>
+                <li><strong>Cell-wise optimization</strong> is better for cell type identification, cellular function analysis, and understanding cellular states</li>
+                <li><strong>Gene-wise optimization</strong> is better for gene function analysis, pathway analysis, and understanding gene regulation</li>
+            </ul>
+            <p>
+                Tarandros's superior performance on cell-wise metrics makes it particularly valuable for applications 
+                that require accurate cell type identification and cellular function analysis.
+            </p>
+        </section>
+
+        <section>
+            <h2>Reference Dataset Integration</h2>
+            <p>
+                Another key innovation in Tarandros is its effective integration of reference datasets. This allows 
+                the model to leverage prior knowledge about gene co-expression patterns and cell type-specific expression 
+                profiles.
+            </p>
+            
+            <h3>Reference Dataset Selection</h3>
+            <p>
+                The choice of reference dataset is crucial for the performance of Tarandros. Ideally, the reference 
+                dataset should:
+            </p>
+            <ul>
+                <li>Cover the same tissue type as the target dataset</li>
+                <li>Include a diverse range of cell types</li>
+                <li>Have high-quality gene expression measurements</li>
+                <li>Include both measured and unmeasured genes</li>
+            </ul>
+            
+            <h3>Reference Dataset Processing</h3>
+            <p>
+                Before using the reference dataset, it needs to be processed to ensure compatibility with the target 
+                dataset. This includes:
+            </p>
+            <ol>
+                <li>Normalizing expression values to a common scale</li>
+                <li>Aligning gene identifiers between reference and target</li>
+                <li>Filtering out low-quality cells and genes</li>
+                <li>Annotating cell types if not already done</li>
+            </ol>
+            
+            <h3>Reference Integration in Tarandros</h3>
+            <p>
+                Tarandros integrates the reference dataset in two main ways:
+            </p>
+            <ol>
+                <li>
+                    <strong>Cell Type Classification</strong>: The reference dataset is used to train the cell type 
+                    classifier, providing labeled examples of different cell types.
+                </li>
+                <li>
+                    <strong>Expression Transfer</strong>: The reference dataset provides unmeasured gene expressions 
+                    that are transferred to target cells based on similarity and cell type.
+                </li>
+            </ol>
+            <p>
+                This integration allows Tarandros to leverage prior knowledge while still adapting to the specific 
+                characteristics of the target dataset.
+            </p>
+        </section>
+
+        <section>
+            <h2>Performance Characteristics</h2>
+            <p>
+                Tarandros's performance characteristics make it particularly well-suited for certain applications:
+            </p>
+            
+            <h3>Strengths</h3>
+            <ul>
+                <li><strong>Superior cell-wise performance</strong>: Tarandros excels at preserving cell-specific expression patterns</li>
+                <li><strong>Effective reference integration</strong>: Tarandros effectively leverages prior knowledge from reference datasets</li>
+                <li><strong>Cell type awareness</strong>: Tarandros's explicit cell type classification improves prediction accuracy</li>
+                <li><strong>Spatial context preservation</strong>: Tarandros maintains spatial coherence in its predictions</li>
+            </ul>
+            
+            <h3>Limitations</h3>
+            <ul>
+                <li><strong>Lower gene-wise performance</strong>: Tarandros's gene-wise performance is lower than DeepSpot's</li>
+                <li><strong>Reference dependency</strong>: Tarandros's performance depends on the quality and relevance of the reference dataset</li>
+                <li><strong>Computational complexity</strong>: The similarity calculation and reference integration can be computationally intensive</li>
+            </ul>
+            
+            <h3>Ideal Use Cases</h3>
+            <p>
+                Tarandros is particularly well-suited for:
+            </p>
+            <ul>
+                <li>Cell type identification and classification</li>
+                <li>Cellular function analysis</li>
+                <li>Understanding cellular states and transitions</li>
+                <li>Applications where preserving cell-specific expression patterns is crucial</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Integration with Unified Approach</h2>
+            <p>
+                In our unified approach, we integrate Tarandros's cell-wise optimization and reference dataset integration 
+                with DeepSpot's sophisticated neural network architecture and the LogFC method's gene ranking capabilities.
+            </p>
+            
+            <h3>Key Integration Points</h3>
+            <ol>
+                <li>
+                    <strong>Cell-wise Optimization</strong>: We incorporate Tarandros's cell-wise Spearman loss function 
+                    into our unified model, balancing it with gene-wise optimization through configurable weights.
+                </li>
+                <li>
+                    <strong>Reference Dataset Integration</strong>: We use Tarandros's reference integration approach 
+                    to improve the prediction of unmeasured genes.
+                </li>
+                <li>
+                    <strong>Cell Type Classification</strong>: We incorporate Tarandros's cell type classification 
+                    component into our unified model.
+                </li>
+                <li>
+                    <strong>Spatial Refinement</strong>: We use Tarandros's spatial refinement approach to ensure 
+                    spatial coherence in our predictions.
+                </li>
+            </ol>
+            
+            <h3>Benefits of Integration</h3>
+            <p>
+                By integrating Tarandros with DeepSpot and the LogFC method, we achieve:
+            </p>
+            <ul>
+                <li>Improved cell-wise performance compared to DeepSpot alone</li>
+                <li>Improved gene-wise performance compared to Tarandros alone</li>
+                <li>Comprehensive gene ranking capabilities from the LogFC method</li>
+                <li>A unified solution that leverages the strengths of all three approaches</li>
+            </ul>
+            
+            <p>
+                For more details on how we integrate these approaches, please see the <a href="unified_approach.html">Unified Approach</a> page.
+            </p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Catskills Research. All rights reserved.</p>
+    </footer>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'neutral',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

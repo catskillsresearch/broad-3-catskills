@@ -3,452 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integrated Approach - Broad Institute IBD Challenge: Catskills Solution for Crunch 3</title>
+    <title>Crunch Approaches - Spatial Transcriptomics</title>
     <link rel="stylesheet" href="../css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 </head>
 <body>
     <header>
-        <div class="logo-container">
-            <h1>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h1>
-        </div>
-        <nav class="main-nav">
-            <ul>
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="input_data.html">Input Data</a></li>
-                <li><a href="process_flow.html">Process Flow</a></li>
-                <li><a href="deepspot_architecture.html">DeepSpot Techniques</a></li>
-                <li><a href="implementation.html">Implementation</a></li>
-                <li><a href="visualizations.html">Visualizations</a></li>
-                <li><a href="crunch_approaches.html" class="active">Integrated Approach</a></li>
-                <li><a href="getting_started.html">Getting Started</a></li>
-            </ul>
-        </nav>
-        <button class="mobile-menu-toggle">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
+        <h1>Crunch Approaches for Spatial Transcriptomics Analysis</h1>
     </header>
+    <nav>
+        <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="getting_started.html">Getting Started</a></li>
+            <li><a href="data_structure.html">Data Structure</a></li>
+            <li><a href="synthetic_datasets.html">Synthetic Datasets</a></li>
+            <li><a href="deepspot_architecture.html">DeepSpot Architecture</a></li>
+            <li><a href="crunch_approaches.html" class="active">Crunch Approaches</a></li>
+            <li><a href="unified_approach.html">Unified Approach</a></li>
+            <li><a href="process_flow.html">Process Flow</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section>
+            <h2>Overview of Crunch Approaches</h2>
+            <p>
+                The Broad Institute IBD Challenge was divided into three "crunches," each focusing on different aspects of spatial transcriptomics analysis. 
+                This page provides a detailed overview of the approaches developed for each crunch and how they complement each other in our unified solution.
+            </p>
+        </section>
 
-    <div class="container">
-        <aside class="sidebar">
-            <div class="search-container">
-                <input type="text" placeholder="Search documentation...">
-                <button type="submit">Search</button>
-            </div>
-            <nav class="side-nav">
-                <h3>On This Page</h3>
-                <ul>
-                    <li><a href="#overview">Challenge Overview</a></li>
-                    <li><a href="#crunch1">Crunch 1: DeepSpot Techniques</a></li>
-                    <li><a href="#crunch2">Crunch 2: Cell-wise Optimization</a></li>
-                    <li><a href="#crunch3">Crunch 3: Our Catskills Solution</a></li>
-                    <li><a href="#comparison">Technique Comparison</a></li>
-                    <li><a href="#integration">Our Integrated Solution</a></li>
-                </ul>
-            </nav>
-        </aside>
+        <section>
+            <h2>Crunch 1: DeepSpot</h2>
+            <p>
+                DeepSpot was developed for Crunch 1 of the Broad Institute IBD Challenge, focusing on predicting the expression of 460 measured genes 
+                from H&E pathology images. It established the foundation for our spatial transcriptomics analysis pipeline.
+            </p>
+            
+            <h3>Key Features of DeepSpot</h3>
+            <ul>
+                <li><strong>Multi-level Spatial Context Integration</strong>: Processes information at spot, sub-spot, and neighborhood levels</li>
+                <li><strong>Permutation-invariant Deep-set Neural Networks</strong>: Handles variable numbers of sub-spots and neighbors</li>
+                <li><strong>Pre-trained Pathology Foundation Models</strong>: Leverages transfer learning from large pathology datasets</li>
+                <li><strong>Ensemble Learning Techniques</strong>: Combines multiple models for improved robustness</li>
+                <li><strong>Specialized Loss Functions</strong>: Optimized for Spearman correlation</li>
+            </ul>
+            
+            <h3>DeepSpot Architecture</h3>
+            <p>
+                The DeepSpot architecture consists of several key components:
+            </p>
+            <ol>
+                <li><strong>Feature Extraction</strong>: Uses ResNet50 to extract features from H&E images</li>
+                <li><strong>Phi Networks</strong>: Process features at each spatial level (spot, sub-spot, neighbor)</li>
+                <li><strong>Aggregation Operations</strong>: Combine information across sub-spots and neighbors using permutation-invariant operations</li>
+                <li><strong>Rho Networks</strong>: Generate final predictions from aggregated features</li>
+            </ol>
+            
+            <h3>Performance Characteristics</h3>
+            <p>
+                DeepSpot excels at gene-wise Spearman correlation, achieving a score of 16.168 in the Crunch 1 evaluation. 
+                This indicates strong performance in predicting the expression patterns of individual genes across cells.
+            </p>
+            
+            <h3>Limitations</h3>
+            <p>
+                While DeepSpot performs well on gene-wise metrics, it has limitations in cell-wise performance, 
+                with a cell-wise Spearman correlation score of 45.937, which is lower than the Tarandros approach.
+            </p>
+        </section>
 
-        <main class="content">
-            <div class="breadcrumbs">
-                <span><a href="../index.html">Home</a></span>
-                <span>Integrated Approach</span>
-            </div>
+        <section>
+            <h2>Crunch 2: Tarandros</h2>
+            <p>
+                Tarandros was developed for Crunch 2 of the Broad Institute IBD Challenge, focusing on inferring the expression of 
+                18,157 unmeasured genes based on the predictions from Crunch 1 and a single-cell RNA sequencing reference dataset.
+            </p>
+            
+            <h3>Key Features of Tarandros</h3>
+            <ul>
+                <li><strong>Similarity-based Gene Inference</strong>: Uses similarity between measured gene expressions to infer unmeasured genes</li>
+                <li><strong>Cell Type Classification</strong>: Identifies cell types to improve prediction accuracy</li>
+                <li><strong>Reference Dataset Integration</strong>: Leverages single-cell RNA-seq reference data</li>
+                <li><strong>Cell-wise Optimization</strong>: Prioritizes cell-wise Spearman correlation</li>
+                <li><strong>Spatial Context Preservation</strong>: Maintains local spatial relationships in predictions</li>
+            </ul>
+            
+            <h3>Tarandros Approach</h3>
+            <p>
+                The Tarandros approach consists of several key steps:
+            </p>
+            <ol>
+                <li><strong>Cell Type Identification</strong>: Classifies cells based on measured gene expression</li>
+                <li><strong>Similarity Computation</strong>: Calculates similarity between predicted and reference expression profiles</li>
+                <li><strong>Expression Transfer</strong>: Transfers unmeasured gene expression from reference to target cells</li>
+                <li><strong>Spatial Refinement</strong>: Refines predictions using spatial context</li>
+            </ol>
+            
+            <h3>Performance Characteristics</h3>
+            <p>
+                Tarandros excels at cell-wise Spearman correlation, achieving a score of 52.792 in the Crunch 2 evaluation, 
+                significantly higher than DeepSpot's 45.937. This indicates strong performance in predicting the overall expression 
+                profile of individual cells.
+            </p>
+            
+            <h3>Limitations</h3>
+            <p>
+                While Tarandros performs well on cell-wise metrics, it has limitations in gene-wise performance, 
+                with a gene-wise Spearman correlation score of 14.8, which is lower than DeepSpot's 16.168.
+            </p>
+        </section>
 
-            <section id="overview">
-                <h2>Challenge Overview</h2>
-                <p>The Broad Institute IBD Challenge is divided into three distinct "crunches," each focusing on a different aspect of the problem:</p>
-                
-                <div class="info-box">
-                    <h3>Challenge Structure</h3>
-                    <ul>
-                        <li><strong>Crunch 1:</strong> Predicting spatial transcriptomics data (460 genes) from H&E images</li>
-                        <li><strong>Crunch 2:</strong> Predicting unmeasured genes using single-cell RNA-seq data</li>
-                        <li><strong>Crunch 3:</strong> Identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions</li>
-                    </ul>
-                </div>
-                
-                <p>Our Catskills Solution for Crunch 3 integrates techniques from various approaches to effectively identify gene markers that distinguish dysplastic from non-dysplastic tissue regions. This page documents how we've integrated these techniques into a comprehensive solution for Crunch 3.</p>
-                
-                <h3>Evaluation Metrics</h3>
-                <p>The challenge uses different evaluation metrics for each crunch:</p>
-                <ul>
-                    <li><strong>Crunch 1:</strong> Spearman rank correlation between predicted and actual gene expression</li>
-                    <li><strong>Crunch 2:</strong> Cell-wise and gene-wise Spearman correlation for unmeasured genes</li>
-                    <li><strong>Crunch 3:</strong> Ability to identify genes that distinguish dysplastic regions</li>
-                </ul>
-                
-                <p>Understanding these metrics is crucial for developing effective solutions, as they guide the optimization process and model selection. Our Catskills Solution is specifically optimized for the Crunch 3 metric while leveraging techniques that performed well on the metrics for Crunches 1 and 2.</p>
-            </section>
+        <section>
+            <h2>Crunch 3: LogFC Method</h2>
+            <p>
+                The LogFC method was developed for Crunch 3 of the Broad Institute IBD Challenge, focusing on ranking genes 
+                based on their ability to differentiate between dysplastic and non-dysplastic tissue regions.
+            </p>
+            
+            <h3>Key Features of LogFC Method</h3>
+            <ul>
+                <li><strong>Log Fold Change Calculation</strong>: Computes the log fold change between dysplastic and non-dysplastic regions</li>
+                <li><strong>Statistical Significance Testing</strong>: Assesses the significance of differential expression</li>
+                <li><strong>Gene Ranking</strong>: Ranks genes based on their discriminative power</li>
+                <li><strong>Visualization Capabilities</strong>: Provides tools for visualizing differential expression</li>
+            </ul>
+            
+            <h3>LogFC Approach</h3>
+            <p>
+                The LogFC approach consists of several key steps:
+            </p>
+            <ol>
+                <li><strong>Group Definition</strong>: Defines dysplastic and non-dysplastic groups based on cell labels</li>
+                <li><strong>Expression Aggregation</strong>: Aggregates expression values within each group</li>
+                <li><strong>Fold Change Calculation</strong>: Calculates log fold change between groups</li>
+                <li><strong>Statistical Testing</strong>: Performs statistical tests to assess significance</li>
+                <li><strong>Ranking</strong>: Ranks genes based on absolute log fold change values</li>
+            </ol>
+            
+            <h3>Performance Characteristics</h3>
+            <p>
+                The LogFC method is particularly effective at identifying genes that are differentially expressed between 
+                dysplastic and non-dysplastic regions, providing valuable insights for understanding disease mechanisms.
+            </p>
+        </section>
 
-            <section id="crunch1">
-                <h2>Crunch 1: DeepSpot Techniques</h2>
-                <p>Crunch 1 focuses on predicting gene expression from H&E images. The DeepSpot approach introduced several innovations that significantly improved performance over previous approaches.</p>
-                
-                <h3>Key Techniques We've Integrated</h3>
-                <p>We've integrated the following techniques from the DeepSpot approach into our Catskills Solution:</p>
-                
-                <div class="feature-cards">
-                    <div class="card">
-                        <h4>Multi-level Spatial Context</h4>
-                        <p>Integrates information from spot, sub-spot, and neighborhood levels to capture both local and global tissue patterns.</p>
-                    </div>
-                    <div class="card">
-                        <h4>Deep-Set Architecture</h4>
-                        <p>Uses a permutation-invariant architecture to handle variable numbers of sub-spots and neighbors.</p>
-                    </div>
-                    <div class="card">
-                        <h4>Pathology Foundation Models</h4>
-                        <p>Leverages pre-trained vision models specifically designed for pathology images.</p>
-                    </div>
-                </div>
-                
-                <h3>Architecture Integration</h3>
-                <p>We've integrated the DeepSpot architecture into our Catskills Solution as follows:</p>
-                
-                <div class="mermaid">
-                    graph TD
-                    subgraph "DeepSpot Integration"
-                        A[H&E Images] --> B[Feature Extraction]
-                        B --> C[Multi-level Context Integration]
-                        C --> D[Gene Expression Prediction]
-                        D --> E[Gene Marker Identification]
-                    end
-                    
-                    classDef primary fill:#e1f5fe,stroke:#01579b
-                    classDef secondary fill:#e8f5e9,stroke:#2e7d32
-                    
-                    class A,B,C primary
-                    class D,E secondary
-                </div>
-                
-                <p>This integration allows us to leverage the powerful feature extraction and context integration capabilities of the DeepSpot approach while adapting it to the specific requirements of Crunch 3.</p>
-                
-                <h3>Adaptation for Crunch 3</h3>
-                <p>While the DeepSpot approach was developed for Crunch 1, we've adapted it for Crunch 3 by:</p>
-                <ul>
-                    <li>Focusing on genes that show differential expression between dysplastic and non-dysplastic regions</li>
-                    <li>Modifying the loss function to prioritize genes with high discriminative power</li>
-                    <li>Incorporating spatial context information to better capture tissue heterogeneity</li>
-                </ul>
-            </section>
+        <section>
+            <h2>Unified Approach: Combining the Best of All Crunches</h2>
+            <p>
+                Our unified approach combines the strengths of all three crunches into a single, integrated solution:
+            </p>
+            
+            <h3>Integration Strategy</h3>
+            <ul>
+                <li><strong>DeepSpot Architecture</strong>: Uses the sophisticated neural network architecture from Crunch 1</li>
+                <li><strong>Cell-wise Optimization</strong>: Incorporates the cell-wise focus from Tarandros (Crunch 2)</li>
+                <li><strong>Gene Ranking</strong>: Integrates the LogFC method from Crunch 3</li>
+                <li><strong>Balanced Loss Function</strong>: Combines gene-wise and cell-wise metrics with configurable weights</li>
+                <li><strong>End-to-End Pipeline</strong>: Provides a seamless workflow from raw data to final results</li>
+            </ul>
+            
+            <h3>Performance Improvements</h3>
+            <p>
+                By combining the strengths of all three approaches, our unified solution achieves:
+            </p>
+            <ul>
+                <li>Improved gene-wise Spearman correlation compared to Tarandros alone</li>
+                <li>Improved cell-wise Spearman correlation compared to DeepSpot alone</li>
+                <li>Comprehensive gene ranking capabilities from the LogFC method</li>
+                <li>More robust performance across different datasets and conditions</li>
+            </ul>
+            
+            <h3>Further Details</h3>
+            <p>
+                For more detailed information about our unified approach, please see the <a href="unified_approach.html">Unified Approach</a> page.
+            </p>
+        </section>
 
-            <section id="crunch2">
-                <h2>Crunch 2: Cell-wise Optimization</h2>
-                <p>Crunch 2 focuses on predicting unmeasured genes using single-cell RNA-seq data. The Tarandros approach demonstrated the importance of cell-wise optimization for accurate gene expression prediction.</p>
-                
-                <h3>Cell-wise vs. Gene-wise Optimization</h3>
-                <p>A key insight from the Tarandros approach is the importance of cell-wise optimization:</p>
-                
-                <div class="comparison-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Aspect</th>
-                                <th>Cell-wise Optimization</th>
-                                <th>Gene-wise Optimization</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Focus</td>
-                                <td>Preserving gene expression profiles within each cell</td>
-                                <td>Preserving spatial patterns of individual genes</td>
-                            </tr>
-                            <tr>
-                                <td>Correlation</td>
-                                <td>Measured across genes for each cell</td>
-                                <td>Measured across cells for each gene</td>
-                            </tr>
-                            <tr>
-                                <td>Biological Relevance</td>
-                                <td>Better captures cellular state and function</td>
-                                <td>Better captures gene-specific spatial patterns</td>
-                            </tr>
-                            <tr>
-                                <td>Application</td>
-                                <td>Cell type identification, cellular state analysis</td>
-                                <td>Spatial pattern analysis, gene co-expression</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <h3>Techniques We've Integrated</h3>
-                <p>We've integrated the following techniques from the Tarandros approach into our Catskills Solution:</p>
-                
-                <div class="feature-cards">
-                    <div class="card">
-                        <h4>Cell-wise Spearman Optimization</h4>
-                        <p>Optimizes for preserving the relative expression levels of different genes within each cell.</p>
-                    </div>
-                    <div class="card">
-                        <h4>Transfer Learning from scRNA-seq</h4>
-                        <p>Uses single-cell RNA-seq data to inform predictions for genes not measured in the spatial data.</p>
-                    </div>
-                    <div class="card">
-                        <h4>Weighted Similarity Measures</h4>
-                        <p>Uses sophisticated weighting schemes to identify similar cells in the reference data.</p>
-                    </div>
-                </div>
-                
-                <h3>Adaptation for Crunch 3</h3>
-                <p>We've adapted these techniques for Crunch 3 by:</p>
-                <ul>
-                    <li>Focusing on cell-wise optimization to better preserve cellular states in dysplastic vs. non-dysplastic regions</li>
-                    <li>Using transfer learning to incorporate information about genes not measured in the spatial data but relevant for dysplasia detection</li>
-                    <li>Applying weighted similarity measures to identify cells with similar dysplastic potential</li>
-                </ul>
-            </section>
-
-            <section id="crunch3">
-                <h2>Crunch 3: Our Catskills Solution</h2>
-                <p>Our Catskills Solution for Crunch 3 focuses on identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions. We've developed a comprehensive approach that integrates techniques from Crunches 1 and 2 while adding specific innovations for Crunch 3.</p>
-                
-                <h3>Key Components</h3>
-                <p>Our solution includes the following key components:</p>
-                
-                <div class="feature-cards">
-                    <div class="card highlighted">
-                        <h4>Log Fold Change Analysis</h4>
-                        <p>Calculates the log fold change in gene expression between dysplastic and non-dysplastic regions to identify differentially expressed genes.</p>
-                    </div>
-                    <div class="card highlighted">
-                        <h4>Statistical Significance Testing</h4>
-                        <p>Applies statistical tests to determine the significance of differential expression, accounting for biological and technical variability.</p>
-                    </div>
-                    <div class="card highlighted">
-                        <h4>Spatial Context Integration</h4>
-                        <p>Incorporates spatial context to identify genes with consistent differential expression patterns across different tissue regions.</p>
-                    </div>
-                </div>
-                
-                <h3>Gene Ranking Methodology</h3>
-                <p>Our gene ranking methodology involves several steps:</p>
-                
-                <ol class="numbered-steps">
-                    <li>
-                        <h4>Group Cells by Region Type</h4>
-                        <p>We group cells into dysplastic and non-dysplastic categories based on region annotations.</p>
-                    </li>
-                    <li>
-                        <h4>Calculate Mean Expression</h4>
-                        <p>We calculate the mean expression of each gene in dysplastic and non-dysplastic regions.</p>
-                    </li>
-                    <li>
-                        <h4>Compute Log Fold Change</h4>
-                        <p>We compute the log fold change (logFC) for each gene as the log2 ratio of mean expression in dysplastic vs. non-dysplastic regions.</p>
-                    </li>
-                    <li>
-                        <h4>Assess Statistical Significance</h4>
-                        <p>We perform statistical tests (e.g., t-test, Wilcoxon rank-sum test) to assess the significance of differential expression.</p>
-                    </li>
-                    <li>
-                        <h4>Apply Multiple Testing Correction</h4>
-                        <p>We apply multiple testing correction (e.g., Benjamini-Hochberg procedure) to control the false discovery rate.</p>
-                    </li>
-                    <li>
-                        <h4>Rank Genes</h4>
-                        <p>We rank genes based on a combination of logFC magnitude and statistical significance.</p>
-                    </li>
-                </ol>
-                
-                <h3>Biological Interpretation</h3>
-                <p>Our solution goes beyond statistical analysis to provide biological interpretation of the identified gene markers:</p>
-                <ul>
-                    <li>We perform pathway enrichment analysis to identify biological processes associated with dysplasia.</li>
-                    <li>We compare our findings with known dysplasia markers in the literature.</li>
-                    <li>We analyze the spatial distribution of marker genes to understand their role in tissue architecture.</li>
-                </ul>
-            </section>
-
-            <section id="comparison">
-                <h2>Technique Comparison</h2>
-                <p>Here we compare the different techniques we've integrated into our Catskills Solution:</p>
-                
-                <div class="comparison-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Technique</th>
-                                <th>Origin</th>
-                                <th>Strength</th>
-                                <th>Application in Our Solution</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Multi-level Spatial Context</td>
-                                <td>DeepSpot (Crunch 1)</td>
-                                <td>Captures both local and global tissue patterns</td>
-                                <td>Provides comprehensive tissue context for gene expression prediction</td>
-                            </tr>
-                            <tr>
-                                <td>Deep-Set Architecture</td>
-                                <td>DeepSpot (Crunch 1)</td>
-                                <td>Handles variable numbers of sub-spots and neighbors</td>
-                                <td>Enables flexible processing of tissue regions with different cell densities</td>
-                            </tr>
-                            <tr>
-                                <td>Cell-wise Optimization</td>
-                                <td>Tarandros (Crunch 2)</td>
-                                <td>Preserves cellular state and function</td>
-                                <td>Ensures accurate representation of cell-specific gene expression profiles</td>
-                            </tr>
-                            <tr>
-                                <td>Transfer Learning</td>
-                                <td>Tarandros (Crunch 2)</td>
-                                <td>Incorporates information from scRNA-seq data</td>
-                                <td>Extends predictions to genes not measured in spatial data</td>
-                            </tr>
-                            <tr>
-                                <td>Log Fold Change Analysis</td>
-                                <td>Catskills (Crunch 3)</td>
-                                <td>Identifies differentially expressed genes</td>
-                                <td>Core method for ranking genes based on dysplasia association</td>
-                            </tr>
-                            <tr>
-                                <td>Statistical Significance Testing</td>
-                                <td>Catskills (Crunch 3)</td>
-                                <td>Ensures robustness of findings</td>
-                                <td>Filters out noise and focuses on reliable markers</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <section id="integration">
-                <h2>Our Integrated Solution</h2>
-                <p>Our Catskills Solution for Crunch 3 integrates these techniques into a comprehensive pipeline:</p>
-                
-                <div class="mermaid">
-                    graph TD
-                    subgraph "Catskills Solution for Crunch 3"
-                        A[H&E Images] --> B[Feature Extraction]
-                        C[Spatial Transcriptomics Data] --> D[Gene Expression Processing]
-                        E[scRNA-seq Data] --> F[Reference Gene Profiles]
-                        
-                        B --> G[DeepSpot Techniques]
-                        D --> G
-                        G --> H[Predicted Gene Expression]
-                        
-                        H --> I[Cell-wise Optimization]
-                        F --> I
-                        I --> J[Extended Gene Predictions]
-                        
-                        J --> K[Log Fold Change Analysis]
-                        K --> L[Statistical Testing]
-                        L --> M[Gene Ranking]
-                        M --> N[Dysplasia Markers]
-                    end
-                    
-                    classDef input fill:#e1f5fe,stroke:#01579b
-                    classDef process fill:#e8f5e9,stroke:#2e7d32
-                    classDef output fill:#fff9c4,stroke:#fbc02d
-                    
-                    class A,C,E input
-                    class B,D,F,G,I,K,L process
-                    class H,J,M,N output
-                </div>
-                
-                <h3>Pipeline Components</h3>
-                <p>Our integrated pipeline consists of the following components:</p>
-                
-                <ol class="numbered-steps">
-                    <li>
-                        <h4>Data Preprocessing</h4>
-                        <p>We preprocess H&E images, spatial transcriptomics data, and scRNA-seq data to ensure compatibility and quality.</p>
-                    </li>
-                    <li>
-                        <h4>Feature Extraction</h4>
-                        <p>We extract features from H&E images using pre-trained pathology foundation models.</p>
-                    </li>
-                    <li>
-                        <h4>Gene Expression Prediction</h4>
-                        <p>We predict gene expression using the DeepSpot techniques with multi-level spatial context integration.</p>
-                    </li>
-                    <li>
-                        <h4>Expression Extension</h4>
-                        <p>We extend predictions to unmeasured genes using cell-wise optimization and transfer learning from scRNA-seq data.</p>
-                    </li>
-                    <li>
-                        <h4>Differential Expression Analysis</h4>
-                        <p>We perform log fold change analysis and statistical testing to identify differentially expressed genes.</p>
-                    </li>
-                    <li>
-                        <h4>Gene Ranking</h4>
-                        <p>We rank genes based on their ability to distinguish dysplastic from non-dysplastic regions.</p>
-                    </li>
-                    <li>
-                        <h4>Biological Interpretation</h4>
-                        <p>We interpret the results in the context of known biological pathways and dysplasia mechanisms.</p>
-                    </li>
-                </ol>
-                
-                <h3>Implementation Details</h3>
-                <p>Our implementation uses a modular approach that allows for flexibility and experimentation:</p>
-                <ul>
-                    <li>We use PyTorch Lightning for model implementation and training.</li>
-                    <li>We use Luigi for pipeline management and workflow orchestration.</li>
-                    <li>We use Weights & Biases for hyperparameter optimization and experiment tracking.</li>
-                    <li>We start with a small dataset for rapid experimentation before scaling to the full dataset.</li>
-                </ul>
-                
-                <p>For more details on the implementation, see the <a href="implementation.html">Implementation</a> page.</p>
-            </section>
-
-            <div class="page-navigation">
-                <a href="visualizations.html" class="prev-page">Previous: Visualizations</a>
-                <a href="getting_started.html" class="next-page">Next: Getting Started</a>
-            </div>
-        </main>
-    </div>
-
+        <section>
+            <h2>Comparison of Approaches</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>DeepSpot (Crunch 1)</th>
+                        <th>Tarandros (Crunch 2)</th>
+                        <th>LogFC (Crunch 3)</th>
+                        <th>Unified Approach</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Primary Focus</td>
+                        <td>Measured gene prediction</td>
+                        <td>Unmeasured gene inference</td>
+                        <td>Gene ranking</td>
+                        <td>Comprehensive analysis</td>
+                    </tr>
+                    <tr>
+                        <td>Gene-wise Spearman</td>
+                        <td>16.168</td>
+                        <td>14.8</td>
+                        <td>N/A</td>
+                        <td>16.0+</td>
+                    </tr>
+                    <tr>
+                        <td>Cell-wise Spearman</td>
+                        <td>45.937</td>
+                        <td>52.792</td>
+                        <td>N/A</td>
+                        <td>52.0+</td>
+                    </tr>
+                    <tr>
+                        <td>Architecture</td>
+                        <td>Deep-set neural networks</td>
+                        <td>Similarity-based</td>
+                        <td>Statistical</td>
+                        <td>Hybrid</td>
+                    </tr>
+                    <tr>
+                        <td>Reference Data</td>
+                        <td>No</td>
+                        <td>Yes</td>
+                        <td>No</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Spatial Context</td>
+                        <td>Strong</td>
+                        <td>Moderate</td>
+                        <td>Weak</td>
+                        <td>Strong</td>
+                    </tr>
+                    <tr>
+                        <td>Gene-Gene Relationships</td>
+                        <td>Implicit</td>
+                        <td>Through reference</td>
+                        <td>No</td>
+                        <td>Explicit (Graph Attention)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
     <footer>
-        <div class="footer-content">
-            <div class="footer-section">
-                <h3>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h3>
-                <p>Comprehensive documentation of our approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions.</p>
-            </div>
-            <div class="footer-section">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="../index.html">Home</a></li>
-                    <li><a href="input_data.html">Input Data</a></li>
-                    <li><a href="process_flow.html">Process Flow</a></li>
-                    <li><a href="deepspot_architecture.html">DeepSpot Techniques</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Resources</h3>
-                <ul>
-                    <li><a href="implementation.html">Implementation</a></li>
-                    <li><a href="visualizations.html">Visualizations</a></li>
-                    <li><a href="crunch_approaches.html">Integrated Approach</a></li>
-                    <li><a href="getting_started.html">Getting Started</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Catskills Solution for Broad Institute IBD Challenge</p>
-        </div>
+        <p>&copy; 2025 Catskills Research. All rights reserved.</p>
     </footer>
-
-    <script src="../js/scripts.js"></script>
-    <script>
-        // Initialize Mermaid for diagrams
-        mermaid.initialize({ startOnLoad: true });
-        
-        // Initialize Highlight.js for code syntax highlighting
-        document.addEventListener('DOMContentLoaded', (event) => {
-            document.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightBlock(block);
-            });
-        });
-    </script>
 </body>
 </html>
