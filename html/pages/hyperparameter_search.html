@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperparameter Search - Broad Institute IBD Challenge: Catskills Solution for Crunch 3</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h1>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="input_data.html">Input Data</a></li>
+                <li><a href="data_structure.html">Data Structure</a></li>
+                <li><a href="pipeline_flow.html">Pipeline Flow</a></li>
+                <li><a href="process_flow.html">Process Flow</a></li>
+                <li><a href="deepspot_architecture.html">DeepSpot Techniques</a></li>
+                <li><a href="implementation.html">Implementation</a></li>
+                <li><a href="visualizations.html">Visualizations</a></li>
+                <li><a href="crunch_approaches.html">Integrated Approach</a></li>
+                <li><a href="getting_started.html">Getting Started</a></li>
+                <li><a href="hyperparameter_search.html" class="active">Hyperparameter Search</a></li>
+            </ul>
+        </nav>
+        <button class="mobile-menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-container">
+                <input type="text" placeholder="Search documentation...">
+                <button type="submit">Search</button>
+            </div>
+            <nav class="side-nav">
+                <h3>On This Page</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#luigi-pipeline">Luigi Pipeline Integration</a></li>
+                    <li><a href="#command-line-options">Command-Line Options</a></li>
+                    <li><a href="#small-dataset">Small Dataset Search</a></li>
+                    <li><a href="#full-dataset">Full Dataset Search</a></li>
+                    <li><a href="#analyzing-results">Analyzing Results</a></li>
+                    <li><a href="#customizing-search">Customizing the Search</a></li>
+                    <li><a href="#troubleshooting">Troubleshooting</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div class="breadcrumbs">
+                <span><a href="../index.html">Home</a></span>
+                <span>Hyperparameter Search</span>
+            </div>
+
+            <section id="overview">
+                <h2>Hyperparameter Search Overview</h2>
+                <p>The hyperparameter search is a critical component of our approach, allowing us to find the optimal model configuration for spatial transcriptomics analysis. We use Weights & Biases (W&B) for Bayesian optimization to efficiently explore the hyperparameter space.</p>
+                
+                <p>Our hyperparameter search is integrated with the Luigi pipeline system to ensure proper dependency management and data flow. This means the search will automatically ensure that all required data is prepared before starting the search process.</p>
+                
+                <div class="info-box">
+                    <h3>Key Benefits</h3>
+                    <ul>
+                        <li><strong>Automated Dependency Management:</strong> The search automatically ensures all required data is prepared</li>
+                        <li><strong>Efficient Exploration:</strong> Bayesian optimization focuses on promising regions of the hyperparameter space</li>
+                        <li><strong>Comprehensive Tracking:</strong> All runs are tracked in W&B with detailed metrics and visualizations</li>
+                        <li><strong>Reproducibility:</strong> Random seeds ensure reproducible results</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="luigi-pipeline">
+                <h2>Luigi Pipeline Integration</h2>
+                <p>Our hyperparameter search is implemented as a Luigi task that integrates with the rest of the pipeline. This ensures proper dependency management and data flow.</p>
+                
+                <h3>Pipeline Dependencies</h3>
+                <p>The hyperparameter search depends on the following pipeline tasks:</p>
+                
+                <div class="mermaid">
+                    graph TD
+                    A[EnsureDirectories] --> B[CreateSmallDataset]
+                    B --> C[PrepareImagePatches]
+                    C --> D[ExtractMultiLevelFeatures]
+                    D --> E[PrepareTrainingData]
+                    E --> F[HyperparameterSearch]
+                    style F fill:#f9f,stroke:#333,stroke-width:2px
+                </div>
+                
+                <p>This dependency chain ensures that:</p>
+                <ol>
+                    <li>All necessary directories are created</li>
+                    <li>The small dataset is created (if using the small dataset option)</li>
+                    <li>Image patches are extracted from the dataset</li>
+                    <li>Multi-level features are extracted using the DeepSpot approach</li>
+                    <li>Training data is prepared with features and gene expression</li>
+                    <li>Only then does the hyperparameter search begin</li>
+                </ol>
+                
+                <p>If any of these dependencies are not met, Luigi will automatically run the required tasks in the correct order.</p>
+                
+                <h3>Data Flow</h3>
+                <p>The hyperparameter search uses the training data prepared by the PrepareTrainingData task, which is stored at:</p>
+                <pre><code class="plaintext">output/features/training_data.npz</code></pre>
+                <p>For the small dataset, the path is:</p>
+                <pre><code class="plaintext">output/small_dataset/features/training_data.npz</code></pre>
+                
+                <p>The search results are stored in:</p>
+                <pre><code class="plaintext">output/sweeps/sweep_results.yaml</code></pre>
+                <p>And the optimal hyperparameters are stored in:</p>
+                <pre><code class="plaintext">output/features/hyperparameters/optimal_params.json</code></pre>
+            </section>
+
+            <section id="command-line-options">
+                <h2>Command-Line Options</h2>
+                <p>The hyperparameter search script supports the following command-line options:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Command-Line Options</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_hyperparameter_search.py --help
+
+usage: run_hyperparameter_search.py [-h] [--config CONFIG] [--sweep_config SWEEP_CONFIG] [--count COUNT] [--small_dataset] [--seed SEED]
+
+Run hyperparameter search for spatial transcriptomics model
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG       Path to configuration file
+  --sweep_config SWEEP_CONFIG
+                        Path to sweep configuration file
+  --count COUNT         Number of runs to execute
+  --small_dataset       Use small dataset for hyperparameter search
+  --seed SEED           Random seed for reproducibility
+                    </code></pre>
+                </div>
+                
+                <h3>Option Details</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>--config</code></td>
+                            <td><code>config/config.yaml</code></td>
+                            <td>Path to the main configuration file</td>
+                        </tr>
+                        <tr>
+                            <td><code>--sweep_config</code></td>
+                            <td><code>config/hyperparameter_search.yaml</code></td>
+                            <td>Path to the sweep configuration file defining the hyperparameter space</td>
+                        </tr>
+                        <tr>
+                            <td><code>--count</code></td>
+                            <td><code>10</code></td>
+                            <td>Number of hyperparameter configurations to evaluate</td>
+                        </tr>
+                        <tr>
+                            <td><code>--small_dataset</code></td>
+                            <td><code>False</code></td>
+                            <td>Use the small dataset for faster hyperparameter search</td>
+                        </tr>
+                        <tr>
+                            <td><code>--seed</code></td>
+                            <td><code>42</code></td>
+                            <td>Random seed for reproducibility</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="small-dataset">
+                <h2>Small Dataset Search</h2>
+                <p>We recommend starting with a hyperparameter search on the small dataset to quickly find promising hyperparameter regions before scaling to the full dataset.</p>
+                
+                <h3>Running the Small Dataset Search</h3>
+                <p>To run the hyperparameter search on the small dataset:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Small Dataset Search</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_hyperparameter_search.py --config config/config.yaml --small_dataset
+                    </code></pre>
+                </div>
+                
+                <p>This command will:</p>
+                <ol>
+                    <li>Check if the small dataset exists and create it if needed</li>
+                    <li>Extract features from the small dataset</li>
+                    <li>Prepare the training data</li>
+                    <li>Run the hyperparameter search using W&B</li>
+                    <li>Save the optimal hyperparameters</li>
+                </ol>
+                
+                <div class="info-box">
+                    <h3>Multiple Seeds for Robustness</h3>
+                    <p>For more robust results, you can run the search with different random seeds:</p>
+                    <pre><code class="bash">
+python scripts/run_hyperparameter_search.py --config config/config.yaml --small_dataset --seed 42
+python scripts/run_hyperparameter_search.py --config config/config.yaml --small_dataset --seed 123
+python scripts/run_hyperparameter_search.py --config config/config.yaml --small_dataset --seed 456
+                    </code></pre>
+                    <p>Compare the results to ensure consistent findings across different initializations.</p>
+                </div>
+            </section>
+
+            <section id="full-dataset">
+                <h2>Full Dataset Search</h2>
+                <p>After finding promising hyperparameters on the small dataset, you can refine them with a search on the full dataset.</p>
+                
+                <h3>Running the Full Dataset Search</h3>
+                <p>To run the hyperparameter search on the full dataset:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Full Dataset Search</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+python scripts/run_hyperparameter_search.py --config config/config.yaml
+                    </code></pre>
+                </div>
+                
+                <div class="warning-box">
+                    <h3>Resource Requirements</h3>
+                    <p>The full dataset search requires significantly more computational resources:</p>
+                    <ul>
+                        <li>More memory (at least 16GB RAM recommended)</li>
+                        <li>More GPU memory (at least 8GB VRAM recommended)</li>
+                        <li>Longer runtime (several hours)</li>
+                    </ul>
+                    <p>Consider using a smaller number of runs with <code>--count</code> if resources are limited.</p>
+                </div>
+            </section>
+
+            <section id="analyzing-results">
+                <h2>Analyzing Results</h2>
+                <p>The hyperparameter search results can be analyzed in the Weights & Biases dashboard and in the output files.</p>
+                
+                <h3>W&B Dashboard</h3>
+                <p>To analyze the results in the W&B dashboard:</p>
+                
+                <ol class="numbered-steps">
+                    <li>
+                        <h4>Open the Weights & Biases Dashboard</h4>
+                        <p>Go to <a href="https://wandb.ai" target="_blank">wandb.ai</a> and log in to your account.</p>
+                    </li>
+                    <li>
+                        <h4>Navigate to Your Project</h4>
+                        <p>Find the project for your hyperparameter search (default: "spatial-transcriptomics").</p>
+                    </li>
+                    <li>
+                        <h4>View the Sweep</h4>
+                        <p>Click on the sweep to view the results of all runs.</p>
+                    </li>
+                    <li>
+                        <h4>Analyze Parameter Importance</h4>
+                        <p>Use the "Parameter Importance" tab to see which hyperparameters have the most impact on performance.</p>
+                        <img src="../images/parameter_importance.png" alt="Parameter Importance Visualization" class="screenshot">
+                    </li>
+                    <li>
+                        <h4>Compare Runs</h4>
+                        <p>Use the "Parallel Coordinates" view to compare different runs and understand the relationships between hyperparameters and performance.</p>
+                        <img src="../images/parallel_coordinates.png" alt="Parallel Coordinates Visualization" class="screenshot">
+                    </li>
+                </ol>
+                
+                <h3>Output Files</h3>
+                <p>The hyperparameter search produces the following output files:</p>
+                
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>output/features/hyperparameters/optimal_params.json</code></td>
+                            <td>JSON file containing the optimal hyperparameters</td>
+                        </tr>
+                        <tr>
+                            <td><code>output/sweeps/sweep_results.yaml</code></td>
+                            <td>YAML file containing the sweep results, including the best run ID and metrics</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <p>You can examine these files to see the optimal hyperparameters and the performance metrics:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Viewing Optimal Parameters</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+cat output/features/hyperparameters/optimal_params.json
+                    </code></pre>
+                </div>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Viewing Sweep Results</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="bash">
+cat output/sweeps/sweep_results.yaml
+                    </code></pre>
+                </div>
+            </section>
+
+            <section id="customizing-search">
+                <h2>Customizing the Search</h2>
+                <p>You can customize the hyperparameter search by modifying the sweep configuration file.</p>
+                
+                <h3>Sweep Configuration</h3>
+                <p>The default sweep configuration is defined in <code>config/hyperparameter_search.yaml</code>:</p>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span>Example Sweep Configuration</span>
+                        <button class="copy-button">Copy</button>
+                    </div>
+                    <pre><code class="yaml">
+method: bayes
+metric:
+  name: best_val_cell_wise_spearman
+  goal: maximize
+parameters:
+  learning_rate:
+    min: 0.0001
+    max: 0.01
+    distribution: log_uniform
+  phi_dim:
+    values: [128, 256, 512]
+  dropout:
+    min: 0.1
+    max: 0.5
+  weight_decay:
+    min: 0.00001
+    max: 0.001
+    distribution: log_uniform
+  loss_weight_spearman:
+    min: 0.5
+    max: 0.9
+  batch_size:
+    values: [16, 32, 64]
+                    </code></pre>
+                </div>
+                
+                <h3>Creating a Custom Sweep Configuration</h3>
+                <p>To create a custom sweep configuration:</p>
+                
+                <ol>
+                    <li>Copy the default configuration to a new file:
+                        <pre><code class="bash">cp config/hyperparameter_search.yaml config/custom_sweep.yaml</code></pre>
+                    </li>
+                    <li>Edit the new file to modify the hyperparameter ranges or add new hyperparameters</li>
+                    <li>Run the search with your custom configuration:
+                        <pre><code class="bash">python scripts/run_hyperparameter_search.py --config config/config.yaml --sweep_config config/custom_sweep.yaml --small_dataset</code></pre>
+                    </li>
+                </ol>
+                
+                <h3>Hyperparameter Types</h3>
+                <p>W&B supports several types of hyperparameters:</p>
+                
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Example</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Categorical</td>
+                            <td><code>values: [128, 256, 512]</code></td>
+                            <td>Select from a list of discrete values</td>
+                        </tr>
+                        <tr>
+                            <td>Uniform</td>
+                            <td><code>min: 0.1, max: 0.5</code></td>
+                            <td>Sample uniformly between min and max</td>
+                        </tr>
+                        <tr>
+                            <td>Log Uniform</td>
+                            <td><code>min: 0.0001, max: 0.01, distribution: log_uniform</code></td>
+                            <td>Sample from a log-uniform distribution</td>
+                        </tr>
+                        <tr>
+                            <td>Fixed</td>
+                            <td><code>value: 42</code></td>
+                            <td>Use a fixed value</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+                <p>This section provides solutions to common issues that may arise when running the hyperparameter search.</p>
+                
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <h4>File Not Found Errors</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <p>If you encounter "File not found" errors, it's likely that the required data files haven't been created yet. The Luigi pipeline should automatically create these files, but you can manually run the data preparation steps:</p>
+                            <pre><code class="bash">
+python scripts/run_pipeline.py --config config/config.yaml --step data
+                            </code></pre>
+                            <p>For the small dataset:</p>
+                            <pre><code class="bash">
+python scripts/run_pipeline.py --config config/config.yaml --small_dataset --step data
+                            </code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <h4>W&B Authentication Issues</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <p>If you encounter W&B authentication issues, make sure you're logged in to W&B:</p>
+                            <pre><code class="bash">
+wandb login
+                            </code></pre>
+                            <p>Follow the prompts to enter your API key, which you can find in your W&B account settings.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <h4>Out of Memory Errors</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <p>If you encounter out of memory errors, try reducing the batch size in the sweep configuration:</p>
+                            <pre><code class="yaml">
+parameters:
+  batch_size:
+    values: [8, 16, 32]  # Reduced from [16, 32, 64]
+                            </code></pre>
+                            <p>You can also try using a smaller subset of the data by modifying the small dataset creation parameters in the configuration file.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <h4>Sweep Not Showing in W&B</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <p>If your sweep is not showing up in the W&B dashboard, check the following:</p>
+                            <ul>
+                                <li>Make sure you're logged in to the correct W&B account</li>
+                                <li>Check the console output for the sweep ID and URL</li>
+                                <li>Verify that the sweep was created successfully by looking for the sweep ID in the output</li>
+                            </ul>
+                            <p>If the sweep was created but no runs are showing, check for errors in the console output.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <h4>Luigi Task Failures</h4>
+                            <span class="accordion-icon">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <p>If Luigi tasks are failing, you can get more detailed information by running with the <code>--local-scheduler</code> flag:</p>
+                            <pre><code class="bash">
+PYTHONPATH=. luigi --module scripts.run_hyperparameter_search HyperparameterSearch --config config/config.yaml --use-small-dataset --local-scheduler
+                            </code></pre>
+                            <p>This will show more detailed error messages and the task dependency tree.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 Catskills Research. All rights reserved.</p>
+            <p>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</p>
+        </div>
+    </footer>
+
+    <script src="../js/scripts.js"></script>
+    <script>hljs.highlightAll();</script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'neutral',
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>

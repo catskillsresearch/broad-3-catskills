@@ -26,6 +26,7 @@
                 <li><a href="visualizations.html">Visualizations</a></li>
                 <li><a href="crunch_approaches.html">Integrated Approach</a></li>
                 <li><a href="getting_started.html" class="active">Getting Started</a></li>
+                <li><a href="hyperparameter_search.html">Hyperparameter Search</a></li>
             </ul>
         </nav>
         <button class="mobile-menu-toggle">
@@ -213,8 +214,8 @@ python scripts/run_pipeline.py --config config/config.yaml --small_dataset
                 <h2>Hyperparameter Search</h2>
                 <p>The hyperparameter search is a critical component of our approach, allowing us to find the optimal model configuration.</p>
                 
-                <h3>Running Hyperparameter Search on Small Dataset</h3>
-                <p>To run just the hyperparameter search on the small dataset:</p>
+                <h3>Basic Hyperparameter Search</h3>
+                <p>To run the hyperparameter search on the small dataset:</p>
                 
                 <div class="code-container">
                     <div class="code-header">
@@ -226,49 +227,20 @@ python scripts/run_hyperparameter_search.py --config config/hyperparameter_searc
                     </code></pre>
                 </div>
                 
-                <h3>Verifying Hyperparameter Search</h3>
-                <p>To verify that the hyperparameter search is working correctly and selecting optimal parameters, run it multiple times with different random seeds:</p>
+                <p>This will perform a Bayesian optimization search to find the optimal hyperparameters for the model.</p>
                 
-                <div class="code-container">
-                    <div class="code-header">
-                        <span>Running Multiple Hyperparameter Searches</span>
-                        <button class="copy-button">Copy</button>
-                    </div>
-                    <pre><code class="bash">
-# Run with different random seeds
-python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset --seed 42
-python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset --seed 123
-python scripts/run_hyperparameter_search.py --config config/hyperparameter_search.yaml --small_dataset --seed 456
-                    </code></pre>
+                <div class="info-box">
+                    <h3>Detailed Hyperparameter Search Documentation</h3>
+                    <p>For comprehensive information about hyperparameter search, including:</p>
+                    <ul>
+                        <li>All available command-line options</li>
+                        <li>Detailed explanation of search parameters</li>
+                        <li>Advanced usage with different random seeds</li>
+                        <li>Analyzing results in the W&B dashboard</li>
+                        <li>Troubleshooting common issues</li>
+                    </ul>
+                    <p>Please refer to our dedicated <a href="hyperparameter_search.html">Hyperparameter Search</a> documentation page.</p>
                 </div>
-                
-                <p>Compare the results in the Weights & Biases dashboard to ensure that the search is consistently finding similar optimal parameters.</p>
-                
-                <h3>Analyzing Hyperparameter Search Results</h3>
-                <p>The hyperparameter search results can be analyzed in the Weights & Biases dashboard:</p>
-                
-                <ol class="numbered-steps">
-                    <li>
-                        <h4>Open the Weights & Biases Dashboard</h4>
-                        <p>Go to <a href="https://wandb.ai" target="_blank">wandb.ai</a> and log in to your account.</p>
-                    </li>
-                    <li>
-                        <h4>Navigate to Your Project</h4>
-                        <p>Find the project for your hyperparameter search (default: "ibd-challenge-crunch3").</p>
-                    </li>
-                    <li>
-                        <h4>View the Sweep</h4>
-                        <p>Click on the sweep to view the results of all runs.</p>
-                    </li>
-                    <li>
-                        <h4>Analyze Parameter Importance</h4>
-                        <p>Use the "Parameter Importance" tab to see which hyperparameters have the most impact on performance.</p>
-                    </li>
-                    <li>
-                        <h4>Compare Runs</h4>
-                        <p>Use the "Parallel Coordinates" view to compare different runs and understand the relationships between hyperparameters and performance.</p>
-                    </li>
-                </ol>
                 
                 <p>The optimal hyperparameters will be automatically saved to <code>output/features/hyperparameters/optimal_params.json</code> for use in the full pipeline.</p>
             </section>
@@ -290,7 +262,7 @@ python scripts/run_hyperparameter_search.py --config config/hyperparameter_searc
                     </code></pre>
                 </div>
                 
-                <p>This will perform a more focused search around the optimal parameters found on the small dataset.</p>
+                <p>This will perform a more focused search around the optimal parameters found on the small dataset. See the <a href="hyperparameter_search.html#full-dataset">Hyperparameter Search documentation</a> for more details.</p>
                 
                 <h3>Running the Full Pipeline</h3>
                 <p>To run the complete pipeline on the full dataset:</p>
@@ -398,92 +370,25 @@ cat config/config.yaml
                     </div>
                 </div>
                 
-                <h3>Getting Help</h3>
-                <p>If you encounter issues that are not covered in this troubleshooting guide, please:</p>
-                <ol>
-                    <li>Check the logs for error messages</li>
-                    <li>Search for the error message online</li>
-                    <li>Open an issue on the GitHub repository with a detailed description of the problem and the steps to reproduce it</li>
-                </ol>
+                <p>For more specific troubleshooting related to hyperparameter search, please refer to the <a href="hyperparameter_search.html#troubleshooting">Hyperparameter Search Troubleshooting</a> section.</p>
             </section>
-
-            <div class="page-navigation">
-                <a href="crunch_approaches.html" class="prev-page">Previous: Integrated Approach</a>
-                <a href="../index.html" class="next-page">Next: Home</a>
-            </div>
         </main>
     </div>
 
     <footer>
         <div class="footer-content">
-            <div class="footer-section">
-                <h3>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</h3>
-                <p>Comprehensive documentation of our approach to identifying gene markers that distinguish dysplastic from non-dysplastic tissue regions.</p>
-            </div>
-            <div class="footer-section">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="../index.html">Home</a></li>
-                    <li><a href="input_data.html">Input Data</a></li>
-                    <li><a href="data_structure.html">Data Structure</a></li>
-                    <li><a href="pipeline_flow.html">Pipeline Flow</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Resources</h3>
-                <ul>
-                    <li><a href="implementation.html">Implementation</a></li>
-                    <li><a href="visualizations.html">Visualizations</a></li>
-                    <li><a href="crunch_approaches.html">Integrated Approach</a></li>
-                    <li><a href="getting_started.html">Getting Started</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Catskills Solution for Broad Institute IBD Challenge</p>
+            <p>&copy; 2025 Catskills Research. All rights reserved.</p>
+            <p>Broad Institute IBD Challenge: Catskills Solution for Crunch 3</p>
         </div>
     </footer>
 
     <script src="../js/scripts.js"></script>
+    <script>hljs.highlightAll();</script>
     <script>
-        // Initialize Mermaid for diagrams
-        mermaid.initialize({ 
+        mermaid.initialize({
             startOnLoad: true,
-            theme: 'default',
-            flowchart: {
-                useMaxWidth: false,
-                htmlLabels: true,
-                curve: 'basis'
-            },
+            theme: 'neutral',
             securityLevel: 'loose'
-        });
-        
-        // Initialize Highlight.js for code syntax highlighting
-        document.addEventListener('DOMContentLoaded', (event) => {
-            document.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightBlock(block);
-            });
-        });
-        
-        // Accordion functionality
-        document.addEventListener('DOMContentLoaded', () => {
-            const accordionHeaders = document.querySelectorAll('.accordion-header');
-            
-            accordionHeaders.forEach(header => {
-                header.addEventListener('click', () => {
-                    const accordionItem = header.parentElement;
-                    const accordionContent = header.nextElementSibling;
-                    const accordionIcon = header.querySelector('.accordion-icon');
-                    
-                    accordionItem.classList.toggle('active');
-                    
-                    if (accordionItem.classList.contains('active')) {
-                        accordionIcon.textContent = '-';
-                    } else {
-                        accordionIcon.textContent = '+';
-                    }
-                });
-            });
         });
     </script>
 </body>

@@ -1,19 +1,12 @@
-program: scripts/run_hyperparameter_search.py
-
-# Data paths
-data_path: data/UC9_I.zarr
-region_annotations: input/raw/region_annotations.csv
-output_dir: output
-
 method: bayes
 metric:
   name: val_cell_wise_spearman
   goal: maximize
 parameters:
   learning_rate:
+    distribution: log_uniform_values
     min: 0.00001
     max: 0.001
-    distribution: log_uniform
   phi_dim:
     values: [128, 256, 512]
   embedding_dim:
@@ -22,9 +15,9 @@ parameters:
     min: 0.1
     max: 0.5
   weight_decay:
+    distribution: log_uniform_values
     min: 0.00001
     max: 0.001
-    distribution: log_uniform
   loss_weight_spearman:
     min: 0.5
     max: 0.9

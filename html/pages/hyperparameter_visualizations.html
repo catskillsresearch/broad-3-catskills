@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperparameter Search Visualizations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .visualization-types {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .vis-type {
+            flex: 0 0 48%;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .vis-type img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .note {
+            background-color: #e7f5fe;
+            border-left: 4px solid #3498db;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hyperparameter Search Visualizations</h1>
+    
+    <div class="section">
+        <h2>Overview</h2>
+        <p>
+            This documentation explains the enhanced hyperparameter search implementation with extended training epochs and comprehensive visualizations. The implementation now includes:
+        </p>
+        <ul>
+            <li>Extended training to 20 epochs for better training graphs in Weights & Biases</li>
+            <li>Comprehensive visualizations using PCA, t-SNE, and UMAP to show model fidelity</li>
+            <li>Detailed HTML visualization pages in the output folder</li>
+            <li>Integration with Weights & Biases for tracking and visualization</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Running the Enhanced Hyperparameter Search</h2>
+        <p>
+            To run the enhanced hyperparameter search with extended epochs and visualizations:
+        </p>
+        <pre>python scripts/run_hyperparameter_search.py --config config/config.yaml --small_dataset</pre>
+        
+        <p>
+            This will run the hyperparameter search with the following features:
+        </p>
+        <ul>
+            <li>20 epochs per run (instead of the previous shorter runs)</li>
+            <li>Automatic generation of visualizations for model evaluation</li>
+            <li>HTML visualization pages in the output directory</li>
+            <li>Proper integration with Weights & Biases for tracking</li>
+        </ul>
+        
+        <div class="note">
+            <strong>Note:</strong> The hyperparameter search will automatically create the small dataset if it doesn't exist, using the Luigi pipeline integration.
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Visualization Types</h2>
+        <p>
+            The enhanced implementation generates several types of visualizations to help evaluate model fidelity:
+        </p>
+        
+        <div class="visualization-types">
+            <div class="vis-type">
+                <h3>PCA Visualization</h3>
+                <img src="example_pca.png" alt="Example PCA Visualization">
+                <p>
+                    Principal Component Analysis (PCA) reduces the high-dimensional gene expression data to two dimensions while preserving global variance. This visualization shows:
+                </p>
+                <ul>
+                    <li>Blue points: Model predictions</li>
+                    <li>Red points: Ground truth values</li>
+                    <li>Gray arrows: Connect corresponding points (shorter arrows indicate better predictions)</li>
+                </ul>
+            </div>
+            
+            <div class="vis-type">
+                <h3>t-SNE Visualization</h3>
+                <img src="example_tsne.png" alt="Example t-SNE Visualization">
+                <p>
+                    t-Distributed Stochastic Neighbor Embedding (t-SNE) reduces dimensionality while preserving local structure. This visualization shows:
+                </p>
+                <ul>
+                    <li>Blue points: Model predictions</li>
+                    <li>Red points: Ground truth values</li>
+                    <li>Proximity of corresponding points indicates prediction accuracy</li>
+                </ul>
+            </div>
+            
+            <div class="vis-type">
+                <h3>UMAP Visualization</h3>
+                <img src="example_umap.png" alt="Example UMAP Visualization">
+                <p>
+                    Uniform Manifold Approximation and Projection (UMAP) preserves both local and global structure. This visualization shows:
+                </p>
+                <ul>
+                    <li>Blue points: Model predictions</li>
+                    <li>Red points: Ground truth values</li>
+                    <li>Similarity in overall patterns indicates how well the model captures data structure</li>
+                </ul>
+            </div>
+            
+            <div class="vis-type">
+                <h3>Gene Expression Heatmap</h3>
+                <img src="example_heatmap.png" alt="Example Heatmap Visualization">
+                <p>
+                    Heatmaps compare predicted gene expression with ground truth for selected cells:
+                </p>
+                <ul>
+                    <li>Left: Ground truth expression</li>
+                    <li>Right: Predicted expression</li>
+                    <li>Cells are selected to represent the range of prediction quality</li>
+                    <li>Correlation values show quantitative measure of prediction accuracy</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Accessing Visualizations</h2>
+        <p>
+            Visualizations are available in multiple locations:
+        </p>
+        
+        <h3>1. Weights & Biases Dashboard</h3>
+        <p>
+            All visualizations are logged to W&B and can be viewed in the run page:
+        </p>
+        <ol>
+            <li>Go to your W&B project page</li>
+            <li>Click on the sweep to view all runs</li>
+            <li>Select a specific run to view its visualizations</li>
+            <li>Check the "Media" tab to see all visualizations</li>
+        </ol>
+        
+        <h3>2. Local HTML Pages</h3>
+        <p>
+            Visualizations are also saved as HTML pages in your output directory:
+        </p>
+        <pre>output/visualizations/[run_id]/visualizations.html</pre>
+        
+        <p>
+            These HTML pages include:
+        </p>
+        <ul>
+            <li>Performance metrics for the model</li>
+            <li>All visualization types (PCA, t-SNE, UMAP, heatmaps)</li>
+            <li>Detailed descriptions of each visualization</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Implementation Details</h2>
+        <h3>Extended Training Epochs</h3>
+        <p>
+            The implementation now runs each model for 20 epochs by default, which provides:
+        </p>
+        <ul>
+            <li>More detailed training curves in W&B</li>
+            <li>Better convergence for more accurate model evaluation</li>
+            <li>Early stopping to prevent overfitting while ensuring sufficient training</li>
+        </ul>
+        
+        <h3>Visualization Generation</h3>
+        <p>
+            Visualizations are generated at the end of each validation epoch and include:
+        </p>
+        <ul>
+            <li>Dimensionality reduction techniques (PCA, t-SNE, UMAP)</li>
+            <li>Heatmap comparisons of predicted vs. ground truth expression</li>
+            <li>HTML pages with detailed descriptions and metrics</li>
+        </ul>
+        
+        <h3>W&B Integration</h3>
+        <p>
+            The implementation integrates with Weights & Biases for:
+        </p>
+        <ul>
+            <li>Hyperparameter tracking and optimization</li>
+            <li>Logging of metrics and visualizations</li>
+            <li>Experiment comparison and analysis</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Troubleshooting</h2>
+        <table>
+            <tr>
+                <th>Issue</th>
+                <th>Solution</th>
+            </tr>
+            <tr>
+                <td>Missing dependencies</td>
+                <td>
+                    Install required packages:
+                    <pre>pip install umap-learn scikit-learn matplotlib seaborn pytorch-lightning wandb</pre>
+                </td>
+            </tr>
+            <tr>
+                <td>Visualizations not appearing in W&B</td>
+                <td>
+                    Check that you're logged in to W&B and have proper internet connectivity:
+                    <pre>wandb login</pre>
+                </td>
+            </tr>
+            <tr>
+                <td>HTML pages not generated</td>
+                <td>
+                    Ensure the output directory is writable and check the logs for specific errors.
+                </td>
+            </tr>
+            <tr>
+                <td>Out of memory errors</td>
+                <td>
+                    Reduce batch size or model size in the hyperparameter search configuration.
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
