@@ -39,7 +39,7 @@ class TrainModel(luigi.Task):
         os.makedirs(models_dir, exist_ok=True)
         
         # Load training data
-        data = np.load(self.requires().output().path)
+        data = np.load(self.requires().output().path, allow_pickle=True)
         
         # Extract features and labels
         spot_features = data['spot_features']
@@ -141,7 +141,7 @@ class PredictGeneExpression(luigi.Task):
         os.makedirs(predictions_dir, exist_ok=True)
         
         # Load data
-        data = np.load(self.requires()['data'].output().path)
+        data = np.load(self.requires()['data'].output().path, allow_pickle=True)['data']
         
         # Extract features and test indices
         spot_features = data['spot_features']
@@ -206,12 +206,12 @@ class EvaluateModel(luigi.Task):
         os.makedirs(evaluation_dir, exist_ok=True)
         
         # Load predictions
-        pred_data = np.load(self.requires()['predictions'].output().path)
+        pred_data = np.load(self.requires()['data'].output().path, allow_pickle=True)['predictions']
         predicted_expression = pred_data['predicted_expression']
         test_indices = pred_data['test_indices']
         
         # Load ground truth
-        data = np.load(self.requires()['data'].output().path)
+        data = np.load(self.requires()['data'].output().path, allow_pickle=True)['data']
         gene_expression = data['gene_expression']
         
         # Extract ground truth for test set

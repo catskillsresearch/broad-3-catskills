@@ -3,7 +3,7 @@ description: Small dataset configuration for initial experiments
 version: 1.0.0
 
 # Data paths
-data_path: input/raw/xenium_data.zarr
+data_path: data/UC9_I.zarr
 region_annotations: input/raw/region_annotations.csv
 output_dir: output/small_dataset
 
