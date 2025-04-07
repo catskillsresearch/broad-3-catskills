@@ -141,7 +141,7 @@ class PredictGeneExpression(luigi.Task):
         os.makedirs(predictions_dir, exist_ok=True)
         
         # Load data
-        data = np.load(self.requires()['data'].output().path, allow_pickle=True)['data']
+        data = np.load(self.requires()['data'].output().path, allow_pickle=True)
         
         # Extract features and test indices
         spot_features = data['spot_features']
@@ -205,13 +205,13 @@ class EvaluateModel(luigi.Task):
         evaluation_dir = os.path.join(config['output_dir'], 'evaluation', self.experiment_name)
         os.makedirs(evaluation_dir, exist_ok=True)
         
-        # Load predictions
-        pred_data = np.load(self.requires()['data'].output().path, allow_pickle=True)['predictions']
+        # Load predictions - THIS LINE IS FIXED
+        pred_data = np.load(self.requires()['predictions'].output().path, allow_pickle=True)
         predicted_expression = pred_data['predicted_expression']
         test_indices = pred_data['test_indices']
         
         # Load ground truth
-        data = np.load(self.requires()['data'].output().path, allow_pickle=True)['data']
+        data = np.load(self.requires()['data'].output().path, allow_pickle=True)
         gene_expression = data['gene_expression']
         
         # Extract ground truth for test set
@@ -277,71 +277,10 @@ class EvaluateModel(luigi.Task):
         print(f"Evaluation complete. Results saved to {self.output().path}")
         print(f"Cell-wise Spearman: {mean_cell_wise_spearman:.4f}")
         print(f"Gene-wise Spearman: {mean_gene_wise_spearman:.4f}")
-        print(f"MSE: {mse:.4f}")
-        
-        # Close W&B run
-        wandb.finish()
 
-class RunHyperparameterSearch(luigi.Task):
-    """Run hyperparameter search using W&B Sweeps."""
-    config_path = luigi.Parameter()
-    sweep_config_path = luigi.Parameter()
-    
-    def requires(self):
-        from .pipeline_data_preparation import PrepareTrainingData
-        return PrepareTrainingData(config_path=self.config_path)
-    
-    def output(self):
-        with open(self.config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        sweep_dir = os.path.join(config['output_dir'], 'sweeps')
-        os.makedirs(sweep_dir, exist_ok=True)
-        return luigi.LocalTarget(os.path.join(sweep_dir, 'sweep_results.yaml'))
-    
-    def run(self):
-        with open(self.config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        with open(self.sweep_config_path, 'r') as f:
-            sweep_config = yaml.safe_load(f)
-        
-        # Initialize W&B sweep
-        sweep_id = wandb.sweep(
-            sweep_config,
-            project=config.get('wandb_project', 'spatial-transcriptomics')
-        )
-        
-        # Define sweep function (placeholder implementation)
-        # In a real implementation, this would use the actual sweep function
-        print(f"Initialized W&B sweep with ID: {sweep_id}")
-        
-        # Placeholder: Create a dummy sweep results file for demonstration
-        sweep_results = {
-            'sweep_id': sweep_id,
-            'best_params': {
-                'learning_rate': 0.001,
-                'phi_size': 256,
-                'embedding_size': 512,
-                'dropout': 0.3,
-                'weight_decay': 0.0001,
-                'loss_weight_spearman': 0.7,
-                'batch_size': 32
-            },
-            'best_metrics': {
-                'cell_wise_spearman': 0.72,
-                'gene_wise_spearman': 0.35,
-                'mse': 0.15
-            }
-        }
-        
-        with open(self.output().path, 'w') as f:
-            yaml.dump(sweep_results, f)
-        
-        print(f"Hyperparameter search complete. Results saved to {self.output().path}")
 
 class RunFullPipeline(luigi.Task):
-    """Run the complete pipeline from data preparation to evaluation."""
+    """Run the full pipeline from data preparation to model evaluation."""
     config_path = luigi.Parameter()
     experiment_name = luigi.Parameter(default='default_experiment')
     
@@ -352,12 +291,11 @@ class RunFullPipeline(luigi.Task):
         with open(self.config_path, 'r') as f:
             config = yaml.safe_load(f)
         
-        pipeline_dir = os.path.join(config['output_dir'], 'pipeline')
-        os.makedirs(pipeline_dir, exist_ok=True)
-        return luigi.LocalTarget(os.path.join(pipeline_dir, f'{self.experiment_name}_complete.txt'))
+        output_dir = config['output_dir']
+        return luigi.LocalTarget(os.path.join(output_dir, f"pipeline_complete_{self.experiment_name}.txt"))
     
     def run(self):
         with open(self.output().path, 'w') as f:
-            f.write(f"Pipeline completed successfully for experiment: {self.experiment_name}")
+            f.write(f"Pipeline completed successfully at {os.path.basename(self.config_path)} with experiment name {self.experiment_name}")
         
-        print(f"Full pipeline completed for experiment: {self.experiment_name}")
+        print(f"Full pipeline completed successfully for experiment {self.experiment_name}")
