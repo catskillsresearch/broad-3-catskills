@@ -242,8 +242,25 @@ class PrepareTrainingData(luigi.Task):
         gene_names = np.load(os.path.join(small_dataset_dir, 'gene_names.npy'), allow_pickle=True)
         
         # Save training data
+        # Create X and y data for hyperparameter search
+        # X should be the concatenated features
+        n_samples = len(spot_features)
+        feature_dim = spot_features.shape[1]
+        n_subspots = subspot_features.shape[1]
+        n_neighbors = neighbor_features.shape[1]
+        
+        X = np.concatenate([
+            spot_features,
+            subspot_features.reshape(n_samples, n_subspots * feature_dim),
+            neighbor_features.reshape(n_samples, n_neighbors * feature_dim)
+        ], axis=1)
+        
+        # y should be the gene expression
+        y = gene_expression
+        
         np.savez(
             self.output().path,
+            # Original keys
             spot_features=spot_features,
             subspot_features=subspot_features,
             neighbor_features=neighbor_features,
@@ -251,7 +268,10 @@ class PrepareTrainingData(luigi.Task):
             gene_names=gene_names,
             train_indices=train_indices,
             val_indices=val_indices,
-            test_indices=test_indices
+            test_indices=test_indices,
+            # Keys needed by hyperparameter search
+            X=X,
+            y=y
         )
         
         print(f"Prepared training data with {len(gene_names)} genes and saved to {self.output().path}")
