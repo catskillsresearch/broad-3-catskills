@@ -652,6 +652,30 @@ class HyperparameterSearch(luigi.Task):
             Path(directory).mkdir(parents=True, exist_ok=True)
             print(f"Ensured directory exists: {directory}")
     
+    
+    def ensure_directories(self):
+        # Ensure all necessary directories exist.
+        # Load config
+        with open(self.config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        # Get output directory
+        output_dir = config.get('output_dir', 'output')
+        if not os.path.isabs(output_dir):
+            output_dir = os.path.join(os.getcwd(), output_dir)
+        
+        # Create directories for hyperparameter search
+        directories = [
+            output_dir,
+            os.path.join(output_dir, 'sweeps'),
+            os.path.join(output_dir, 'small_dataset'),
+            os.path.join(output_dir, 'small_dataset', 'features')
+        ]
+        
+        for directory in directories:
+            Path(directory).mkdir(parents=True, exist_ok=True)
+            print(f"Ensured directory exists: {directory}")
+    
     def requires(self):
         # If using small dataset, require the small dataset preparation task
         if self.use_small_dataset:
@@ -663,6 +687,9 @@ class HyperparameterSearch(luigi.Task):
         return luigi.LocalTarget(f"output/sweeps/sweep_results.yaml")
     
     def run(self):
+        # Ensure directories exist
+        self.ensure_directories()
+
         # Ensure directories exist
         self.ensure_directories()
 
