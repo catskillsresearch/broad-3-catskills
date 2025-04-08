@@ -23,18 +23,31 @@ class EnsureDirectories(luigi.Task):
         with open(self.config_path, 'r') as f:
             config = yaml.safe_load(f)
         
-        # Create all necessary directories
+        # Get the output directory and make it absolute if it's not already
+        output_dir = config['output_dir']
+        if not os.path.isabs(output_dir):
+            # Get the directory where the script is running from
+            current_dir = os.path.abspath(os.getcwd())
+            output_dir = os.path.join(current_dir, output_dir)
+            print(f"Using absolute output directory path: {output_dir}")
+        
+        # Create all necessary directories with absolute paths
         directories = [
-            config['output_dir'],
-            os.path.join(config['output_dir'], 'data'),
-            os.path.join(config['output_dir'], 'features'),
-            os.path.join(config['output_dir'], 'models'),
-            os.path.join(config['output_dir'], 'predictions'),
-            os.path.join(config['output_dir'], 'evaluation')
+            output_dir,
+            os.path.join(output_dir, 'data'),
+            os.path.join(output_dir, 'features'),
+            os.path.join(output_dir, 'models'),
+            os.path.join(output_dir, 'predictions'),
+            os.path.join(output_dir, 'evaluation')
         ]
         
         for directory in directories:
-            Path(directory).mkdir(parents=True, exist_ok=True)
+            try:
+                Path(directory).mkdir(parents=True, exist_ok=True)
+                print(f"Created directory: {directory}")
+            except Exception as e:
+                print(f"Error creating directory {directory}: {e}")
+                raise
         
         # Create marker file
         with self.output().open('w') as f:
