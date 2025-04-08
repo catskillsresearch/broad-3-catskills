@@ -186,31 +186,54 @@ class SimpleModel(pl.LightningModule):
         targets = self.validation_targets
         inputs = self.validation_inputs
         
+        # Create a dictionary to store visualization paths
+        vis_paths = {}
+        
         # 1. PCA Visualization
-        pca_vis_path = self._create_pca_visualization(predictions, targets, vis_dir)
+        try:
+            pca_vis_path = self._create_pca_visualization(predictions, targets, vis_dir)
+            vis_paths['pca_visualization'] = pca_vis_path
+        except Exception as e:
+            print(f"Warning: Could not create PCA visualization: {e}")
+            vis_paths['pca_visualization'] = None
         
         # 2. t-SNE Visualization
-        tsne_vis_path = self._create_tsne_visualization(predictions, targets, vis_dir)
+        try:
+            tsne_vis_path = self._create_tsne_visualization(predictions, targets, vis_dir)
+            vis_paths['tsne_visualization'] = tsne_vis_path
+        except Exception as e:
+            print(f"Warning: Could not create t-SNE visualization: {e}")
+            vis_paths['tsne_visualization'] = None
         
         # 3. UMAP Visualization
-        umap_vis_path = self._create_umap_visualization(predictions, targets, vis_dir)
+        try:
+            umap_vis_path = self._create_umap_visualization(predictions, targets, vis_dir)
+            vis_paths['umap_visualization'] = umap_vis_path
+        except Exception as e:
+            print(f"Warning: Could not create UMAP visualization: {e}")
+            vis_paths['umap_visualization'] = None
         
         # 4. Prediction vs Ground Truth Heatmap
-        heatmap_vis_path = self._create_heatmap_visualization(predictions, targets, vis_dir)
+        try:
+            heatmap_vis_path = self._create_heatmap_visualization(predictions, targets, vis_dir)
+            vis_paths['heatmap_visualization'] = heatmap_vis_path
+        except Exception as e:
+            print(f"Warning: Could not create heatmap visualization: {e}")
+            vis_paths['heatmap_visualization'] = None
         
-        # Log images to W&B
-        self.logger.experiment.log({
-            "pca_visualization": wandb.Image(pca_vis_path),
-            "tsne_visualization": wandb.Image(tsne_vis_path),
-            "umap_visualization": wandb.Image(umap_vis_path),
-            "heatmap_visualization": wandb.Image(heatmap_vis_path)
-        })
+        # Log images to W&B (only the ones that were successfully created)
+        log_dict = {}
+        for key, path in vis_paths.items():
+            if path is not None:
+                log_dict[key] = wandb.Image(path)
         
-        # Create HTML visualization page
-        self._create_html_visualization_page(
-            [pca_vis_path, tsne_vis_path, umap_vis_path, heatmap_vis_path],
-            vis_dir
-        )
+        if log_dict:
+            self.logger.experiment.log(log_dict)
+        
+        # Create HTML visualization page with available visualizations
+        valid_paths = [path for path in vis_paths.values() if path is not None]
+        if valid_paths:
+            self._create_html_visualization_page(valid_paths, vis_dir)
     
     def _create_pca_visualization(self, predictions, targets, vis_dir):
         """Create PCA visualization of predictions vs targets."""
@@ -250,8 +273,19 @@ class SimpleModel(pl.LightningModule):
     
     def _create_tsne_visualization(self, predictions, targets, vis_dir):
         """Create t-SNE visualization of predictions vs targets."""
-        # Apply t-SNE
-        tsne = TSNE(n_components=2, random_state=42)
+        # Check if we have enough samples for t-SNE
+        n_samples = len(predictions) + len(targets)
+        
+        # Calculate appropriate perplexity (should be less than n_samples)
+        # Recommended range is 5-50, but must be less than n_samples
+        perplexity = min(30, max(5, n_samples // 5))
+        
+        # If we still don't have enough samples, raise an exception
+        if perplexity >= n_samples:
+            raise ValueError(f"Not enough samples for t-SNE visualization. Need at least 6 samples, got {n_samples}.")
+        
+        # Apply t-SNE with adjusted perplexity
+        tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
         combined_data = np.vstack([predictions, targets])
         tsne_result = tsne.fit_transform(combined_data)
         
@@ -275,7 +309,7 @@ class SimpleModel(pl.LightningModule):
                      tsne_pred[i, 1] - tsne_target[i, 1], 
                      color='gray', alpha=0.3, width=0.001, head_width=0.01)
         
-        plt.title('t-SNE: Predictions vs Ground Truth')
+        plt.title(f't-SNE (perplexity={perplexity}): Predictions vs Ground Truth')
         plt.xlabel('t-SNE 1')
         plt.ylabel('t-SNE 2')
         plt.legend()
@@ -290,8 +324,18 @@ class SimpleModel(pl.LightningModule):
     
     def _create_umap_visualization(self, predictions, targets, vis_dir):
         """Create UMAP visualization of predictions vs targets."""
-        # Apply UMAP
-        reducer = umap.UMAP(random_state=42)
+        # Check if we have enough samples for UMAP
+        n_samples = len(predictions) + len(targets)
+        
+        # UMAP requires at least 2 samples
+        if n_samples < 2:
+            raise ValueError(f"Not enough samples for UMAP visualization. Need at least 2 samples, got {n_samples}.")
+        
+        # Adjust n_neighbors parameter based on dataset size
+        n_neighbors = min(15, max(2, n_samples // 5))
+        
+        # Apply UMAP with adjusted parameters
+        reducer = umap.UMAP(random_state=42, n_neighbors=n_neighbors)
         combined_data = np.vstack([predictions, targets])
         umap_result = reducer.fit_transform(combined_data)
         
@@ -315,7 +359,7 @@ class SimpleModel(pl.LightningModule):
                      umap_pred[i, 1] - umap_target[i, 1], 
                      color='gray', alpha=0.3, width=0.001, head_width=0.01)
         
-        plt.title('UMAP: Predictions vs Ground Truth')
+        plt.title(f'UMAP (n_neighbors={n_neighbors}): Predictions vs Ground Truth')
         plt.xlabel('UMAP 1')
         plt.ylabel('UMAP 2')
         plt.legend()
@@ -329,52 +373,47 @@ class SimpleModel(pl.LightningModule):
         return save_path
     
     def _create_heatmap_visualization(self, predictions, targets, vis_dir):
-        """Create heatmap visualization of predictions vs targets."""
-        # Sample a subset of genes and cells for better visualization
-        n_cells = min(50, predictions.shape[0])
-        n_genes = min(50, predictions.shape[1])
+        """Create heatmap visualization comparing predictions to targets."""
+        # Limit to a subset of cells and genes for better visualization
+        max_cells = min(10, predictions.shape[0])
+        max_genes = min(50, predictions.shape[1])
         
-        pred_subset = predictions[:n_cells, :n_genes]
-        target_subset = targets[:n_cells, :n_genes]
+        # Select a subset of cells and genes
+        cell_indices = np.linspace(0, predictions.shape[0]-1, max_cells, dtype=int)
+        gene_indices = np.linspace(0, predictions.shape[1]-1, max_genes, dtype=int)
         
-        # Calculate correlation matrix
-        corr_matrix = np.zeros((n_cells, 2))
-        for i in range(n_cells):
-            # Calculate Spearman correlation for each cell
-            y_ranks = np.argsort(np.argsort(target_subset[i]))
-            y_hat_ranks = np.argsort(np.argsort(pred_subset[i]))
-            corr_matrix[i, 0] = np.corrcoef(y_ranks, y_hat_ranks)[0, 1]
-            corr_matrix[i, 1] = i  # Cell index
+        pred_subset = predictions[cell_indices][:, gene_indices]
+        target_subset = targets[cell_indices][:, gene_indices]
         
-        # Sort by correlation
-        corr_matrix = corr_matrix[corr_matrix[:, 0].argsort()]
+        # Create a figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
         
-        # Select cells with highest, lowest, and middle correlations
-        selected_indices = np.concatenate([
-            corr_matrix[:5, 1].astype(int),  # Lowest correlation
-            corr_matrix[n_cells//2-2:n_cells//2+3, 1].astype(int),  # Middle correlation
-            corr_matrix[-5:, 1].astype(int)  # Highest correlation
-        ])
+        # Plot ground truth
+        sns.heatmap(target_subset, ax=ax1, cmap='viridis', cbar_kws={'label': 'Expression'})
+        ax1.set_title('Ground Truth')
+        ax1.set_xlabel('Genes')
+        ax1.set_ylabel('Cells')
         
-        # Create figure with subplots
-        fig, axes = plt.subplots(len(selected_indices), 2, figsize=(12, 3*len(selected_indices)))
+        # Plot predictions
+        sns.heatmap(pred_subset, ax=ax2, cmap='viridis', cbar_kws={'label': 'Expression'})
+        ax2.set_title('Predictions')
+        ax2.set_xlabel('Genes')
+        ax2.set_ylabel('Cells')
         
-        for i, idx in enumerate(selected_indices):
-            # Plot ground truth
-            sns.heatmap(target_subset[idx].reshape(1, -1), ax=axes[i, 0], cmap='viridis', 
-                       cbar=False, xticklabels=False, yticklabels=['Cell ' + str(idx)])
-            
-            # Plot prediction
-            sns.heatmap(pred_subset[idx].reshape(1, -1), ax=axes[i, 1], cmap='viridis', 
-                       cbar=True, xticklabels=False, yticklabels=['Cell ' + str(idx)])
-            
-            # Add correlation value
-            corr = np.corrcoef(
-                np.argsort(np.argsort(target_subset[idx])), 
-                np.argsort(np.argsort(pred_subset[idx]))
-            )[0, 1]
-            axes[i, 0].set_title(f'Ground Truth (Cell {idx})')
-            axes[i, 1].set_title(f'Prediction (Corr: {corr:.3f})')
+        # Calculate correlations for each cell
+        correlations = []
+        for i in range(max_cells):
+            corr_matrix = np.corrcoef(target_subset[i], pred_subset[i])
+            corr = corr_matrix[0, 1]
+            if not np.isnan(corr):
+                correlations.append(corr)
+        
+        # Add overall correlation as a figure title
+        if correlations:
+            mean_corr = np.mean(correlations)
+            plt.suptitle(f'Gene Expression Comparison (Mean Cell Correlation: {mean_corr:.3f})', fontsize=16)
+        else:
+            plt.suptitle('Gene Expression Comparison', fontsize=16)
         
         plt.tight_layout()
         
@@ -412,28 +451,24 @@ class SimpleModel(pl.LightningModule):
                     margin-top: 30px;
                 }
                 .visualization {
-                    margin: 20px 0;
-                    text-align: center;
-                }
-                .visualization img {
-                    max-width: 100%;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
+                    margin: 30px 0;
+                    padding: 20px;
+                    background-color: #f9f9f9;
+                    border-radius: 5px;
                     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                 }
-                .description {
-                    margin: 15px 0;
-                    text-align: left;
-                    max-width: 800px;
-                    margin-left: auto;
-                    margin-right: auto;
+                img {
+                    max-width: 100%;
+                    height: auto;
+                    display: block;
+                    margin: 20px 0;
+                    border: 1px solid #ddd;
                 }
                 .metrics {
-                    background-color: #f8f9fa;
-                    border: 1px solid #e9ecef;
-                    border-radius: 4px;
-                    padding: 15px;
                     margin: 20px 0;
+                    padding: 15px;
+                    background-color: #e7f5fe;
+                    border-left: 4px solid #3498db;
                 }
                 table {
                     width: 100%;
@@ -460,86 +495,82 @@ class SimpleModel(pl.LightningModule):
                         <th>Metric</th>
                         <th>Value</th>
                     </tr>
+        """
+        
+        # Add metrics if available
+        metrics = {}
+        if hasattr(self, 'trainer') and hasattr(self.trainer, 'callback_metrics'):
+            for key, value in self.trainer.callback_metrics.items():
+                if isinstance(value, torch.Tensor):
+                    metrics[key] = value.item()
+                else:
+                    metrics[key] = value
+        
+        for key, value in metrics.items():
+            html_content += f"""
                     <tr>
-                        <td>Cell-wise Spearman Correlation</td>
-                        <td id="cell-wise-spearman">Loading...</td>
+                        <td>{key}</td>
+                        <td>{value:.4f}</td>
                     </tr>
-                    <tr>
-                        <td>Gene-wise Spearman Correlation</td>
-                        <td id="gene-wise-spearman">Loading...</td>
-                    </tr>
-                    <tr>
-                        <td>Mean Squared Error</td>
-                        <td id="mse">Loading...</td>
-                    </tr>
+            """
+        
+        html_content += """
                 </table>
             </div>
         """
         
-        # Add PCA visualization
-        pca_path = os.path.basename(image_paths[0])
-        html_content += f"""
-            <h2>PCA Visualization</h2>
+        # Add visualizations
+        for path in image_paths:
+            if path is None:
+                continue
+                
+            vis_type = os.path.basename(path).replace('_visualization.png', '')
+            
+            # Create a more readable title
+            if vis_type == 'pca':
+                title = 'PCA Visualization'
+                description = """
+                    <p>Principal Component Analysis (PCA) reduces the high-dimensional gene expression data to two dimensions 
+                    while preserving global variance. Blue points represent model predictions, red points represent ground truth values, 
+                    and gray arrows connect corresponding points. Shorter arrows indicate better predictions.</p>
+                """
+            elif vis_type == 'tsne':
+                title = 't-SNE Visualization'
+                description = """
+                    <p>t-Distributed Stochastic Neighbor Embedding (t-SNE) reduces dimensionality while preserving local structure. 
+                    Blue points represent model predictions, red points represent ground truth values. 
+                    Proximity of corresponding points indicates prediction accuracy.</p>
+                """
+            elif vis_type == 'umap':
+                title = 'UMAP Visualization'
+                description = """
+                    <p>Uniform Manifold Approximation and Projection (UMAP) preserves both local and global structure. 
+                    Blue points represent model predictions, red points represent ground truth values. 
+                    Similarity in overall patterns indicates how well the model captures data structure.</p>
+                """
+            elif vis_type == 'heatmap':
+                title = 'Gene Expression Heatmap'
+                description = """
+                    <p>This heatmap compares predicted gene expression with ground truth for selected cells. 
+                    The left panel shows ground truth expression, while the right panel shows predicted expression. 
+                    Correlation values provide a quantitative measure of prediction accuracy.</p>
+                """
+            else:
+                title = f'{vis_type.title()} Visualization'
+                description = ""
+            
+            # Get relative path for the image
+            rel_path = os.path.basename(path)
+            
+            html_content += f"""
             <div class="visualization">
-                <img src="{pca_path}" alt="PCA Visualization">
+                <h2>{title}</h2>
+                {description}
+                <img src="{rel_path}" alt="{title}">
             </div>
-            <div class="description">
-                <p>This visualization shows the projection of gene expression data onto the first two principal components. 
-                Blue points represent model predictions, while red points represent ground truth values. 
-                Gray arrows connect corresponding points, with shorter arrows indicating better predictions.</p>
-            </div>
-        """
+            """
         
-        # Add t-SNE visualization
-        tsne_path = os.path.basename(image_paths[1])
-        html_content += f"""
-            <h2>t-SNE Visualization</h2>
-            <div class="visualization">
-                <img src="{tsne_path}" alt="t-SNE Visualization">
-            </div>
-            <div class="description">
-                <p>This t-SNE plot reduces the high-dimensional gene expression data to two dimensions while preserving local structure.
-                Blue points represent model predictions, while red points represent ground truth values.
-                The proximity of corresponding blue and red points indicates prediction accuracy.</p>
-            </div>
-        """
-        
-        # Add UMAP visualization
-        umap_path = os.path.basename(image_paths[2])
-        html_content += f"""
-            <h2>UMAP Visualization</h2>
-            <div class="visualization">
-                <img src="{umap_path}" alt="UMAP Visualization">
-            </div>
-            <div class="description">
-                <p>UMAP provides another dimensionality reduction technique that often preserves both local and global structure better than t-SNE.
-                Blue points represent model predictions, while red points represent ground truth values.
-                The similarity in the overall patterns between predictions and ground truth indicates how well the model captures the data structure.</p>
-            </div>
-        """
-        
-        # Add heatmap visualization
-        heatmap_path = os.path.basename(image_paths[3])
-        html_content += f"""
-            <h2>Gene Expression Heatmap</h2>
-            <div class="visualization">
-                <img src="{heatmap_path}" alt="Heatmap Visualization">
-            </div>
-            <div class="description">
-                <p>These heatmaps compare predicted gene expression (right) with ground truth (left) for selected cells.
-                Cells are chosen to represent the range of prediction quality, from lowest to highest correlation.
-                The similarity in patterns between pairs of heatmaps indicates prediction accuracy for individual cells.</p>
-            </div>
-        """
-        
-        # Close HTML
         html_content += """
-            <script>
-                // This would be populated with actual metrics in a real implementation
-                document.getElementById('cell-wise-spearman').textContent = 'PLACEHOLDER';
-                document.getElementById('gene-wise-spearman').textContent = 'PLACEHOLDER';
-                document.getElementById('mse').textContent = 'PLACEHOLDER';
-            </script>
         </body>
         </html>
         """
@@ -561,284 +592,199 @@ class SimpleModel(pl.LightningModule):
 
 class HyperparameterSearch(luigi.Task):
     """
-    Luigi task for running hyperparameter search using Weights & Biases.
-    This task depends on PrepareTrainingData to ensure the training data exists.
+    Luigi task for running hyperparameter search.
     """
-    config_path = luigi.Parameter(description="Path to configuration file")
-    sweep_config_path = luigi.Parameter(default="config/hyperparameter_search.yaml", 
-                                       description="Path to sweep configuration file")
+    config_path = luigi.Parameter(description="Path to the main configuration file")
+    sweep_config_path = luigi.Parameter(default="config/hyperparameter_search.yaml", description="Path to the sweep configuration file")
     count = luigi.IntParameter(default=10, description="Number of runs to execute")
-    use_small_dataset = luigi.BoolParameter(default=False, description="Use small dataset for hyperparameter search")
+    use_small_dataset = luigi.BoolParameter(default=False, description="Whether to use the small dataset")
     seed = luigi.IntParameter(default=42, description="Random seed for reproducibility")
     
     def requires(self):
-        """
-        Define dependencies for this task.
-        The hyperparameter search requires the training data to be prepared.
-        """
-        # If using small dataset, use small_dataset_config.yaml
+        # If using small dataset, require the small dataset preparation task
         if self.use_small_dataset:
-            config_path = 'config/small_dataset_config.yaml'
+            return PrepareTrainingData(config_path="config/small_dataset_config.yaml")
         else:
-            config_path = self.config_path
-            
-        return PrepareTrainingData(config_path=config_path)
+            return PrepareTrainingData(config_path=self.config_path)
     
     def output(self):
-        """
-        Define the output target for this task.
-        The hyperparameter search produces a sweep results file.
-        """
-        with open(self.config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        output_dir = config['output_dir']
-        sweeps_dir = os.path.join(output_dir, 'sweeps')
-        Path(sweeps_dir).mkdir(parents=True, exist_ok=True)
-        
-        return luigi.LocalTarget(os.path.join(sweeps_dir, 'sweep_results.yaml'))
+        return luigi.LocalTarget(f"output/sweeps/sweep_results.yaml")
     
     def run(self):
-        """
-        Run the hyperparameter search using Weights & Biases.
-        """
-        # If using small dataset, use small_dataset_config.yaml
-        if self.use_small_dataset:
-            config_path = 'config/small_dataset_config.yaml'
-        else:
-            config_path = self.config_path
-            
-        # Load config
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        # Load sweep config
+        # Load the sweep configuration
         with open(self.sweep_config_path, 'r') as f:
             sweep_config = yaml.safe_load(f)
         
-        # Get the path to the training data
-        output_dir = config['output_dir']
-        features_dir = os.path.join(output_dir, 'features')
-        training_data_path = os.path.join(features_dir, 'training_data.npz')
+        # Determine the data path based on whether we're using the small dataset
+        if self.use_small_dataset:
+            data_path = "output/small_dataset/features/training_data.npz"
+            print(f"Using training data from: {data_path}")
+        else:
+            data_path = "output/features/training_data.npz"
+            print(f"Using training data from: {data_path}")
         
-        print(f"Using training data from: {training_data_path}")
-        
-        # Ensure sweep config doesn't contain extraneous properties
-        # Only keep the method, metric, and parameters sections
+        # Extract only the method, metric, and parameters sections for W&B
         clean_sweep_config = {
-            'method': sweep_config.get('method', 'bayes'),
-            'metric': sweep_config.get('metric', {'name': 'val_cell_wise_spearman', 'goal': 'maximize'}),
-            'parameters': sweep_config.get('parameters', {})
+            "method": sweep_config.get("method", "random"),
+            "metric": sweep_config.get("metric", {"name": "val_cell_wise_spearman", "goal": "maximize"}),
+            "parameters": sweep_config.get("parameters", {})
         }
         
-        # Add small_dataset flag and seed to sweep config parameters
-        clean_sweep_config['parameters']['use_small_dataset'] = {'value': self.use_small_dataset}
-        clean_sweep_config['parameters']['seed'] = {'value': self.seed}
+        # Add seed and small_dataset flag to parameters
+        if "parameters" not in clean_sweep_config:
+            clean_sweep_config["parameters"] = {}
         
-        # Create output directories
-        hyperparams_dir = os.path.join(features_dir, 'hyperparameters')
-        Path(hyperparams_dir).mkdir(parents=True, exist_ok=True)
+        clean_sweep_config["parameters"]["seed"] = {"value": self.seed}
+        clean_sweep_config["parameters"]["use_small_dataset"] = {"value": self.use_small_dataset}
+        
+        # Fix log_uniform distributions if present
+        for param_name, param_config in clean_sweep_config["parameters"].items():
+            if param_config.get("distribution") == "log_uniform":
+                # Convert to log_uniform_values
+                min_val = param_config.get("min", 0)
+                max_val = param_config.get("max", 0)
+                param_config["distribution"] = "log_uniform_values"
+                param_config["min"] = np.exp(min_val)
+                param_config["max"] = np.exp(max_val)
         
         # Initialize wandb
-        wandb.login()
+        sweep_id = wandb.sweep(clean_sweep_config, project="spatial-transcriptomics")
+        print(f"Create sweep with ID: {sweep_id}")
+        print(f"Sweep URL: {wandb.run.get_sweep_url() if wandb.run else 'https://wandb.ai/username/spatial-transcriptomics/sweeps/' + sweep_id}")
         
-        # Create sweep
-        sweep_id = wandb.sweep(clean_sweep_config, project='spatial-transcriptomics')
-        print(f"Created sweep with ID: {sweep_id}")
-        print(f"View sweep at: https://wandb.ai/username/spatial-transcriptomics/sweeps/{sweep_id}")
-        
-        # Define the training function
-        def train_model_with_config(config=None):
-            with wandb.init(config=config) as run:
+        # Create a wrapper function for the wandb agent
+        def train_model_with_config():
+            # Initialize a new wandb run
+            with wandb.init() as run:
                 # Get hyperparameters from wandb
                 config = wandb.config
                 
-                # Load training data
-                data = np.load(training_data_path, allow_pickle=True)
+                # Set random seeds for reproducibility
+                seed = config.get('seed', 42)
+                torch.manual_seed(seed)
+                np.random.seed(seed)
                 
-                # Extract features and targets
-                features = data['spot_features']
-                targets = data['gene_expression']
-                train_indices = data['train_indices']
-                val_indices = data['val_indices']
-                test_indices = data['test_indices']
+                # Load data
+                if config.get('use_small_dataset', False):
+                    data_path = "output/small_dataset/features/training_data.npz"
+                else:
+                    data_path = "output/features/training_data.npz"
+                
+                try:
+                    data = np.load(data_path, allow_pickle=True)
+                    X = data['X']
+                    y = data['y']
+                except FileNotFoundError:
+                    print(f"Error: Training data not found at {data_path}")
+                    print("Make sure to run the data preparation step first.")
+                    return
+                
+                # Split data into train and validation sets
+                n_samples = X.shape[0]
+                indices = np.random.permutation(n_samples)
+                train_size = int(0.8 * n_samples)
+                
+                train_indices = indices[:train_size]
+                val_indices = indices[train_size:]
+                
+                X_train, y_train = X[train_indices], y[train_indices]
+                X_val, y_val = X[val_indices], y[val_indices]
                 
                 # Convert to PyTorch tensors
-                X_train = torch.tensor(features[train_indices], dtype=torch.float32)
-                y_train = torch.tensor(targets[train_indices], dtype=torch.float32)
-                X_val = torch.tensor(features[val_indices], dtype=torch.float32)
-                y_val = torch.tensor(targets[val_indices], dtype=torch.float32)
+                X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+                y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+                X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
+                y_val_tensor = torch.tensor(y_val, dtype=torch.float32)
                 
-                # Create data loaders
-                train_dataset = TensorDataset(X_train, y_train)
-                val_dataset = TensorDataset(X_val, y_val)
+                # Create datasets and dataloaders
+                train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+                val_dataset = TensorDataset(X_val_tensor, y_val_tensor)
                 
-                train_loader = DataLoader(
-                    train_dataset, 
-                    batch_size=int(config.batch_size), 
-                    shuffle=True
-                )
-                val_loader = DataLoader(
-                    val_dataset, 
-                    batch_size=int(config.batch_size), 
-                    shuffle=False
-                )
+                batch_size = config.get('batch_size', 64)
+                train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+                val_loader = DataLoader(val_dataset, batch_size=batch_size)
                 
                 # Create model
+                input_dim = X.shape[1]
+                output_dim = y.shape[1]
+                
                 model = SimpleModel(
-                    input_dim=features.shape[1],
-                    output_dim=targets.shape[1],
-                    phi_dim=int(config.phi_dim),
-                    dropout=float(config.dropout),
-                    learning_rate=float(config.learning_rate),
-                    weight_decay=float(config.weight_decay),
-                    loss_weight_spearman=float(config.loss_weight_spearman)
+                    input_dim=input_dim,
+                    output_dim=output_dim,
+                    phi_dim=config.get('phi_dim', 256),
+                    dropout=config.get('dropout', 0.2),
+                    learning_rate=config.get('learning_rate', 0.001),
+                    weight_decay=config.get('weight_decay', 1e-5),
+                    loss_weight_spearman=config.get('loss_weight_spearman', 0.7)
                 )
                 
                 # Create callbacks
                 checkpoint_callback = ModelCheckpoint(
-                    monitor='val_cell_wise_spearman',
-                    mode='max',
-                    save_top_k=1,
-                    filename='best-{epoch:02d}-{val_cell_wise_spearman:.4f}'
+                    dirpath=f"output/models/{run.id}",
+                    filename="model-{epoch:02d}-{val_cell_wise_spearman:.4f}",
+                    monitor="val_cell_wise_spearman",
+                    mode="max",
+                    save_top_k=1
                 )
                 
                 early_stop_callback = EarlyStopping(
-                    monitor='val_cell_wise_spearman',
+                    monitor="val_cell_wise_spearman",
+                    mode="max",
                     patience=5,
-                    mode='max'
+                    verbose=True
                 )
-                
-                # Create logger
-                wandb_logger = WandbLogger(experiment=run)
                 
                 # Create trainer
                 trainer = pl.Trainer(
-                    max_epochs=20,  # Run for 20 epochs as requested
-                    logger=wandb_logger,
+                    max_epochs=20,  # Train for 20 epochs
+                    logger=WandbLogger(),
                     callbacks=[checkpoint_callback, early_stop_callback],
                     enable_progress_bar=True,
-                    log_every_n_steps=5
+                    log_every_n_steps=1
                 )
                 
                 # Train model
                 trainer.fit(model, train_loader, val_loader)
                 
-                # Get best validation metrics
-                best_val_cell_wise_spearman = checkpoint_callback.best_model_score.item()
-                
-                # Log best metrics
-                wandb.log({
-                    'best_val_cell_wise_spearman': best_val_cell_wise_spearman
-                })
-                
-                # Create visualizations directory in output
-                vis_output_dir = os.path.join(output_dir, 'visualizations', run.id)
-                Path(vis_output_dir).mkdir(parents=True, exist_ok=True)
-                
-                # Copy visualization files from wandb run directory to output directory
-                wandb_run_dir = wandb_logger.experiment.dir
-                wandb_vis_dir = os.path.join(wandb_run_dir, 'visualizations')
-                
-                if os.path.exists(wandb_vis_dir):
-                    for file in os.listdir(wandb_vis_dir):
-                        if file.endswith('.png') or file.endswith('.html'):
-                            src = os.path.join(wandb_vis_dir, file)
-                            dst = os.path.join(vis_output_dir, file)
-                            try:
-                                import shutil
-                                shutil.copy2(src, dst)
-                                print(f"Copied visualization file: {file}")
-                            except Exception as e:
-                                print(f"Error copying file {file}: {e}")
-                
-                return best_val_cell_wise_spearman
+                # Log best model path
+                if checkpoint_callback.best_model_path:
+                    wandb.log({"best_model_path": checkpoint_callback.best_model_path})
         
-        # Run sweep
+        # Run the wandb agent
         wandb.agent(sweep_id, function=train_model_with_config, count=self.count)
         
-        # Get best run
-        api = wandb.Api()
-        sweep = api.sweep(f"username/spatial-transcriptomics/sweeps/{sweep_id}")
-        runs = sorted(sweep.runs, key=lambda run: run.summary.get('best_val_cell_wise_spearman', 0), reverse=True)
-        
-        if runs:
-            best_run = runs[0]
-            best_config = {k: v for k, v in best_run.config.items() if not k.startswith('_')}
-            best_metrics = {
-                'best_val_cell_wise_spearman': best_run.summary.get('best_val_cell_wise_spearman', 0),
-                'best_val_gene_wise_spearman': best_run.summary.get('val_gene_wise_spearman', 0),
-                'best_val_mse': best_run.summary.get('val_mse', 0)
-            }
-            
-            # Save best config
-            with open(os.path.join(hyperparams_dir, 'optimal_params.json'), 'w') as f:
-                json.dump(best_config, f, indent=2)
-            
-            # Save sweep results
-            sweep_results = {
+        # Save sweep results
+        os.makedirs(os.path.dirname(self.output().path), exist_ok=True)
+        with open(self.output().path, 'w') as f:
+            yaml.dump({
                 'sweep_id': sweep_id,
-                'best_run_id': best_run.id,
-                'best_config': best_config,
-                'best_metrics': best_metrics,
-                'visualization_dir': os.path.join(output_dir, 'visualizations', best_run.id)
-            }
-            
-            with self.output().open('w') as f:
-                yaml.dump(sweep_results, f, default_flow_style=False)
-            
-            print(f"Hyperparameter search complete. Best run: {best_run.id}")
-            print(f"Best cell-wise Spearman: {best_metrics['best_val_cell_wise_spearman']:.4f}")
-            print(f"Best gene-wise Spearman: {best_metrics.get('best_val_gene_wise_spearman', 'N/A')}")
-            print(f"Best MSE: {best_metrics.get('best_val_mse', 'N/A')}")
-            print(f"Optimal parameters saved to {os.path.join(hyperparams_dir, 'optimal_params.json')}")
-            print(f"Sweep results saved to {self.output().path}")
-            print(f"Visualizations saved to {os.path.join(output_dir, 'visualizations', best_run.id)}")
-        else:
-            print("No runs found in sweep.")
-            # Create an empty output file to satisfy Luigi
-            with self.output().open('w') as f:
-                yaml.dump({'error': 'No runs found in sweep'}, f)
+                'config_path': self.config_path,
+                'sweep_config_path': self.sweep_config_path,
+                'count': self.count,
+                'use_small_dataset': self.use_small_dataset,
+                'seed': self.seed
+            }, f)
 
-def run_hyperparameter_search(config_path, sweep_config_path=None, count=10, use_small_dataset=False, seed=42):
-    """
-    Run the hyperparameter search using Luigi to manage dependencies.
-    
-    Parameters:
-    - config_path: Path to configuration file
-    - sweep_config_path: Path to sweep configuration file
-    - count: Number of runs to execute
-    - use_small_dataset: Whether to use the small dataset
-    - seed: Random seed for reproducibility
-    """
-    # Run the hyperparameter search task
-    task = HyperparameterSearch(
-        config_path=config_path,
-        sweep_config_path=sweep_config_path if sweep_config_path else "config/hyperparameter_search.yaml",
-        count=count,
-        use_small_dataset=use_small_dataset,
-        seed=seed
-    )
-    
-    # Build the task
-    luigi.build([task], local_scheduler=True)
-    
-    print(f"Hyperparameter search completed successfully.")
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run hyperparameter search for spatial transcriptomics model')
-    parser.add_argument('--config', type=str, default='config/config.yaml', help='Path to configuration file')
-    parser.add_argument('--sweep_config', type=str, help='Path to sweep configuration file')
-    parser.add_argument('--count', type=int, default=10, help='Number of runs to execute')
-    parser.add_argument('--small_dataset', action='store_true', help='Use small dataset for hyperparameter search')
-    parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
+def main():
+    parser = argparse.ArgumentParser(description="Run hyperparameter search for the model")
+    parser.add_argument("--config", type=str, default="config/config.yaml", help="Path to the configuration file")
+    parser.add_argument("--sweep_config", type=str, default="config/hyperparameter_search.yaml", help="Path to the sweep configuration file")
+    parser.add_argument("--count", type=int, default=10, help="Number of runs to execute")
+    parser.add_argument("--small_dataset", action="store_true", help="Use the small dataset")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     
     args = parser.parse_args()
     
-    run_hyperparameter_search(
-        config_path=args.config,
-        sweep_config_path=args.sweep_config,
-        count=args.count,
-        use_small_dataset=args.small_dataset,
-        seed=args.seed
-    )
+    # Run the Luigi task
+    luigi.build([
+        HyperparameterSearch(
+            config_path=args.config,
+            sweep_config_path=args.sweep_config,
+            count=args.count,
+            use_small_dataset=args.small_dataset,
+            seed=args.seed
+        )
+    ], local_scheduler=True)
+
+if __name__ == "__main__":
+    main()
