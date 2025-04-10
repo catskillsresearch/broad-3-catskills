@@ -9,12 +9,13 @@ The `infer` function loads trained models and performs inference on a new datase
 4. Generate embeddings for the test data and applies the trained models for regression predictions.
 5. Format the predictions for submission.
 """
-from types import SimpleNamespace
 import joblib, os, json
 from inf_encoder_factory import *
 from generate_embeddings import *
 from H5Dataset import *
 import spatialdata as sd  # Manage multi-modal spatial omics datasets
+from args1 import args1
+from extract_spatial_positions import *
 
 def embedding_and_load_data(name_data, dir_processed_dataset_test, test_embed_dir, args, device):
     """
@@ -125,25 +126,16 @@ def infer1(
     data_file_path: str,  # Path to a test dataset (in Zarr format) to perform inference on.
     model_directory_path: str  # Path to save the trained model and results
 ):
-    ### Prepare Directories ###
 
     # Extract the name of the dataset from the file path (without extension)
     name_data = os.path.splitext(os.path.basename(data_file_path))[0]
     print(f"\n-- {name_data} INFERENCE ---------------------------------------------------------------\n")
     print(data_file_path)
 
-    # Previous directory where models and results are stored
-    dir_models_and_results = os.path.join(model_directory_path, f"ST_pred_results")
-    # Load training configuration parameters
-    config_path = os.path.join(dir_models_and_results, "config.json")
-    with open(config_path, 'r') as f:
-        args_dict = json.load(f)
-    args = SimpleNamespace(**args_dict)
-
-    # Directory for processed test dataset (temporary storage)
+    args, dir_processed_dataset, dir_models_and_results, list_ST_name_data = args1(model_directory_path)
     dir_processed_dataset_test = os.path.join("resources", f"processed_dataset_test")
     os.makedirs(dir_processed_dataset_test, exist_ok=True)
-
+    
     # Directory to store the test data embeddings (temporary storage)
     test_embed_dir = os.path.join(dir_processed_dataset_test, "ST_data_emb")
     os.makedirs(test_embed_dir, exist_ok=True)
@@ -152,7 +144,7 @@ def infer1(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     ### Preprocess and Embedding Data + Regression inference ###
-
+    print("data_file_path", data_file_path)
     # Read the spatial data from the provided file
     sdata = sd.read_zarr(data_file_path)
 
