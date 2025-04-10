@@ -6,6 +6,8 @@ import torch, os
 from tqdm import tqdm
 from utilities import *
 import numpy as np
+from H5Dataset import *
+from save_hdf5 import *
 
 def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, device: str, precision):
     """

@@ -15,7 +15,7 @@ The `train1` function automates the training of models for spatial transcriptomi
 
 All regression models and metric results are saved in `./resources/ST_pred_results` -- check it out!
 
-Preprocessed datasets are saved in `sesources/processed_dataset` (temporary storage - not needed for inference).
+Preprocessed datasets are saved in `resources/processed_dataset` (temporary storage - not needed for inference).
 
 Official challenge metric: L2 mean error (`l2_errors_mean`)
 """
@@ -36,7 +36,7 @@ def train1(
     os.makedirs(model_directory_path, exist_ok=True)
 
     # Directory to store the processed train dataset (temporary storage)
-    dir_processed_dataset = os.path.join("sesources", f"processed_dataset")
+    dir_processed_dataset = os.path.join("resources", f"processed_dataset")
     os.makedirs(dir_processed_dataset, exist_ok=True)
 
     # Directory to store models and results
@@ -46,11 +46,11 @@ def train1(
     # List of datasets for Spatial Transcriptomics (ST) training
     # The DC1 sample is deliberately absent because it does not contain spatial transcriptomic data.
     #list_ST_name_data = ["UC1_NI", "UC1_I", "UC6_NI", "UC6_I", "UC7_I", "UC9_I", "DC5"]
-    list_ST_name_data = ["UC9_I"]
+    list_ST_name_data = ["UC1_I", "UC9_I"]
     # Training parameters
     args_dict = {
         # Parameters for data preprocessing
-        "size_subset": 10000,  # Sampling 10,000 smaller images from each H&E image
+        "size_subset": 100, # None, # 10000,  # Sampling 10,000 smaller images from each H&E image
         "target_patch_size": 32,  # Target size of cell patches (sub-region of an image) for the data
 
         "show_extracted_images": False,  # (Only for visualization) Whether to visualize all the extracted patches for the first ST data

@@ -99,15 +99,18 @@ def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center,
     vis_width: int, optional (default=1000)
         Width of the visualization images.
     """
-
+    # Path for the .h5 image dataset
+    h5_path = os.path.join(patch_save_dir, name_data + '.h5')
+    if os.path.exists(h5_path):
+        return
+    else:
+        print(h5_path, "does not exist")
+        
     # Load the image and transpose it to the correct format
     print("Loading imgs ...")
     intensity_image = np.transpose(sdata['HE_original'].to_numpy(), (1, 2, 0))
-
+    
     print("Patching: create image dataset (X) ...")
-    # Path for the .h5 image dataset
-    h5_path = os.path.join(patch_save_dir, name_data + '.h5')
-
     # Create the patcher object to extract patches (localized square sub-region of an image) from an image at specified coordinates.
     patcher = Patcher(
         image=intensity_image,
@@ -124,25 +127,20 @@ def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center,
         print("Extracted Images (high time and memory consumption...)")
         patcher.save_visualization(os.path.join(patch_save_dir, name_data + '_viz.png'), vis_width=vis_width)
 
-    print("Spatial coordinates")
-    patcher.view_coord_points(vis_width=vis_width)
-
-    # Display some example images from the created dataset
-    print("Examples from the created .h5 dataset")
-    assets, _ = read_assets_from_h5(h5_path)
-
-    n_images = 3
-    fig, axes = plt.subplots(1, n_images, figsize=(15, 5))
-    for i in range(n_images):
-        axes[i].imshow(assets["img"][i])
-    for ax in axes:
-        ax.axis('off')
-    plt.show()
-
-    # Delete variables that are no longer used
-    del intensity_image, patcher, assets
-    gc.collect()
-
+        print("Spatial coordinates")
+        patcher.view_coord_points(vis_width=vis_width)
+    
+        # Display some example images from the created dataset
+        print("Examples from the created .h5 dataset")
+        assets, _ = read_assets_from_h5(h5_path)
+    
+        n_images = 3
+        fig, axes = plt.subplots(1, n_images, figsize=(15, 5))
+        for i in range(n_images):
+            axes[i].imshow(assets["img"][i])
+        for ax in axes:
+            ax.axis('off')
+        plt.show()
 
 def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_directory_path, dir_processed_dataset, size_subset=None, target_patch_size=32, vis_width=1000, show_extracted_images=False):
     """
@@ -181,10 +179,13 @@ def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_direct
 
     # Loop through each dataset name
     for count, name_data in enumerate(list_ST_name_data):
+        
         print(f"\nDATA ({count+1}/{len(list_ST_name_data)}): {name_data}\n")
 
         # Load the spatial transcriptomics data from the .zarr format
-        sdata = sd.read_zarr(os.path.join(data_directory_path, f"{name_data}.zarr"))
+        zarr_path = os.path.join(data_directory_path, f"{name_data}.zarr")
+        print("zarr_path", zarr_path, os.path.exists(zarr_path))
+        sdata = sd.read_zarr(zarr_path)
 
         # Extract the list of gene names
         gene_name_list = sdata['anucleus'].var['gene_symbols'].values
@@ -199,6 +200,15 @@ def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_direct
 
         # Extract spatial positions for 'train' cells
         cell_id_train = sdata['anucleus'].obs["cell_id"].values
+
+        # Path for the .h5 image dataset
+        h5_path = os.path.join(patch_save_dir, name_data + '.h5')
+        if os.path.exists(h5_path):
+            print(h5_path, "exists")
+            continue
+        else:
+            print(h5_path, "does not exist")
+       
         new_spatial_coord = extract_spatial_positions(sdata, cell_id_train)
         # Store new spatial coordinates into sdata
         sdata['anucleus'].obsm['spatial'] = new_spatial_coord
@@ -230,6 +240,9 @@ def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_direct
 
     # Save the gene list to a JSON file
     gene_path = os.path.join(dir_processed_dataset, 'var_genes.json')
+    if os.path.exists(gene_path):
+        return
+        
     print(f"Save gene list in {gene_path}")
     data = {
         "genes": list(gene_name_list)
@@ -269,6 +282,10 @@ def preprocess_spatial_transcriptomics_data_test(name_data, sdata, cell_id_list,
     patch_save_dir = os.path.join(dir_processed_dataset, "patches")
     os.makedirs(patch_save_dir, exist_ok=True)
 
+    h5_path = os.path.join(patch_save_dir, name_data + '.h5')
+    if os.path.exists(h5_path):
+        return
+        
     print("\n -- PREPROCESS SPATIAL TRANSCRIPTOMICS DATASET --------------------------------------------\n")
 
     # Extract spatial positions for selected cells

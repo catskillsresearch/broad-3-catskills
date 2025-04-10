@@ -9,7 +9,8 @@ This section defines functions for training models and saving results.
 - **`run_training`**: Executes the full training process by calling `predict_folds` and saving the encoder performance results.
 """
 
-import os, json
+import os
+import json
 import pandas as pd
 from inf_encoder_factory import *
 from generate_embeddings import *
@@ -18,6 +19,18 @@ from train_test_reg import *
 from tqdm import tqdm
 from utilities import *
 import joblib
+import numpy as np
+from operator import itemgetter
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
 
 def predict_single_split(fold, train_split, test_split, args, save_dir, model_name, device, bench_data_root):
     """ Predict a single split for a single model """
@@ -25,6 +38,8 @@ def predict_single_split(fold, train_split, test_split, args, save_dir, model_na
     # Ensure paths to train and test split files are correct
     if not os.path.isfile(train_split):
         train_split = os.path.join(bench_data_root, 'splits', train_split)
+
+    print("train_split", train_split, os.path.isfile(train_split))
 
     if not os.path.isfile(test_split):
         test_split = os.path.join(bench_data_root, 'splits', test_split)
@@ -92,11 +107,17 @@ def predict_single_split(fold, train_split, test_split, args, save_dir, model_na
     X_test, y_test = all_split_assets['test']['embeddings'], all_split_assets['test']['adata']
 
     print("\n--REGRESSION--\n")
+    model_path = os.path.join(save_dir, f'model.pkl')
+    probe_results_fn = os.path.join(save_dir, f'results.json')
+    if os.path.exists(probe_results_fn):
+        with open(probe_results_fn, 'r') as f:
+            return json.load(f)
+    
     # Perform regression using the specified method
     reg, probe_results = train_test_reg(X_train, X_test, y_train, y_test, random_state=args.seed, genes=genes, method=args.method)
 
     # Save the trained regression model
-    model_path = os.path.join(save_dir, f'model.pkl')
+
     joblib.dump(reg, model_path)
     print(f"Model saved in '{model_path}'")
 
@@ -113,12 +134,11 @@ def predict_single_split(fold, train_split, test_split, args, save_dir, model_na
         if key in probe_summary
     }
     print(filtered_summary)
-
-    with open(os.path.join(save_dir, f'results.json'), 'w') as f:
-        json.dump(probe_results, f, sort_keys=True, indent=4)
+    with open(probe_results_fn, 'w') as f:
+        json.dump(probe_results, f, sort_keys=True, indent=4, cls=NpEncoder)
 
     with open(os.path.join(save_dir, f'summary.json'), 'w') as f:
-        json.dump(probe_summary, f, sort_keys=True, indent=4)
+        json.dump(probe_summary, f, sort_keys=True, indent=4, cls=NpEncoder)
 
     return probe_results
 
@@ -139,7 +159,7 @@ def predict_folds(args, exp_save_dir, model_name, device, bench_data_root):
 
     # Save training configuration to JSON
     with open(os.path.join(exp_save_dir, 'config.json'), 'w') as f:
-        json.dump(vars(args), f, sort_keys=True, indent=4)
+        json.dump(vars(args), f, sort_keys=True, indent=4, cls=NpEncoder)
 
     # Loop through each split and perform predictions
     libprobe_results_arr = []
@@ -160,14 +180,18 @@ def predict_folds(args, exp_save_dir, model_name, device, bench_data_root):
         p_corrs = kfold_results['pearson_corrs']
         p_corrs = sorted(p_corrs, key=itemgetter('mean'), reverse=True)
         kfold_results['pearson_corrs'] = p_corrs
-        json.dump(kfold_results, f, sort_keys=True, indent=4)
+        json.dump(kfold_results, f, sort_keys=True, indent=4, cls=NpEncoder)
 
     return kfold_results
 
 
 def run_training(args):
     """ Training function: Execute predict_folds for processed train dataset with the specified encoder and dump the results in a nested directory structure """
-
+    save_dir = args.results_dir
+    enc_perf_fn = os.path.join(save_dir, 'dataset_results.json')
+    if os.path.exists(enc_perf_fn):
+        return
+        
     print("\n-- RUN TRAINING ---------------------------------------------------------------\n")
 
     print(f'run parameters {args}')
@@ -175,7 +199,6 @@ def run_training(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Create directory for results
-    save_dir = args.results_dir
     os.makedirs(save_dir, exist_ok=True)
 
     # Perform predictions for all folds
@@ -188,8 +211,8 @@ def run_training(args):
         'pearson_std': round(enc_results['pearson_std'], 4),
     }
 
-    with open(os.path.join(save_dir, 'dataset_results.json'), 'w') as f:
-        json.dump(enc_perfs, f, sort_keys=True, indent=4)
+    with open(enc_perf_fn, 'w') as f:
+        json.dump(enc_perfs, f, sort_keys=True, indent=4, cls=NpEncoder)
 
     print("\n-- TRAINING DONE ---------------------------------------------------------------\n")
 

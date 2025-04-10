@@ -9,11 +9,12 @@ The `infer` function loads trained models and performs inference on a new datase
 4. Generate embeddings for the test data and applies the trained models for regression predictions.
 5. Format the predictions for submission.
 """
-
-import joblib, os
+from types import SimpleNamespace
+import joblib, os, json
 from inf_encoder_factory import *
 from generate_embeddings import *
 from H5Dataset import *
+import spatialdata as sd  # Manage multi-modal spatial omics datasets
 
 def embedding_and_load_data(name_data, dir_processed_dataset_test, test_embed_dir, args, device):
     """
