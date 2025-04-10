@@ -21,7 +21,7 @@ def args1(model_directory_path):
     # Training parameters
     args_dict = {
         # Parameters for data preprocessing
-        "size_subset": 100, # None, # 10000,  # Sampling 10,000 smaller images from each H&E image
+        "size_subset": None, # 10000,  # Sampling 10,000 smaller images from each H&E image
         "target_patch_size": 32,  # Target size of cell patches (sub-region of an image) for the data
 
         "show_extracted_images": False,  # (Only for visualization) Whether to visualize all the extracted patches for the first ST data
