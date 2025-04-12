@@ -1,2 +1,2 @@
-import infer
-import train
+from train import train
+from infer import infer
