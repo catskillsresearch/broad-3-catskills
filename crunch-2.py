@@ -21,36 +21,9 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 
-def find_matches_cos_similarity(spot_vectors, query_vectors, top_k=1):
-    """
-    Find the top-k most similar scRNA-Seq cells for each Xenium cell using cosine similarity.
+from find_matches_cos_similarity import find_matches_cos_similarity
 
-    Args:
-        spot_vectors (array): 2D array of gene expression of scRNA-Seq cells.
-        query_vectors (array): 2D array of gene expression of Xenium cells.
-        top_k (int): Number of top matches to return.
-
-    Returns:
-        tuple: Indices and similarity values of top-k matches.
-    """
-
-    # Use PyTorch functionalities for efficiency and scalability
-    # Normalize the vectors
-    spot_vectors = F.normalize(torch.tensor(spot_vectors, dtype=torch.float32), p=2, dim=-1)
-    query_vectors = F.normalize(torch.tensor(query_vectors, dtype=torch.float32), p=2, dim=-1)
-
-    # Compute dot product (cosine similarity because vectors are first normalized to unit norm)
-    dot_similarity = query_vectors @ spot_vectors.T
-
-    # Find the top_k similar spots for each query
-    values, indices = torch.topk(dot_similarity, k=top_k, dim=-1)
-    return indices.cpu().numpy(), values.cpu().numpy()
-
-
-def log1p_normalization_scale_factor(arr, scale_factor=10000):
-    row_sums = np.sum(arr, axis=1, keepdims=True)
-    row_sums = np.where(row_sums == 0, 1, row_sums)  # Avoid division by zero
-    return np.log1p((arr / row_sums) * scale_factor)
+from log1p_normalization_scale_factor import log1p_normalization_scale_factor
 
 # In the inference function, the trained model is loaded and used to make inferences on a
 # sample of data that matches the characteristics of the training test.
@@ -67,15 +40,10 @@ def infer2(
     print(data_file_path)
 
     # Previous Directory to store models and results
-    dir_models_and_results = os.path.join(model_directory_path, f"ST_pred_results")
-    # Load training configuration parameters
-    config_path = os.path.join(dir_models_and_results, "config.json")
-    with open(config_path, 'r') as f:
-        args_dict = json.load(f)
-    args = SimpleNamespace(**args_dict)
+    args, dir_processed_dataset, dir_models_and_results, list_ST_name_data = args1(model_directory_path)
 
     # Directory for processed test dataset (temporary storage)
-    dir_processed_dataset_test = os.path.join("/tmp", f"processed_dataset_test")
+    dir_processed_dataset_test = os.path.join("results", f"processed_dataset")
     os.makedirs(dir_processed_dataset_test, exist_ok=True)
 
     # Directory to store the test data embeddings (temporary storage)
@@ -197,4 +165,5 @@ if __name__=="__main__":
         data_file_path="./data.2.large/UC9_I.zarr",
         model_directory_path="./resources"
     )
+    prediction.to_csv('resources/crunch2.csv')
     print(prediction.head())

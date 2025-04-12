@@ -50,7 +50,10 @@ def extract_spatial_positions(sdata, cell_id_list):
 
     print("Extracting spatial positions ...")
     # Get region properties from the nucleus image: for each cell_id get its location on HE image
-    regions = regionprops(sdata['HE_nuc_original'][0, :, :].to_numpy())
+    if "tif_HE_nuc" in sdata:
+        regions = regionprops(sdata['tif_HE_nuc'])
+    else:
+        regions = regionprops(sdata['HE_nuc_original'][0, :, :].to_numpy())
 
     dict_spatial_positions = {}
     # Loop through each region and extract centroid if the cell ID matches
@@ -108,7 +111,10 @@ def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center,
         
     # Load the image and transpose it to the correct format
     print("Loading imgs ...")
-    intensity_image = np.transpose(sdata['HE_original'].to_numpy(), (1, 2, 0))
+    if 'tif_HE' in sdata:
+        intensity_image = sdata['tif_HE'].copy()
+    else:
+        intensity_image = np.transpose(sdata['HE_original'].to_numpy(), (1, 2, 0))
     
     print("Patching: create image dataset (X) ...")
     # Create the patcher object to extract patches (localized square sub-region of an image) from an image at specified coordinates.

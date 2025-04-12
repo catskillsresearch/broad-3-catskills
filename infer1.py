@@ -133,7 +133,7 @@ def infer1(
     print(data_file_path)
 
     args, dir_processed_dataset, dir_models_and_results, list_ST_name_data = args1(model_directory_path)
-    dir_processed_dataset_test = os.path.join("resources", f"processed_dataset_test")
+    dir_processed_dataset_test = os.path.join("resources", f"processed_dataset")
     os.makedirs(dir_processed_dataset_test, exist_ok=True)
     
     # Directory to store the test data embeddings (temporary storage)
