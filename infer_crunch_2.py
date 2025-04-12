@@ -3,6 +3,14 @@ from find_matches_cos_similarity import find_matches_cos_similarity
 import pandas as pd
 import numpy as np
 
+# 1. Prepare the necessary directories and load the configuration parameters from the previously trained model.
+# 2. The test data, provided as a Zarr file, is read and specific subsets of the data (test and validation groups) are extracted.
+# 3. Preprocess the data into image patches (X_test).
+# 4. Generate embeddings for the test data and applies the trained models for regression predictions on the 460 measured genes.
+# 5. Apply cosine similarities between predictions and single-cell RNA sequencing from shared genes.
+# 6. Compute weighted average of unmeasured genes from scRNA-Seq based on similarity scores.
+# 7. Format the predictions of the 2000 unmeasured genes for submission.
+
 def infer_crunch_2(
     prediction_460_genes,  # Predicted expression values for 460 genes (Crunch 1 output)
     name_data: str,  # The name of the dataset being processed (only used for logging and directory naming)
