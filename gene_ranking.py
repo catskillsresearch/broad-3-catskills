@@ -65,7 +65,7 @@ def gene_ranking(prediction_cell_ids_no_cancer, prediction_cell_ids_cancer,
     gene_ranking_df = gene_ranking_df.sort_values(by=column_for_ranking, ascending=ascending)
 
     print(f"Gene ranking by {column_for_ranking}:")
-    display(gene_ranking_df)
+    print(gene_ranking_df.head())
 
     # Create the final ranked DataFrame with gene names and their ranks
     prediction = pd.DataFrame(
