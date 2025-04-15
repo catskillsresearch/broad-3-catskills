@@ -190,7 +190,7 @@ class Patcher:
         plt.show()
         plt.close()
 
-    def view_coord_points(self, vis_width=300, dpi=150):
+    def view_coord_points(self, path, vis_width=300, dpi=150):
         """
         Visualizes the coordinates as small points in 2D.
         This function generates a scatter plot of the patch coordinates on the H&E image.
@@ -202,6 +202,7 @@ class Patcher:
         # Create a plot
         _, ax = plt.subplots(figsize=(self.height / self.width * vis_width / dpi, vis_width / dpi))
         plt.scatter(self.coords[:, 0], -self.coords[:, 1], s=0.2)
+        plt.savefig(path, dpi=dpi, bbox_inches='tight')
         plt.show()
         plt.close()
 

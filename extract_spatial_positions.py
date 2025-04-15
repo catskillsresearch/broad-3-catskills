@@ -31,7 +31,8 @@ def extract_spatial_positions(sdata, cell_id_list):
     Extracts spatial positions (centroids) of regions from the nucleus image where cell IDs match the provided cell list.
 
     Need to use 'HE_nuc_original' to extract spatial coordinate of cells
-    HE_nuc_original: The nucleus segmentation mask of H&E image, in H&E native coordinate system. The cell_id in this segmentation mask matches with the nuclei by gene matrix stored in anucleus.
+    HE_nuc_original: The nucleus segmentation mask of H&E image, in H&E native coordinate system. 
+                     The cell_id in this segmentation mask matches with the nuclei by gene matrix stored in anucleus.
     HE_nuc_original is like a binary segmentation mask 0 - 1 but replace 1 with cell_ids.
     You can directly find the location of a cell, with cell_id, through HE_nuc_original==cell_id
 
@@ -78,7 +79,7 @@ def extract_spatial_positions(sdata, cell_id_list):
 
 
 def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center, target_patch_size, barcodes,
-                                show_extracted_images=False, vis_width=1000):
+                                show_extracted_images=True, vis_width=1000, dpi=150):
     """
     Load and process the spatial image data, creates patches, saves them in an HDF5 file,
     and visualizes the extracted images and spatial coordinates.
@@ -105,6 +106,7 @@ def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center,
     # Path for the .h5 image dataset
     h5_path = os.path.join(patch_save_dir, name_data + '.h5')
     if os.path.exists(h5_path):
+        print(h5_path, "exists")
         return
     else:
         print(h5_path, "does not exist")
@@ -131,10 +133,12 @@ def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center,
     print("Visualization")
     if show_extracted_images:
         print("Extracted Images (high time and memory consumption...)")
-        patcher.save_visualization(os.path.join(patch_save_dir, name_data + '_viz.png'), vis_width=vis_width)
+        path1 = os.path.join(patch_save_dir, name_data + '_patch_locations_on_image.png')
+        patcher.save_visualization(path1, vis_width=vis_width)
 
         print("Spatial coordinates")
-        patcher.view_coord_points(vis_width=vis_width)
+        path2 = os.path.join(patch_save_dir, name_data + '_spatial_coordinates.png')
+        patcher.view_coord_points(path2, vis_width=vis_width)
     
         # Display some example images from the created dataset
         print("Examples from the created .h5 dataset")
@@ -146,6 +150,8 @@ def process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center,
             axes[i].imshow(assets["img"][i])
         for ax in axes:
             ax.axis('off')
+        path3 = os.path.join(patch_save_dir, name_data + '_patch_examples.png')
+        plt.savefig(path3, dpi=dpi, bbox_inches='tight')
         plt.show()
 
 def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_directory_path, dir_processed_dataset, size_subset=None, target_patch_size=32, vis_width=1000, show_extracted_images=False):
@@ -215,7 +221,13 @@ def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_direct
         else:
             print(h5_path, "does not exist")
        
-        new_spatial_coord = extract_spatial_positions(sdata, cell_id_train)
+        new_spatial_coord_fn = os.path.join(adata_save_dir, f'{name_data}_spatial_positions.npy')
+        if os.path.exists(new_spatial_coord_fn):
+            new_spatial_coord = np.load(new_spatial_coord_fn)
+        else:
+            new_spatial_coord = extract_spatial_positions(sdata, cell_id_train)
+            np.save(new_spatial_coord_fn, new_spatial_coord)
+
         # Store new spatial coordinates into sdata
         sdata['anucleus'].obsm['spatial'] = new_spatial_coord
 
@@ -238,7 +250,7 @@ def preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_direct
 
         # Generate and visualize image patches centered around spatial coordinates ({name_data}.h5 file in directory os.path.join(dir_processed_dataset, "patches"))
         process_and_visualize_image(sdata, patch_save_dir, name_data, coords_center, target_patch_size, barcodes,
-                                    show_extracted_images=False, vis_width=1000)
+                                    show_extracted_images=True, vis_width=1000)
 
         # Delete variables that are no longer used
         del sdata, y_subtracted

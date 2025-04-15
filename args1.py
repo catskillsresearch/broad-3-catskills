@@ -24,7 +24,7 @@ def args1(model_directory_path):
         "size_subset": None, # 10000,  # Sampling 10,000 smaller images from each H&E image
         "target_patch_size": 32,  # Target size of cell patches (sub-region of an image) for the data
 
-        "show_extracted_images": False,  # (Only for visualization) Whether to visualize all the extracted patches for the first ST data
+        "show_extracted_images": True,  # (Only for visualization) Whether to visualize all the extracted patches for the first ST data
         "vis_width": 1000,  # (Only for visualization) Width of the above visualization
 
         # Generic training settings
