@@ -1,21 +1,3 @@
-from args1 import args1
-from extract_spatial_positions import *
-from gene_ranking import gene_ranking
-from infer_crunch_1 import infer_crunch_1
-from infer_crunch_2 import infer_crunch_2
-from print_memory_usage import print_memory_usage
-from run_training import *
-from skimage.measure import regionprops
-from tqdm import tqdm
-from types import SimpleNamespace
-import gc, os
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
-import pandas as pd
-import scanpy as sc 
-import skimage.io
-import spatialdata as sd 
-
 # Broad Institute IBD Challenge
 # Rank all 18615 protein-coding genes based on ability to distinguish dysplastic from non-cancerous tissue
 
@@ -25,10 +7,14 @@ def train(
 ):
    
     # 1. Prepare the input data by preprocessing the spatial transcriptomics datasets (image patches (X) and gene expression (Y)).
+    from args1 import args1
     args, dir_processed_dataset, dir_models_and_results, list_ST_name_data = args1(model_directory_path)
+
+    from preprocess_spatial_transcriptomics_data_train import preprocess_spatial_transcriptomics_data_train
     preprocess_spatial_transcriptomics_data_train(list_ST_name_data, data_directory_path, dir_processed_dataset,
                                                   args.size_subset, args.target_patch_size, args.vis_width, args.show_extracted_images)
     # 2. Create leave-one-out cross-validation splits for training and testing.
+    from create_cross_validation_splits import create_cross_validation_splits
     create_cross_validation_splits(dir_processed_dataset, n_fold=args.n_fold)
 
     # 3. Use the specified encoder model (ResNet50) and a regression method (ridge regression) to train the model
@@ -36,6 +22,7 @@ def train(
     #    All regression models and metric results are saved in `./resources/ST_pred_results`
     #    Preprocessed datasets are saved in `resources/processed_dataset`
     #    Official challenge metric: L2 mean error (`l2_errors_mean`)
+    from run_training import run_training
     run_training(args)
 
     data_directory_path="./data"
@@ -48,8 +35,11 @@ def train(
         "column_for_ranking": "abs_logFC",
         "ascending": False
     }
-    
+    from types import SimpleNamespace
     args = SimpleNamespace(**args_dict)
+
+    import spatialdata as sd 
+    import os
     sdata = sd.read_zarr(os.path.join(data_directory_path, 'UC9_I.zarr'))
     gene_460_names = list(sdata["anucleus"].var.index)
     
@@ -66,17 +56,18 @@ def train(
     
 
     # Read the dysplasia-related images and store them in a dictionary
+    import skimage.io
     dysplasia_img_list = {}
     for key in dysplasia_file:
         dysplasia_img_list[key] = skimage.io.imread(dysplasia_file[key])
     
-
+    from skimage.measure import regionprops
     regions = regionprops(dysplasia_img_list['tif_HE_nuc'])
-    
 
     # Divide cell IDs between dysplasia and non-dysplasia status
     cell_ids_no_cancer, cell_ids_cancer = [], []
     # Loop through each region and extract centroid if the cell ID matches
+    from tqdm import tqdm
     for props in tqdm(regions):
         cell_id = props.label
         centroid = props.centroid
@@ -88,6 +79,7 @@ def train(
         elif dysplasia == 2:
             cell_ids_cancer.append(cell_id)
     
+    from infer_crunch_1 import infer_crunch_1
     prediction_cell_ids_no_cancer1 = infer_crunch_1(
         name_data="UC9_I no cancer",
         data_file_path=data_directory_path,
@@ -109,13 +101,16 @@ def train(
     del regions
     del dysplasia_img_list
     
-
+    import scanpy as sc
     scRNAseq = sc.read_h5ad(os.path.join(data_directory_path, args.file_name_scRNAseq))
     
     # Filter scRNAseq data by dysplasia status
     scRNAseq_no_cancer = scRNAseq[scRNAseq.obs[args.filter_column_scRNAseq] == args.filter_value_no_cancer].copy()
     scRNAseq_cancer = scRNAseq[scRNAseq.obs[args.filter_column_scRNAseq] == args.filter_value_cancer].copy()
     del scRNAseq
+
+    import gc
+    from print_memory_usage import print_memory_usage
     gc.collect(); print_memory_usage("memory")
     
     subsample = 5000
@@ -124,6 +119,7 @@ def train(
     # 
     # `Y` is log1p-normalized with scale factor 100.
 
+    from infer_crunch_2 import infer_crunch_2
     prediction_cell_ids_no_cancer2 = infer_crunch_2(
         prediction_460_genes=prediction_cell_ids_no_cancer1[0:subsample],
         name_data="UC9_I no cancer",
@@ -149,6 +145,7 @@ def train(
     
     gc.collect(); print_memory_usage("memory")
     
+    from gene_ranking import gene_ranking
     prediction, df_gene_ranking = gene_ranking(prediction_cell_ids_no_cancer2, prediction_cell_ids_cancer2,
                                    column_for_ranking=args.column_for_ranking, ascending=args.ascending)
     
@@ -161,6 +158,7 @@ def train(
     df['rank'] = [i+1 for i in range(len(df))]
     
     # Create the scatterplot
+    import matplotlib.pyplot as plt
     plt.figure(figsize=(10, 6))
     df_460 = df[df.is460 == 'green']
     df_imputed = df[df.is460 != 'green']
@@ -173,6 +171,7 @@ def train(
     plt.title('Scatterplot of logFC vs Row Number')
     
     # Create custom legend
+    import matplotlib.patches as mpatches
     red_patch = mpatches.Patch(color='red', label='Imputed')
     green_patch = mpatches.Patch(color='green', label='Assayed')
     plt.legend(handles=[red_patch, green_patch]);

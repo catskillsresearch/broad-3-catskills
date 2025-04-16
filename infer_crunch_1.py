@@ -1,7 +1,5 @@
 import os, torch, gc
 from args1 import args1
-from extract_spatial_positions import *
-from infer1 import *
 
 def infer_crunch_1(
     name_data: str,  # The name of the dataset being processed (only used for logging and directory naming)
