@@ -30,14 +30,18 @@ def train_test_reg(model_path, genes_path, results_fn, X_train_fn, X_test_fn, y_
         # Make predictions on test set
         with torch.no_grad():
             Y_pred_t = X_test_t @ W
-        preds_all = Y_pred_t.cpu().numpy()
+        Y_pred = Y_pred_t.cpu().numpy()
         
     # Compute the evaluation metrics using the test data and predictions
     from compute_metrics import compute_metrics
-    results = compute_metrics(Y_test, preds_all, genes=genes)
+    results = compute_metrics(Y_test, Y_pred, genes=genes)
 
+    # Quick MSE from SKLearn
+    from sklearn.metrics import mean_squared_error
+    mse = mean_squared_error(Y_test, Y_pred)
+    print("MSE", mse)
+    
     # Save the trained regression model
-
     import joblib
     joblib.dump(W, model_path)
     print(f"Model saved in '{model_path}'")
