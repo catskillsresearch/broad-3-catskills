@@ -8,6 +8,33 @@ This method uses the baseline quickstart code as follows:
 
 * Gene Ranking Using logFC Method: Apply the log fold change (logFC) method to rank genes based on their ability to differentiate between dysplastic and non-dysplastic tissue regions. 
 
+# Diagram Documentation
+
+## Core Workflow
+![Crunch3 Processing](crunch3.png)  
+*Description of crunch3 diagram*
+
+![Plasia Gene Inference](plasia_gene_inference.png)  
+*Description of plasia_gene_inference diagram*
+
+## SCRNA Pipeline
+![SCRNA Calibration](SCRNA_calibration.png)  
+*Description of calibration process*
+
+![SCRN Data Unpacking](scrna_unpack.png)  
+*Data preparation steps*
+
+## Feature Analysis
+![UC9I Feature PCs](uc9I_feature_PCs.png)  
+*Principal component visualization*
+
+![UC9I Gene PCs](UC9_I_gene_pcs.png)  
+*Gene-level component analysis*
+
+## Data Processing
+![TIF Split Chips](uc9I_tif_split_chips.png)  
+*Image splitting methodology*
+
 # Rationale
 
 Our suggested gene panel is to take the top 500 genes in our list which is ranked by absolute value of log fold change. The logFC method computes the logarithmic fold change between the predicted expression values for the two regions (dysplastic and non-dysplastic). Genes are ranked based on the magnitude of their logFC values, with higher values indicating greater differentiation potential between the regions.
