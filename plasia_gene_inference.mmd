@@ -1,0 +1,26 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef greenBorder fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#ff6666,stroke-width:2px,shape:round-rect
+
+    data5["UC9_I Basis(feature)"]:::greenBorder  
+    data10["UC9_I Ridge weights: Feature PCs -> Gene PCS"]:::greenBorder
+    data19["SCRNA 18157 Basis"]:::greenBorder
+    data22["SCRNA 18157 Ridge weights: 458 Gene PCS -> 18157 Gene PCS"]:::greenBorder
+    data30["Dysplasia or Non-Dysplasia features _x1024"]:::greenBorder 
+    data40["Dysplasia or Non-Dysplasia 18615 genes"]:::greenBorder  
+
+    op21["PCATransform"]:::op
+    op23["RidgeTransform"]:::op
+    op25["RidgeTransform"]:::op
+    op27["PCAInverseTransform"]:::op
+    op29["Concatenate"]:::op
+
+    data30 & data5 --> op21
+    op21 --> data32["Dysplasia or Non-Dysplasia feature PCs _x44"]:::data
+    data32 & data10 --> op23 --> data34["Dysplasia or Non-Dysplasia 458 gene PCs _x6"]:::data
+    data34 & data22 --> op25 --> data36["Dysplasia or Non-Dysplasia 18157 predicted gene PCs"]:::data
+    data36 & data19 --> op27 --> data38["Dysplasia or Non-Dysplasia 18157 predicted genes"]:::data
+    data42["Dysplasia or Non-Dysplasia 458 genes"]:::greenBorder
+    data42 & data38 --> op29 --> data40

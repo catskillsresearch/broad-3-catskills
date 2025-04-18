@@ -1,0 +1,12 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#ff6666,stroke-width:2px,shape:round-rect
+
+    data1["UC9_I histology image"]:::data --> op1["Chipper (all centroids)"]:::op
+    op1 --> data2["UC9_I chips Nx32x32x3"]:::data
+    data2 --> op2["Resnet50"]:::op
+    op2 --> data3["UC9_I features N x 1024"]:::data
+    data3 --> op3["PCAFitTransform"]:::op
+    op3 --> data4["UC9_I feature PCs N x 44"]:::data
+    op3 --> data5["UC9_I Basis(feature)"]:::data
