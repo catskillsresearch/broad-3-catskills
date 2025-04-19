@@ -1,0 +1,15 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    
+    data14["SCRNA _x458+18157 gene expressions"]:::inputData
+    op9["Splitter"]:::op
+    data15["SCRNA gene expressions _x458"]:::outputData
+    data16["SCRNA gene expressions _x18157"]:::outputData
+    data14 --> op9 --> data15 & data16
+    data17["Gene names 458"]:::outputData
+    op10["Extract Names"]:::op
+    data15 --> op10 --> data17

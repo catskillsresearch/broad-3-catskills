@@ -1,0 +1,31 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data9["UC9_I Basis(458 genes)"]:::inputData
+
+    data15["SCRNA gene expressions _x458"]:::inputData
+    data16["SCRNA gene expressions _x18157"]:::inputData
+
+    op11["PCATransform"]:::op
+    data9 & data15 --> op11
+    data18["SCRNA 458 gene PCs Mx6"]:::data
+    op11 --> data18
+    op12["PCAFitTransform"]:::op
+    data16 --> op12
+    data19["SCRNA 18157 Basis"]:::outputData
+    data20["SCRNA 18157 PCs _x_"]:::data
+    op12 --> data20 & data19
+    op13["RidgeFitTransform"]:::op
+    data22["SCRNA 18157 Ridge weights: 458 Gene PCS -> 18157 Gene PCS"]:::outputData
+    data21["SCRNA 18157 Predicted PCs MxP"]:::data
+    data18 & data20 --> op13 --> data21 & data22
+    op14["Metrics"]:::op
+    data21 & data20 --> op14
+    data23["SCRNA 18157 Gene PCs MSE"]:::outputMetric
+    data24["SCRNA 18157 Gene PCs Spearman"]:::outputMetric
+    op14 --> data23 & data24
