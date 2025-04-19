@@ -4,8 +4,9 @@ flowchart TD
     classDef op fill:#ffe6e6,stroke:#ff6666,stroke-width:2px,shape:round-rect
 
     data4["UC9_I feature PCs N x 44"]:::data
-
-    data6["UC9_I gene expressions N x 460"]:::data --> op4["Filter to Names"]:::op
+    data17["Gene names 458"]:::data
+    data6["UC9_I gene expressions N x 460"]:::data
+    data6 & data17--> op4["Filter to Names"]:::op
     op4 --> data7["UC9_I gene expressions N x 458"]:::data
     data7 --> op5["PCAFitTransform"]:::op
     op5 --> data8["UC9_I Gene PCs N x 6"]:::data
