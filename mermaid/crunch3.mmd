@@ -1,12 +1,16 @@
 %%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
 flowchart TD
     classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
-    classDef op fill:#ffe6e6,stroke:#ff6666,stroke-width:2px,shape:round-rect
-    data40["Dysplasia 18615 genes"]:::data
-    data41["Non-dysplasia 18615 genes"]:::data
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data40["Dysplasia 18615 genes"]:::inputData
+    data41["Non-dysplasia 18615 genes"]:::inputData
     op31["Log fold change"]:::op
     data44["Differential gene expression"]:::data
     data40 & data41 --> op31 --> data44
     op32["Sort descending by abs logFC"]:::op
-    data45["Crunch 3 deliverable"]:::data
+    data45["Crunch 3 deliverable"]:::outputData
     data44 --> op32 --> data45
