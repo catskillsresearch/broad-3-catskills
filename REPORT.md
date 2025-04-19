@@ -1,39 +1,27 @@
 # Method Description
 
-This method uses the baseline quickstart code as follows:
+The method is as follows:
 
-* Predict the Expression of 460 Measured Genes: This step uses a ResNet50 embedding model and regression models, trained on H&E pathology images, to predict the expression of 460 genes for each cell in the dataset.  Call these the *assayed* genes.
+## Unpack scRNA data
+![scRNA data unpacking](mermaid/SCRNA_unpack.png)  
 
-* Predict the Expression of 18157 Unmeasured Genes: Leveraging the gene expressions for the assayed genes and a single-cell RNA sequencing (scRNA-Seq) reference dataset, a similarity-based method is applied to infer the expression of 18157 unmeasured genes for each cell in the dataset.  Call this the *imputed* set.
+## UC9_I features
+![UC9_I features](mermaid/UC9_I_feature_PCs.png)  
 
-* Gene Ranking Using logFC Method: Apply the log fold change (logFC) method to rank genes based on their ability to differentiate between dysplastic and non-dysplastic tissue regions. 
+## UC9_I Gene Predictor Fit
+![UC9I gene predictor fit](mermaid/UC9_I_gene_pcs.png)
 
-# Diagram Documentation
+## scRNA Gene Predictor Fit
+![scRNA gene predictor fit](mermaid/SCRNA_calibration.png)
 
-## Core Workflow
-![Crunch3 Processing](crunch3.png)  
-*Description of crunch3 diagram*
+## UC9_I TIF splitter
+![UC9_I TIF splitter](mermaid/UC9_I_tif_split_chips.png)  
 
-![Plasia Gene Inference](plasia_gene_inference.png)  
-*Description of plasia_gene_inference diagram*
+## scRNA Gene Predictor Transform (apply to plasia and non-dysplasia gene sets)
+![scRNA gene predictor transform](mermaid/plasia_gene_inference.png)
 
-## SCRNA Pipeline
-![SCRNA Calibration](SCRNA_calibration.png)  
-*Description of calibration process*
-
-![SCRN Data Unpacking](scrna_unpack.png)  
-*Data preparation steps*
-
-## Feature Analysis
-![UC9I Feature PCs](uc9I_feature_PCs.png)  
-*Principal component visualization*
-
-![UC9I Gene PCs](UC9_I_gene_pcs.png)  
-*Gene-level component analysis*
-
-## Data Processing
-![TIF Split Chips](uc9I_tif_split_chips.png)  
-*Image splitting methodology*
+## Genes ranked by highest absolute differential expression
+![Crunch3 Processing](mermaid/crunch3.png)  
 
 # Rationale
 
