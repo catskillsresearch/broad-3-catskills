@@ -25,6 +25,7 @@ class SCRNA_unpack(luigi.Task):
         return {
             'genes460': luigi.LocalTarget('resources/run/genes460.json'),
             'genes458': luigi.LocalTarget('resources/run/genes458.json'),
+            'genes18157': luigi.LocalTarget('resources/run/genes18157.json'),
             'genes18615': luigi.LocalTarget('resources/run/genes18615.json'),
             'scRNA_458_gene_expressions': luigi.LocalTarget('resources/run/scRNA_458_gene_expressions.npz'),
             'scRNA_18157_gene_expressions': luigi.LocalTarget('resources/run/scRNA_18157_gene_expressions.npz'),
@@ -58,7 +59,7 @@ class SCRNA_unpack(luigi.Task):
         with self.output()['genes18157'].open('w') as f:
             json.dump(genes18157, f, indent=4)
 
-        np.savez_compressed(fself.output()['scRNA_18157_gene_expressions'].path, 
+        np.savez_compressed(self.output()['scRNA_18157_gene_expressions'].path, 
                             my_array=rna_data_norm_10000_unmeasured_genes)
 
         np.savez_compressed(f'{rundir}/scRNA_458_gene_expressions', 
