@@ -5,11 +5,21 @@ flowchart TD
     classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
     classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
     
-    data14["SCRNA _x458+18157 gene expressions"]:::inputData
+    data14["SCRNA 201884x458+18157 gene expressions scale factor 10000"]:::inputData
     op9["Splitter"]:::op
-    data15["SCRNA gene expressions _x458"]:::outputData
-    data16["SCRNA gene expressions _x18157"]:::outputData
-    data14 --> op9 --> data15 & data16
-    data17["Gene names 458"]:::outputData
-    op10["Extract Names"]:::op
-    data15 --> op10 --> data17
+    data15["SCRNA gene expressions 201884x458 log1p normalized scale factor 100"]:::outputData
+    data172["Gene names 18615"]:::outputData
+    op102["Extract Gene Names"]:::op
+    data14 --> op102 --> data172
+    data171["Gene names 458"]:::outputData
+    data1["UC9_I histology archive"]:::inputData
+    op101["Extract Gene Names"]:::op
+    data17["Gene names 460"]:::outputData
+    data1 --> op101 --> data17
+    op1010["Diff Gene Names"]:::op
+    data17 & data172 --> op1010 --> data171 --> op9
+    op172["Log1p Normalize"]:::op
+    data14 --> op9
+    data141["SCRNA 201884x458+18157 gene expressions scale factor 10000"]:::outputData
+    op9 --> op172 --> data15
+    op9 --> data141
