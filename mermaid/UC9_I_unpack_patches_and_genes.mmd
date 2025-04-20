@@ -1,0 +1,15 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data1["UC9_I histology archive"]:::inputData --> op1["Chipper (all centroids)"]:::op
+    op1 --> data2["UC9_I chips Nx32x32x3"]:::outputData
+    op1 --> data22["UC9_I genes Nx460"]:::outputData
+    op11["Visualization"]:::op 
+    data2 --> op11 --> data11["UC9_I histology image with patch locations"]:::outputMetric
+    data11 --> data12["UC9_I histology patch spatial coordinates"]:::outputMetric
+    data12 --> data13["UC9_I histology patch examples"]:::outputMetric

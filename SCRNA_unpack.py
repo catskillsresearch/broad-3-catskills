@@ -4,10 +4,7 @@ import scanpy as sc
 import numpy as np
 from log1p_normalization_scale_factor import log1p_normalization_scale_factor
 import luigi
-
-class UC9_I_HistologyArchive(luigi.ExternalTask):
-    def output(self):
-        return luigi.LocalTarget("data/UC9_I.zarr")  # UC9_I histology image
+from UC9_I_HistologyArchive import UC9_I_HistologyArchive
 
 class scRNA_SequenceArchive(luigi.ExternalTask):
     def output(self):
