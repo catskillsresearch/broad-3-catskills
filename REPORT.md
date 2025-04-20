@@ -8,8 +8,11 @@ The method is as follows:
 ## Unpack UC9_I patches and genes
 ![UC9_I_unpack_patches_and_genes](mermaid/UC9_I_unpack_patches_and_genes.png)  
 
-## UC9_I features
-![UC9_I features](mermaid/UC9_I_feature_PCs.png)  
+## UC9_I patches to features 
+![UC9_I_patches_to_features](mermaid/UC9_I_patches_to_features.png)  
+
+## UC9_I features to PCs
+![UC9_I_features_to_PCs](mermaid/UC9_I_features_to_PCs.png)  
 
 ## UC9_I Gene Predictor Fit
 ![UC9I gene predictor fit](mermaid/UC9_I_gene_pcs.png)

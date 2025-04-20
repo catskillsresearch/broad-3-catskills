@@ -1,8 +1,5 @@
-import joblib, os, json
-from inf_encoder_factory import *
-from generate_embeddings import *
-import spatialdata as sd  # Manage multi-modal spatial omics datasets
-from args1 import args1
+from load_models_from_directories import load_models_from_directories
+import numpy as np
 
 def predict_and_aggregate_models(X_test, results_dir):
     """

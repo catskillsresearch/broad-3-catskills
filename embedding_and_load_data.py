@@ -34,12 +34,5 @@ def embedding_and_load_data(name_data, dir_processed_dataset_test, test_embed_di
     from generate_embeddings import generate_embeddings
     generate_embeddings(embed_path, encoder, device, tile_h5_path, args.batch_size, args.num_workers, overwrite=args.overwrite)
 
-    # Load the embeddings and related assets
-    from read_assets_from_h5 import read_assets_from_h5
-    assets, _ = read_assets_from_h5(embed_path)
+    return embed_path
 
-    # Extract cell IDs and convert to a list of strings
-    # The cell IDs are not necessary because the images are kept in the same order as the gene expression data
-    cell_ids = assets['barcodes'].flatten().astype(str).tolist()
-
-    return assets

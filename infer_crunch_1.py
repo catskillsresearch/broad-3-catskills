@@ -47,7 +47,15 @@ def infer_crunch_1(
 
     print(f"\n--{name_data} EMBEDDING--\n")
     # Generate and load the embeddings for the test data
-    assets = embedding_and_load_data(name_data, dir_processed_dataset_test, test_embed_dir, args, device)
+    embed_path = embedding_and_load_data(name_data, dir_processed_dataset_test, test_embed_dir, args, device)
+
+    # Load the embeddings and related assets
+    from read_assets_from_h5 import read_assets_from_h5
+    assets, _ = read_assets_from_h5(embed_path)
+
+    # Extract cell IDs and convert to a list of strings
+    # The cell IDs are not necessary because the images are kept in the same order as the gene expression data
+    cell_ids = assets['barcodes'].flatten().astype(str).tolist()
 
     # Extract embeddings features for prediction
     X_test = assets["embeddings"]
