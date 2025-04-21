@@ -6,9 +6,17 @@ flowchart TD
     classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
     classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
 
-    data2["UC9_I chips Nx32x32x3"]:::inputData
-    data2 --> op2["Resnet50"]:::op
-    op2 --> data3["UC9_I features N x 1024"]:::data
+    data3["UC9_I features N x 1024"]:::inputData
     data3 --> op3["PCAFitTransform"]:::op
     op3 --> data4["UC9_I feature PCs N x 44"]:::outputData
     op3 --> data5["UC9_I Basis(feature)"]:::outputData
+    op3aa["Visualization"]:::op
+    data3aa["Chip Resnet50 feature density"]:::outputMetric
+    data3 --> op3aa --> data3aa
+    op3a["Metrics"]:::op
+    op3b["Visualization"]:::op
+    data3a["MSE"]:::outputMetric
+    data3b["% Variance Explained"]:::outputMetric
+    data4c["#PCs needed for MSE <= 0.16"]:::outputMetric
+    data4 --> op3a --> data3b & data3a
+    data4 --> op3b --> data4c
