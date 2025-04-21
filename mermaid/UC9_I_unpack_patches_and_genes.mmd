@@ -9,6 +9,7 @@ flowchart TD
     data1["UC9_I histology archive"]:::inputData --> op1["Chipper (all centroids)"]:::op
     op1 --> data2["UC9_I chips Nx32x32x3"]:::outputData
     op1 --> data22["UC9_I genes Nx460"]:::outputData
+    op1 --> data23["UC9_I barcodes"]:::outputData
     op11["Visualization"]:::op 
     data2 --> op11 --> data11["UC9_I histology image with patch locations"]:::outputMetric
     data11 --> data12["UC9_I histology patch spatial coordinates"]:::outputMetric

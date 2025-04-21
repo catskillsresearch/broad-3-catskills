@@ -14,6 +14,7 @@ class UC9_I_unpack_patches_and_genes(luigi.Task):
         return {
             'patches': luigi.LocalTarget('resources/run/UC9_I_patches.h5'),
             'genes': luigi.LocalTarget('resources/run/UC9_I_genes.h5ad'),
+            'barcodes': luigi.LocalTarget('resources/run/UC9_I_barcodes.npy'),
             'spatial_positions': luigi.LocalTarget('resources/run/spatial_positions.npy'),
             'patch_locations_on_image': luigi.LocalTarget('resources/run/UC9_I_patch_locations_on_image.png'),
             'spatial_coordinates': luigi.LocalTarget('resources/run/UC9_I_spatial_coordinates.png'),
@@ -48,7 +49,8 @@ class UC9_I_unpack_patches_and_genes(luigi.Task):
         from Patcher import Patcher
         self.patcher = Patcher(image=intensity_image, coords=coords_center, patch_size_target=32)
         self.patcher.to_h5(self.output()['patches'].path, extra_assets={'barcode': barcodes})
-
+        np.save(self.output()['barcodes'].path, barcodes)
+        
     def visualization(self):
         # Visualization
         vis_width=1000

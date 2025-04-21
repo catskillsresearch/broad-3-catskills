@@ -7,6 +7,7 @@ flowchart TD
     classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
 
     data17["Gene names 458"]:::inputData
+    data23["UC9_I barcodes"]:::inputData
     data6["UC9_I gene expressions N x 460"]:::inputData
-    data6 & data17--> op4["Filter to Names"]:::op
+    data6 & data23 & data17--> op4["Filter to Names"]:::op
     op4 --> data7["UC9_I gene expressions N x 458"]:::outputData
