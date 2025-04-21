@@ -1,0 +1,23 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data7["UC9_I gene expressions N x 458"]:::inputData
+    data7 --> op5["PCAFitTransform"]:::op
+    op5 --> data8["UC9_I Gene PCs N x 6"]:::outputData
+    op5 --> data9["UC9_I Basis(458 genes)"]:::outputData
+
+    op3aa["Visualization"]:::op
+    data3aagp["Gene expression density"]:::outputMetric
+    data7 --> op3aa --> data3aagp
+    op3gpa["Metrics"]:::op
+    op3bgp["Visualization"]:::op
+    data3agp["MSE"]:::outputMetric
+    data3bgp["% Variance Explained"]:::outputMetric
+    data4cgp["#PCs needed for MSE <= 0.16"]:::outputMetric
+    data8 --> op3gpa --> data3bgp & data3agp
+    data8 --> op3bgp --> data4cgp
