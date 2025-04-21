@@ -1,0 +1,17 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data4["UC9_I feature PCs N x 44"]:::inputData
+    data8["UC9_I Gene PCs N x 6"]:::inputData
+    data4 & data8 --> op6["RidgeFitTransform"]:::op
+    op6 --> data10["UC9_I Ridge weights: Feature PCs -> Gene PCS"]:::outputData
+    op6 --> data11["UC9_I Predicted Gene PCS"]:::data
+    data11 --> op8["Metrics"]:::op
+    op8 --> data12["UC9_I Gene PCs MSE"]:::outputMetric
+    op8 --> data13["UC9_I Gene PCs Spearman"]:::outputMetric
+    data8 --> op8

@@ -14,8 +14,11 @@ The method is as follows:
 ## UC9_I features to PCs
 ![UC9_I_features_to_PCs](mermaid/UC9_I_features_to_PCs.png)  
 
-## UC9_I Gene Predictor Fit
+## UC9_I Genes to PCs
 ![UC9I gene predictor fit](mermaid/UC9_I_gene_pcs.png)
+
+## UC9_I Regress Feature PCs to Gene PCs
+![UC9I gene predictor fit](mermaid/UC9_I_feature_PCs_to_gene_PCs.png)
 
 ## scRNA Gene Predictor Fit
 ![scRNA gene predictor fit](mermaid/SCRNA_calibration.png)

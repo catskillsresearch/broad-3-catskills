@@ -6,19 +6,11 @@ flowchart TD
     classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
     classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
 
-    data4["UC9_I feature PCs N x 44"]:::data
+
     data17["Gene names 458"]:::inputData
     data6["UC9_I gene expressions N x 460"]:::inputData
     data6 & data17--> op4["Filter to Names"]:::op
-    op4 --> data7["UC9_I gene expressions N x 458"]:::data
+    op4 --> data7["UC9_I gene expressions N x 458"]:::outputData
     data7 --> op5["PCAFitTransform"]:::op
-    op5 --> data8["UC9_I Gene PCs N x 6"]:::data
+    op5 --> data8["UC9_I Gene PCs N x 6"]:::outputData
     op5 --> data9["UC9_I Basis(458 genes)"]:::outputData
-
-    data4 & data8 --> op6["RidgeFitTransform"]:::op
-    op6 --> data10["UC9_I Ridge weights: Feature PCs -> Gene PCS"]:::outputData
-    op6 --> data11["UC9_I Predicted Gene PCS"]:::data
-    data11 --> op8["Metrics"]:::op
-    op8 --> data12["UC9_I Gene PCs MSE"]:::outputMetric
-    op8 --> data13["UC9_I Gene PCs Spearman"]:::outputMetric
-    data8 --> op8
