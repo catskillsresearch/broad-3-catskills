@@ -22,6 +22,7 @@ def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, de
     model.eval()
     # Iterate over the batches in the DataLoader
     from tqdm import tqdm
+    A = []
     for batch_idx, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
         from post_collate_fn import post_collate_fn
         batch = post_collate_fn(batch)
@@ -38,7 +39,10 @@ def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, de
         mode = 'w' if batch_idx == 0 else 'a'
 
         # Create a dictionary with embeddings and other relevant data to save
-        features = embeddings.cpu().numpy()
-        np.savez_compressed(embedding_save_path, features)
+        f = embeddings.cpu().numpy()
+        A.append(f)
+        
+    features = np.vstack(A)
+    np.savez_compressed(embedding_save_path, features)
 
     return embedding_save_path

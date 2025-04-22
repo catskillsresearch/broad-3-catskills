@@ -11,7 +11,7 @@ class UC9_I_object_to_PCs(luigi.Task):
     dependency_task = luigi.TaskParameter()  # Takes Task class as parameter
     
     def requires(self):
-        return dependency_task()
+        return self.dependency_task()
         
     def output(self):
         return {
@@ -24,16 +24,21 @@ class UC9_I_object_to_PCs(luigi.Task):
             'mse': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_pca_basis_MSE.npz') }
 
     def run(self):
-        object_fn = 
-        assets, _ = read_assets_from_h5(self.input().path)
-        features = assets['embeddings']
+        features = np.load(self.input().path)['arr_0']
         plt.hist(features.flatten(), bins=100, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')
         plt.title(f"{self.object_type} density")
         out = self.output()
         plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
-        B, scaler, L, V, MSE, pca_mean = pca_analysis(features[::32])
+
+        # Create a generator for reproducibility
+        rng = np.random.default_rng()
+        # For a 2D array `arr` with shape (N, M)
+        sampled_rows = rng.choice(features.shape[0], size=10000, replace=False)  # Indices
+        sample = features[sampled_rows]  # Subset rows
+
+        B, scaler, L, V, MSE, pca_mean = pca_analysis(sample)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca_mean)
         np.savez_compressed(out['explained_variance'].path, V)
