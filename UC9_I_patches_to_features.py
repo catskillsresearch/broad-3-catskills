@@ -11,13 +11,12 @@ class UC9_I_patches_to_features(luigi.Task):
                 'patches': UC9_I_unpack_patches_and_genes() }
         
     def output(self):
-        return {
-            'features': luigi.LocalTarget('resources/run/UC9_I_features.h5')   }
+        return luigi.LocalTarget('resources/run/UC9_I_features.h5')
 
     def run(self):
         encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
         patches_path = self.input()['patches']['patches'].path
-        embed_path = self.output()['features'].path
+        embed_path = self.output().path
         batch_size = 128
         num_workers = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
