@@ -5,17 +5,13 @@ import joblib
 import matplotlib.pyplot as plt
 from pca_analysis import pca_analysis
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
-from tqdm import tqdm
         
 class UC9_I_object_to_PCs(luigi.Task):
     object_type = luigi.Parameter()
     dependency_task = luigi.TaskParameter()  # Takes Task class as parameter
     
     def requires(self):
-        return UC9_I_patches_to_features()
+        return dependency_task()
         
     def output(self):
         return {
@@ -28,9 +24,9 @@ class UC9_I_object_to_PCs(luigi.Task):
             'mse': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_pca_basis_MSE.npz') }
 
     def run(self):
+        object_fn = 
         assets, _ = read_assets_from_h5(self.input().path)
         features = assets['embeddings']
-        index = assets['barcodes']
         plt.hist(features.flatten(), bins=100, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')

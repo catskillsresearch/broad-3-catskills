@@ -1,4 +1,5 @@
 import torch
+import numpy as np
         
 def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, device: str, precision):
     """
@@ -37,12 +38,7 @@ def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, de
         mode = 'w' if batch_idx == 0 else 'a'
 
         # Create a dictionary with embeddings and other relevant data to save
-        asset_dict = {'embeddings': embeddings.cpu().numpy()}
-        import numpy as np
-        asset_dict.update({key: np.array(val) for key, val in batch.items() if key != 'imgs'})
-
-        # Save the embeddings to the HDF5 file
-        from save_hdf5 import save_hdf5
-        save_hdf5(embedding_save_path, asset_dict=asset_dict, mode=mode)
+        features = embeddings.cpu().numpy()
+        np.savez_compressed(embedding_save_path, features)
 
     return embedding_save_path

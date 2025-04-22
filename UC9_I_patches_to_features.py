@@ -11,7 +11,7 @@ class UC9_I_patches_to_features(luigi.Task):
                 'patches': UC9_I_unpack_patches_and_genes() }
         
     def output(self):
-        return luigi.LocalTarget('resources/run/UC9_I_features.h5')
+        return luigi.LocalTarget('resources/run/UC9_I_features.csv.gz')
 
     def run(self):
         encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
