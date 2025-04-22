@@ -1,5 +1,4 @@
 import os, luigi
-from UC9_I_patches_to_features import UC9_I_patches_to_features
 from read_assets_from_h5 import read_assets_from_h5
 import joblib
 import matplotlib.pyplot as plt
@@ -8,6 +7,7 @@ import numpy as np
         
 class UC9_I_object_to_PCs(luigi.Task):
     object_type = luigi.Parameter()
+    mse_goal = luigi.FloatParameter()
     dependency_task = luigi.TaskParameter()  # Takes Task class as parameter
     
     def requires(self):
@@ -24,35 +24,37 @@ class UC9_I_object_to_PCs(luigi.Task):
             'mse': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_pca_basis_MSE.npz') }
 
     def run(self):
-        features = np.load(self.input().path)['arr_0']
-        plt.hist(features.flatten(), bins=100, density=True)
+        out = self.output()
+        
+        data = np.load(self.input().path, allow_pickle=True)['arr_0']
+        foo = data.flatten()
+        bar = data[data != 0]
+        plt.hist(bar, bins=100, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')
-        plt.title(f"{self.object_type} density")
-        out = self.output()
+        plt.title(f"Non-0 {self.object_type} density")
         plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
 
         # Create a generator for reproducibility
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
-        sampled_rows = rng.choice(features.shape[0], size=10000, replace=False)  # Indices
-        sample = features[sampled_rows]  # Subset rows
+        sampled_rows = rng.choice(data.shape[0], size=10000, replace=False)  # Indices
+        sample = data[sampled_rows]  # Subset rows
 
         B, scaler, L, V, MSE, pca_mean = pca_analysis(sample)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca_mean)
         np.savez_compressed(out['explained_variance'].path, V)
         np.savez_compressed(out['mse'].path, MSE)
-        mse_goal = 0.16
-        finish = np.where((MSE <=mse_goal))[-1][0]
+        finish = np.where((MSE <= self.mse_goal))[-1][0]
         plt.plot(MSE)
         plt.xlim([finish-20, finish+20])
-        plt.ylim([0.12,0.20])
-        plt.scatter([finish],[mse_goal],color='red', s=40)
-        plt.title(f'Use {finish} PCs for {self.object_type} reconstruction MSE <= 0.16')
+        plt.ylim([self.mse_goal * 0.8, self.mse_goal * 1.2])
+        plt.scatter([finish],[self.mse_goal],color='red', s=40)
+        plt.title(f'Use {finish} PCs for {self.object_type} reconstruction MSE <= {self.mse_goal}')
         plt.savefig(out['MSE'].path, dpi=150, bbox_inches='tight')
         basis = B[:, :finish]
-        X_scaled = scaler.fit_transform(features)
+        X_scaled = scaler.fit_transform(data)
         X_centered = X_scaled - pca_mean
         PCs = X_centered @ basis
         np.savez_compressed(out['PCs'].path, PCs)
