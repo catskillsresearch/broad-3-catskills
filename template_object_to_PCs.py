@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 from pca_analysis import pca_analysis
 import numpy as np
         
-class UC9_I_object_to_PCs(luigi.Task):
+class template_object_to_PCs(luigi.Task):
     object_type = luigi.Parameter()
+    object_name = luigi.Parameter()
     mse_goal = luigi.FloatParameter()
     dependency_task = luigi.TaskParameter()  # Takes Task class as parameter
     
@@ -15,13 +16,13 @@ class UC9_I_object_to_PCs(luigi.Task):
         
     def output(self):
         return {
-            'PCs': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_PCs.npz'),
-            'MSE': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_PCA_MSE.png'),
-            'scaler': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_PCs_scaler.joblib'),
-            'pca_mean': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_pca_mean.npz'),
-            'density': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_density.png'),
-            'explained_variance': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_pca_basis_explained_var.npz'),
-            'mse': luigi.LocalTarget(f'resources/run/UC9_I_{self.object_type}_pca_basis_MSE.npz') }
+            'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
+            'MSE': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCA_MSE.png'),
+            'scaler': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs_scaler.joblib'),
+            'pca_mean': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_mean.npz'),
+            'density': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_density.png'),
+            'explained_variance': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_explained_var.npz'),
+            'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
 
     def run(self):
         out = self.output()

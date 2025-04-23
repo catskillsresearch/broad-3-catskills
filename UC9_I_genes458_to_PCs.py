@@ -1,12 +1,13 @@
 import os, luigi
-from UC9_I_object_to_PCs import UC9_I_object_to_PCs
+from template_object_to_PCs import template_object_to_PCs
 from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
 
 class UC9_I_genes458_to_PCs(luigi.Task):
     def requires(self):
         # Provide hardcoded parameters and dependency
-        return UC9_I_object_to_PCs(
+        return template_object_to_PCs(
             object_type="genes458",
+            object_name="UC9_I",
             mse_goal=0.064,
             dependency_task=UC9_I_genes460_to_genes458)
 
