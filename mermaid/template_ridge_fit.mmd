@@ -6,12 +6,12 @@ flowchart TD
     classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
     classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
 
-    data4["UC9_I feature PCs N x 44"]:::inputData
-    data8["UC9_I Gene PCs N x 6"]:::inputData
+    data4["Source N x M1"]:::inputData
+    data8["Target N x M2"]:::inputData
     data4 & data8 --> op6["RidgeFitTransform"]:::op
-    op6 --> data10["UC9_I Ridge weights: Feature PCs -> Gene PCS"]:::outputData
-    op6 --> data11["UC9_I Predicted Gene PCS"]:::data
+    op6 --> data10["Ridge weights: Source -> Target"]:::outputData
+    op6 --> data11["Predicted Target"]:::data
     data11 --> op8["Metrics"]:::op
-    op8 --> data12["UC9_I Gene PCs MSE"]:::outputMetric
-    op8 --> data13["UC9_I Gene PCs Spearman"]:::outputMetric
+    op8 --> data12["Target vs Prediction MSE"]:::outputMetric
+    op8 --> data13["Target vs Prediction Spearman Rank Correlation"]:::outputMetric
     data8 --> op8

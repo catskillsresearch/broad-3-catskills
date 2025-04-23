@@ -23,8 +23,11 @@ Apply principal component dimension reduction pipline to features for MSE <= 0.1
 ## UC9_I Genes 458 to PCs
 Apply principal component dimension reduction pipline to 458 gene expressions for MSE <= 0.064.
 
+## Template Ridge regression fit pipeline
+![template_ridge_fit](template_ridge_fit.png)
+
 ## UC9_I Regress Feature PCs to Gene PCs
-![UC9I gene predictor fit](mermaid/UC9_I_feature_PCs_to_gene_PCs.png)
+Apply Ridge regression pipeline to create a linear map from Feature PCs to Gene PCS.
 
 ## scRNA Gene Predictor Fit
 ![scRNA gene predictor fit](mermaid/SCRNA_calibration.png)
