@@ -16,6 +16,33 @@ def ridge_regression(X, Y, alpha=1.0):
     weights = torch.linalg.solve(XtX + regularization, X.T @ Y)
     return weights
 
+def ridge_fit(X, Y):
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    X_train_t = torch.tensor(X, dtype=torch.float32, device=device)
+    Y_train_t = torch.tensor(Y, dtype=torch.float32, device=device)
+    
+    # Train the model
+    alpha = 100 / (X_train_t.shape[1] * Y_train_t.shape[1])
+    
+    W_t = ridge_regression(X_train_t, Y_train_t, alpha=alpha)
+
+    return W_t.cpu().numpy()
+
+def ridge_apply(X, W):
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    X_t = torch.tensor(X, dtype=torch.float32, device=device)
+    W_t = torch.tensor(W, dtype=torch.float32, device=device)
+
+    # Make predictions on test set
+    with torch.no_grad():
+        Y_t = X_t @ W_t
+
+    return Y_t.cpu().numpy()
+
 if __name__=="__main__":
     import torch
     import numpy as np
@@ -51,30 +78,27 @@ if __name__=="__main__":
     X_test_t = torch.tensor(X_test, dtype=torch.float32, device=device)
     
     # Train the model
-    alpha = 1.0
+    alpha = 100 / (X_train.shape[1] * Y_train.shape[1])
     W = ridge_regression(X_train_t, Y_train_t, alpha=alpha)
-    
     # Make predictions on test set
     with torch.no_grad():
         Y_pred_t = X_test_t @ W
-    
     # Move predictions back to CPU for evaluation with sklearn
     Y_pred = Y_pred_t.cpu().numpy()
-    
     # Evaluate
     mse = mean_squared_error(Y_test, Y_pred)
-    print(f"Test MSE: {mse:.4f}")
+    print(f"Test MSE: {mse:.4f} for alpha: {alpha}")
     print(f"Weight matrix shape: {W.shape} (features × targets)")
 
     # Comparison
     from sklearn.linear_model import Ridge  # Regression model
     max_iter=1000
     random_state=0
-    _alpha = 100 / (X_train.shape[1] * Y_train.shape[1])
-    print(f"Scikit-Learn Ridge: using alpha: {alpha} versus calc alpha {_alpha}")
+
+    print(f"Scikit-Learn Ridge: using alpha: {alpha} versus calc alpha {alpha}")
     # Initialize Ridge regression model
     reg = Ridge(solver='lsqr',
-                alpha=_alpha,
+                alpha=alpha,
                 random_state=random_state,
                 fit_intercept=False,
                 max_iter=max_iter)

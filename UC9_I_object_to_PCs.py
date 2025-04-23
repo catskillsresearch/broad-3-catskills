@@ -34,7 +34,8 @@ class UC9_I_object_to_PCs(luigi.Task):
         plt.ylabel('Frequency')
         plt.title(f"Non-0 {self.object_type} density")
         plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
-
+        plt.clf()
+        
         # Create a generator for reproducibility
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
@@ -53,6 +54,7 @@ class UC9_I_object_to_PCs(luigi.Task):
         plt.scatter([finish],[self.mse_goal],color='red', s=40)
         plt.title(f'Use {finish} PCs for {self.object_type} reconstruction MSE <= {self.mse_goal}')
         plt.savefig(out['MSE'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
         basis = B[:, :finish]
         X_scaled = scaler.fit_transform(data)
         X_centered = X_scaled - pca_mean
