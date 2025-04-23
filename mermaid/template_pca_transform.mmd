@@ -1,0 +1,26 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data5["Basis B: N x K, K <= M"]:::inputData --> op3
+    data5a["Scaler"]:::inputData --> op3 & op3b
+    data5b["pca_mean"]:::inputData --> op3 & op3b
+    data3c["X_orig from basis fit"]:::inputData
+    data3["X: Array N x M"]:::inputData
+    op3c["Visualization"]:::op
+    data3 & data3c --> op3c
+    data5d["Comparative data density of X and X_orig"]:::outputMetric
+    op3c --> data5d
+
+    data3 --> op3["PCA Transform"]:::op
+    op3 --> data4["Yhat: PCs N x K, K <= M"]:::outputData
+    op3a["Metrics"]:::op
+    data3a["MSE for X vs Xhat"]:::outputMetric
+    op3b["PCA Inverse Transform"]:::op
+    data3b["Xhat"]:::data
+    data4 & data5 --> op3b --> data3b --> op3a --> data3a
+    data3 --> op3a

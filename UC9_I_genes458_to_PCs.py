@@ -1,11 +1,11 @@
 import os, luigi
-from template_object_to_PCs import template_object_to_PCs
+from template_pca_fit_transform import template_pca_fit_transform
 from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
 
 class UC9_I_genes458_to_PCs(luigi.Task):
     def requires(self):
         # Provide hardcoded parameters and dependency
-        return template_object_to_PCs(
+        return template_pca_fit_transform(
             object_type="genes458",
             object_name="UC9_I",
             mse_goal=0.064,

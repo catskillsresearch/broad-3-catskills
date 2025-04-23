@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from pca_analysis import pca_analysis
 import numpy as np
         
-class template_object_to_PCs(luigi.Task):
+class template_pca_fit_transform(luigi.Task):
     object_type = luigi.Parameter()
     object_name = luigi.Parameter()
     mse_goal = luigi.FloatParameter()
@@ -16,10 +16,11 @@ class template_object_to_PCs(luigi.Task):
         
     def output(self):
         return {
-            'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
-            'MSE': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCA_MSE.png'),
             'scaler': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs_scaler.joblib'),
             'pca_mean': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_mean.npz'),
+            'basis': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis.npz'),
+            'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
+            'MSE': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCA_MSE.png'),
             'density': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_density.png'),
             'explained_variance': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_explained_var.npz'),
             'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
@@ -28,9 +29,9 @@ class template_object_to_PCs(luigi.Task):
         out = self.output()
         
         data = np.load(self.input().path, allow_pickle=True)['arr_0']
-        foo = data.flatten()
-        bar = data[data != 0]
-        plt.hist(bar, bins=100, density=True)
+        data_flat = data.flatten()
+        data_flat = data_flat[data_flat != 0]
+        plt.hist(data_flat, bins=100, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')
         plt.title(f"Non-0 {self.object_type} density")
@@ -61,3 +62,4 @@ class template_object_to_PCs(luigi.Task):
         X_centered = X_scaled - pca_mean
         PCs = X_centered @ basis
         np.savez_compressed(out['PCs'].path, PCs)
+        np.savez_compressed(out['basis'].path, basis)

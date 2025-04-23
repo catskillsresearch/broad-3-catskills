@@ -36,6 +36,57 @@ def pca_analysis(X):
     
     return B, scaler, L, V, MSE, pca.mean_
 
+def pca_transform(B, scaler, pca_mean, X):
+    """Transform data into PCA components space.
+    
+    Args:
+        B: PCA components matrix (M x M) from pca_analysis
+        scaler: StandardScaler object from pca_analysis
+        pca_mean: Mean vector from PCA analysis (scaler.mean_ is different!)
+        X: New data (N x M) to transform
+    
+    Returns:
+        Y: Transformed data in PCA space (N x M)
+    """
+    # Standardize using original scaler
+    X_scaled = scaler.transform(X)
+    
+    # Center using PCA mean (critical for correct projection)
+    X_centered = X_scaled - pca_mean
+    
+    # Project onto PCA components
+    Y = X_centered @ B
+    
+    return Y
+
+def pca_inverse_transform(B, scaler, pca_mean, Y):
+    """Reconstruct data from PCA components.
+    
+    Args:
+        B: PCA components matrix (M x M) from pca_analysis
+        scaler: StandardScaler object from pca_analysis
+        pca_mean: Mean vector from PCA analysis
+        Y: Transformed data (N x K) where K ≤ M
+    
+    Returns:
+        X_recon: Reconstructed data in original space (N x M)
+    """
+    # Handle partial component reconstruction
+    if Y.shape[1] < B.shape[1]:
+        B_partial = B[:, :Y.shape[1]]
+    else:
+        B_partial = B
+    
+    # Reconstruct in centered space
+    X_centered = Y @ B_partial.T
+    
+    # Uncenter and inverse standardize
+    X_scaled = X_centered + pca_mean
+    X_recon = scaler.inverse_transform(X_scaled)
+    
+    return X_recon
+
+
 if __name__=="__main__":
     # Generate random data
     X = np.random.randn(100, 5)  # 100 samples, 5 features

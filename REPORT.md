@@ -11,8 +11,8 @@ The method is as follows:
 ## UC9_I patches to features 
 ![UC9_I_patches_to_features](mermaid/UC9_I_patches_to_features.png)  
 
-## Template principal component dimension reduction pipeline
-![template_data_to_PCs](mermaid/template_data_to_PCs.png)  
+## Template principal component dimension reduction fit and transform pipeline
+![template_pca_fit_transform](mermaid/template_pca_fit_transform.png)  
 
 ## UC9_I features to PCs
 Apply principal component dimension reduction pipline to features for MSE <= 0.16.
@@ -21,13 +21,22 @@ Apply principal component dimension reduction pipline to features for MSE <= 0.1
 ![UC9_I_genes460_to_genes458](mermaid/UC9_I_genes460_to_genes458.png)
 
 ## UC9_I Genes 458 to PCs
-Apply principal component dimension reduction pipline to 458 gene expressions for MSE <= 0.064.
+Apply principal component dimension reduction pipline to UCI_9 458 gene expressions for MSE <= 0.064.
 
 ## Template Ridge regression fit pipeline
 ![template_ridge_fit](mermaid/template_ridge_fit.png)
 
 ## UC9_I Regress Feature PCs to Gene PCs
 Apply Ridge regression pipeline to create a linear map from Feature PCs to Gene PCS.
+
+## Template PCA transform pipeline
+![template_pca_transform](mermaid/template_pca_transform.png)
+
+## scRNA Genes 458 to UC9_I Genes 458 basis PCs
+Apply PCA transform pipeline with UC9_I Genes 458 PCA basis to map scRNA Genes 458 to PCs.
+
+## scRNA Genes 18157 to PCs
+Apply PCA fit transform pipeline to scRNA 18157 gene expressions for MSE <= 0.064.
 
 ## scRNA Gene Predictor Fit
 ![scRNA gene predictor fit](mermaid/SCRNA_calibration.png)
