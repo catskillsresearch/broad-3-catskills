@@ -10,6 +10,7 @@ class scRNA_genes18157_to_PCs(luigi.Task):
             object_name="scRNA",
             mse_goal=0.064,
             dependency_task=SCRNA_unpack,
+            sample_size = 200,
             sub_input="scRNA_18157_gene_expressions")
 
     def run(self):

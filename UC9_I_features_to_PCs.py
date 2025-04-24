@@ -10,7 +10,8 @@ class UC9_I_features_to_PCs(luigi.Task):
             object_name="UC9_I",
             mse_goal=0.16,
             dependency_task=UC9_I_patches_to_features,
-            sub_input = None
+            sub_input = None,
+            sample_size = 1000
         )
 
     def run(self):

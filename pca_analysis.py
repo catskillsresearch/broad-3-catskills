@@ -22,8 +22,8 @@ def pca_analysis(X):
     X_centered = X_scaled - pca.mean_
     
     MSE = np.zeros(X.shape[1])
-    n_components = min(400, X.shape[1])                 # if it's more than 400, forget about it
-    for i in tqdm(range(1, n_components+1)):
+    n_components = min(50, X.shape[1])                 # if it's more than 400, forget about it
+    for i in tqdm(range(2, n_components+1)):
         # Manual projection and reconstruction
         proj = X_centered @ B[:, :i]  # Project to i components
         recon = proj @ B[:, :i].T     # Reconstruct in centered space

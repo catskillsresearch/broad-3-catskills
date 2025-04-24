@@ -12,6 +12,7 @@ class template_pca_fit_transform(luigi.Task):
     mse_goal = luigi.FloatParameter()
     dependency_task = luigi.TaskParameter()  
     sub_input = luigi.Parameter()
+    sample_size = luigi.Parameter()
     
     def requires(self):
         return self.dependency_task()
@@ -28,7 +29,7 @@ class template_pca_fit_transform(luigi.Task):
             'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
 
     def show_density(self, data):
-        data_flat = select_random_from_2D_array(data, 10000)
+        data_flat = select_random_from_2D_array(data, 1000)
         plt.hist(data_flat, bins=100, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')
@@ -49,13 +50,16 @@ class template_pca_fit_transform(luigi.Task):
         # Create a generator for reproducibility
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
-        sampled_rows = rng.choice(data.shape[0], size=10000, replace=False)  # Indices
+        sampled_rows = rng.choice(data.shape[0], size=self.sample_size, replace=False)  # Indices
         sample = data[sampled_rows]  # Subset rows
+        del data # FIX THIS LATER
         B, scaler, L, V, MSE, pca_mean = pca_analysis(sample)
+        print("got B", B.size)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca_mean)
         np.savez_compressed(out['explained_variance'].path, V)
         np.savez_compressed(out['mse'].path, MSE)
+        print("pictures")
         finish = np.where((MSE <= self.mse_goal))[-1][0]
         plt.plot(MSE)
         plt.xlim([finish-20, finish+20])
@@ -64,9 +68,12 @@ class template_pca_fit_transform(luigi.Task):
         plt.title(f'Use {finish} PCs for {self.object_type} reconstruction MSE <= {self.mse_goal}')
         plt.savefig(out['MSE'].path, dpi=150, bbox_inches='tight')
         plt.clf()
+        print("inverse start")
         basis = B[:, :finish]
-        X_scaled = scaler.fit_transform(data)
+        print("sampled_rows", sample.shape)
+        X_scaled = scaler.fit_transform(sample) # FIX THIS LATER data)
         X_centered = X_scaled - pca_mean
         PCs = X_centered @ basis
         np.savez_compressed(out['PCs'].path, PCs)
         np.savez_compressed(out['basis'].path, basis)
+        print("inverse end")
