@@ -9,7 +9,8 @@ class UC9_I_genes458_to_PCs(luigi.Task):
             object_type="genes458",
             object_name="UC9_I",
             mse_goal=0.064,
-            dependency_task=UC9_I_genes460_to_genes458)
+            dependency_task=UC9_I_genes460_to_genes458,
+            sub_input = None
 
     def run(self):
         pass

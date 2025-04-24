@@ -4,12 +4,14 @@ import joblib
 import matplotlib.pyplot as plt
 from pca_analysis import pca_analysis
 import numpy as np
-        
+from select_random_from_2D_array import select_random_from_2D_array
+
 class template_pca_fit_transform(luigi.Task):
     object_type = luigi.Parameter()
     object_name = luigi.Parameter()
     mse_goal = luigi.FloatParameter()
-    dependency_task = luigi.TaskParameter()  # Takes Task class as parameter
+    dependency_task = luigi.TaskParameter()  
+    sub_input = luigi.Parameter()
     
     def requires(self):
         return self.dependency_task()
@@ -25,12 +27,8 @@ class template_pca_fit_transform(luigi.Task):
             'explained_variance': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_explained_var.npz'),
             'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
 
-    def run(self):
-        out = self.output()
-        
-        data = np.load(self.input().path, allow_pickle=True)['arr_0']
-        data_flat = data.flatten()
-        data_flat = data_flat[data_flat != 0]
+    def show_density(self, data):
+        data_flat = select_random_from_2D_array(data, 10000)
         plt.hist(data_flat, bins=100, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')
@@ -38,12 +36,20 @@ class template_pca_fit_transform(luigi.Task):
         plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
         plt.clf()
         
+    def run(self):
+        src = self.input()
+        if self.sub_input is not None:
+            src = src[self.sub_input]
+        data = np.load(src.path, allow_pickle=True)
+        keys = [x for x in data]
+        data = data[keys[0]]
+        self.show_density(data)
+        
         # Create a generator for reproducibility
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
         sampled_rows = rng.choice(data.shape[0], size=10000, replace=False)  # Indices
         sample = data[sampled_rows]  # Subset rows
-
         B, scaler, L, V, MSE, pca_mean = pca_analysis(sample)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca_mean)
