@@ -14,7 +14,7 @@ class scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs(luigi.Task):
             pca_fit_transform = UC9_I_genes458_to_PCs,
             pca_source = UC9_I_genes460_to_genes458,
             source = SCRNA_unpack,
-            source_field = 'scRNA_18157_gene_expressions')
+            source_field = 'scRNA_458_gene_expressions')
         
     def run(self):
         pass

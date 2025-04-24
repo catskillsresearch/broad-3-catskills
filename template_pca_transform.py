@@ -35,12 +35,13 @@ class template_pca_transform(luigi.Task):
         plt.hist(X_original_flat, bins=100, density=True, label='X(original)')
         plt.xlabel('Value')
         plt.ylabel('Frequency')
+        plt.legend()
         plt.title(f"Non-0 {self.object_type} densities for fitted and application data")
         plt.savefig(self.output()['density_comparison'].path, dpi=150, bbox_inches='tight')
         plt.clf()
 
     def mse_analysis(self, X, X_hat):
-        mse = mean_squared_error(X, Xhat)
+        mse = mean_squared_error(X, X_hat)
         with open(self.output()['source_MSE'].path,'w') as f:
             print(mse, file=f)
         plt.plot(X_hat[0], label='Xhat', color='green')
