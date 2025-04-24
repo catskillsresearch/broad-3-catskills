@@ -9,6 +9,8 @@ def ridge_regression(X, Y, alpha=1.0):
     """
     # Add bias term (optional, remove if not needed)
     # X = torch.cat([X, torch.ones(X.shape[0], 1, device=device)], dim=1)
+    print("X", X.shape)
+    print("Y", Y.shape)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Compute closed-form solution
     XtX = X.T @ X
@@ -17,7 +19,8 @@ def ridge_regression(X, Y, alpha=1.0):
     return weights
 
 def ridge_fit(X, Y):
-
+    print("X", X.shape)
+    print("Y", Y.shape)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     X_train_t = torch.tensor(X, dtype=torch.float32, device=device)

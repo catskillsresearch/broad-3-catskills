@@ -51,16 +51,20 @@ class template_pca_fit_transform(luigi.Task):
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
         sampled_rows = rng.choice(data.shape[0], size=self.sample_size, replace=False)  # Indices
-        sample = data[sampled_rows]  # Subset rows
-        del data # FIX THIS LATER
-        B, scaler, L, V, MSE, pca_mean = pca_analysis(sample)
+        data = data[sampled_rows]  # Subset rows FIX THIS LATER
+        B, scaler, L, V, MSE, pca_mean = pca_analysis(data)
         print("got B", B.size)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca_mean)
         np.savez_compressed(out['explained_variance'].path, V)
         np.savez_compressed(out['mse'].path, MSE)
         print("pictures")
-        finish = np.where((MSE <= self.mse_goal))[-1][0]
+        MSE[0] = 2 * self.mse_goal
+        try:
+            finish = np.where((MSE <= self.mse_goal))[-1][0]
+        except:
+            finish = min(100, len(MSE))
+        print("finish", finish)
         plt.plot(MSE)
         plt.xlim([finish-20, finish+20])
         plt.ylim([self.mse_goal * 0.8, self.mse_goal * 1.2])
@@ -70,10 +74,13 @@ class template_pca_fit_transform(luigi.Task):
         plt.clf()
         print("inverse start")
         basis = B[:, :finish]
-        print("sampled_rows", sample.shape)
-        X_scaled = scaler.fit_transform(sample) # FIX THIS LATER data)
+        print("sampled_rows", data.shape)
+        X_scaled = scaler.fit_transform(data) # FIX THIS LATER data)
+        print("X_scaled", X_scaled.shape)
         X_centered = X_scaled - pca_mean
+        print("X_centered", X_centered.shape)
         PCs = X_centered @ basis
+        print("PCs", PCs.shape)
         np.savez_compressed(out['PCs'].path, PCs)
         np.savez_compressed(out['basis'].path, basis)
         print("inverse end")
