@@ -33,6 +33,7 @@ class template_pca_fit_transform(luigi.Task):
         plt.xlabel('Value')
         plt.ylabel('Frequency')
         plt.title(f"Non-0 {self.object_type} density")
+        out = self.output()
         plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
         plt.clf()
         
@@ -44,7 +45,7 @@ class template_pca_fit_transform(luigi.Task):
         keys = [x for x in data]
         data = data[keys[0]]
         self.show_density(data)
-        
+        out = self.output()
         # Create a generator for reproducibility
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
