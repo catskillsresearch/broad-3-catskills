@@ -1,6 +1,7 @@
 import os, luigi
 from template_pca_transform import template_pca_transform
 from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
+from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
 from SCRNA_unpack import SCRNA_unpack
 
 class scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs(luigi.Task):
@@ -10,8 +11,10 @@ class scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs(luigi.Task):
             object_type = "genes458",
             object_name = "scRNA",
             mse_goal=0.064,
-            pca_fit_transform =UC9_I_genes458_to_PCs,
-            source = SCRNA_unpack)
+            pca_fit_transform = UC9_I_genes458_to_PCs,
+            pca_source = UC9_I_genes460_to_genes458,
+            source = SCRNA_unpack,
+            source_field = 'scRNA_18157_gene_expressions')
         
     def run(self):
         pass
