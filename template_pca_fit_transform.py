@@ -2,7 +2,7 @@ import os, luigi
 from read_assets_from_h5 import read_assets_from_h5
 import joblib
 import matplotlib.pyplot as plt
-from pca_analysis import pca_analysis
+from pca_analysis import *
 import numpy as np
 from select_random_from_2D_array import select_random_from_2D_array
 
@@ -12,7 +12,7 @@ class template_pca_fit_transform(luigi.Task):
     mse_goal = luigi.FloatParameter()
     dependency_task = luigi.TaskParameter()  
     sub_input = luigi.Parameter()
-    sample_size = luigi.Parameter()
+    sample_size = luigi.IntParameter()
     
     def requires(self):
         return self.dependency_task()
@@ -51,21 +51,15 @@ class template_pca_fit_transform(luigi.Task):
         rng = np.random.default_rng()
         # For a 2D array `arr` with shape (N, M)
         sampled_rows = rng.choice(data.shape[0], size=self.sample_size, replace=False)  # Indices
-        data = data[sampled_rows]  # Subset rows FIX THIS LATER
-        B, scaler, L, V, MSE, pca_mean = pca_analysis(data)
-        print("got B", B.size)
+        sample = data[sampled_rows]
+        basis, scaler, L, V, MSE, pca_mean, finish = pca_analysis(sample, self.mse_goal, start=48, end = 50)
+        print("got B", basis.size)
+        np.savez_compressed(out['basis'].path, basis)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca_mean)
         np.savez_compressed(out['explained_variance'].path, V)
         np.savez_compressed(out['mse'].path, MSE)
         print("pictures")
-        MSE[0] = 2 * self.mse_goal
-        try:
-            finish = np.where((MSE <= self.mse_goal))[-1][0]
-        except:
-            finish = min(100, len(MSE))
-        print("finish", finish)
-        plt.plot(MSE)
         plt.xlim([finish-20, finish+20])
         plt.ylim([self.mse_goal * 0.8, self.mse_goal * 1.2])
         plt.scatter([finish],[self.mse_goal],color='red', s=40)
@@ -73,14 +67,8 @@ class template_pca_fit_transform(luigi.Task):
         plt.savefig(out['MSE'].path, dpi=150, bbox_inches='tight')
         plt.clf()
         print("inverse start")
-        basis = B[:, :finish]
         print("sampled_rows", data.shape)
-        X_scaled = scaler.fit_transform(data) # FIX THIS LATER data)
-        print("X_scaled", X_scaled.shape)
-        X_centered = X_scaled - pca_mean
-        print("X_centered", X_centered.shape)
-        PCs = X_centered @ basis
-        print("PCs", PCs.shape)
-        np.savez_compressed(out['PCs'].path, PCs)
-        np.savez_compressed(out['basis'].path, basis)
-        print("inverse end")
+        print("HAIL MARY")
+        batch_size = 1000
+        PCs = pca_transform_batch_export_dealloc(basis, scaler, pca_mean, data, batch_size, out['PCs'].path)
+        print("done")

@@ -4,7 +4,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 from tqdm import tqdm
 
-def pca_analysis(X):
+def pca_analysis(X, mse_goal, start = 2, end = 1000000):
     # Standardize data
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -21,9 +21,10 @@ def pca_analysis(X):
     # Precompute centered data
     X_centered = X_scaled - pca.mean_
     
-    MSE = np.zeros(X.shape[1])
+    MSE = np.ones(X.shape[1])*2*mse_goal
     n_components = min(50, X.shape[1])                 # if it's more than 400, forget about it
-    for i in tqdm(range(2, n_components+1)):
+    finish = end
+    for i in tqdm(range(start, end+1)):
         # Manual projection and reconstruction
         proj = X_centered @ B[:, :i]  # Project to i components
         recon = proj @ B[:, :i].T     # Reconstruct in centered space
@@ -34,8 +35,12 @@ def pca_analysis(X):
         
         # Calculate MSE
         MSE[i-1] = mean_squared_error(X, X_hat_i)
-    
-    return B, scaler, L, V, MSE, pca.mean_
+        if MSE[i-1] <= mse_goal:
+            finish = i-1
+            break
+    print("MSE", MSE[i-1], "finish", finish)
+    basis = B[:, :finish]
+    return basis, scaler, L, V, MSE, pca.mean_, finish
 
 def pca_transform(B, scaler, pca_mean, X):
     """Transform data into PCA components space.
@@ -59,6 +64,72 @@ def pca_transform(B, scaler, pca_mean, X):
     Y = X_centered @ B
     
     return Y
+
+import os
+import gzip
+import pickle
+import tempfile
+import numpy as np
+import gc
+from pathlib import Path
+
+def pca_transform_batch_export_dealloc(B, scaler, pca_mean, X, batch_size, fn):
+    """Process X in batches, write compressed chunks, then combine results.
+    
+    Args:
+        B: PCA components matrix (M x M)
+        scaler: Fitted StandardScaler object
+        pca_mean: PCA mean vector (M,)
+        X: Input data (N x M)
+        batch_size: Number of samples per batch
+        fn: Final output filename (.npz)
+    """
+    # Create temp directory
+    temp_dir = tempfile.mkdtemp()
+    chunk_paths = []
+    
+    try:
+        # Process and export batches
+        for i in tqdm(range(0, len(X), batch_size), total=int(len(X)/batch_size)):
+            batch = X[i:i + batch_size]
+            
+            # Transform batch
+            X_scaled = scaler.transform(batch)
+            X_centered = X_scaled - pca_mean
+            Y_batch = X_centered @ B
+            
+            # Export compressed chunk
+            chunk_path = os.path.join(temp_dir, f'chunk_{i}.pkl.gz')
+            with gzip.open(chunk_path, 'wb') as f:
+                pickle.dump(Y_batch, f)
+            chunk_paths.append(chunk_path)
+            
+        # Clear memory
+        del X
+        gc.collect()
+        
+        # Reassemble chunks
+        Y_chunks = []
+        for path in tqdm(chunk_paths):
+            with gzip.open(path, 'rb') as f:
+                Y_chunks.append(pickle.load(f))
+        
+        Y = np.vstack(Y_chunks)
+        
+        # Export final result
+        np.savez_compressed(fn, Y=Y)
+        
+    finally:
+        # Cleanup
+        for path in chunk_paths:
+            try:
+                os.remove(path)
+            except:
+                pass
+        try:
+            os.rmdir(temp_dir)
+        except:
+            pass
 
 def pca_inverse_transform(B, scaler, pca_mean, Y):
     """Reconstruct data from PCA components.
