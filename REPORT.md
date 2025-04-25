@@ -8,8 +8,11 @@ The method is as follows:
 ## Unpack UC9_I patches and genes
 ![UC9_I_unpack_patches_and_genes](mermaid/UC9_I_unpack_patches_and_genes.png)  
 
-## UC9_I patches to features 
+## Template patches to features
 ![UC9_I_patches_to_features](mermaid/UC9_I_patches_to_features.png)  
+
+## UC9_I patches to features 
+Apply patches to features pipeline to UC9_I patches.
 
 ## Template principal component dimension reduction fit and transform pipeline
 ![template_pca_fit_transform](mermaid/template_pca_fit_transform.png)  
