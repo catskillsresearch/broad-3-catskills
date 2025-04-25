@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pylab as plt
 from sklearn.metrics import mean_squared_error
 from scipy.stats import spearmanr
-
+from np_loadz import np_loadz
+    
 class template_ridge_fit(luigi.Task):
     src_object_type = luigi.Parameter()
     src_object_name = luigi.Parameter()
@@ -47,8 +48,8 @@ class template_ridge_fit(luigi.Task):
         
     def run(self):
         # Regression
-        X = np.load(self.input()['src']['PCs'].path)['arr_0']
-        self.Y = np.load(self.input()['tgt']['PCs'].path)['arr_0']
+        X = np_loadz(self.input()['src']['PCs'].path)
+        self.Y = np_loadz(self.input()['tgt']['PCs'].path)
         W = ridge_fit(X, self.Y)
         np.savez_compressed(self.output()['W'].path, W)
 
