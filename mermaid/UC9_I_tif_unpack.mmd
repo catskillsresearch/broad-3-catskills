@@ -15,15 +15,7 @@ flowchart TD
     data25 --> op16 --> data27
     op17["Chipper (specific centroids)"]:::op
     op18["Chipper (specific centroids)"]:::op
-    data28["Dysplasia chips: 32x32x3"]:::data
-    data29["Non-dysplasia chips: 32x32x3"]:::data
+    data28["Dysplasia chips: Nx32x32x3"]:::data
+    data29["Non-dysplasia chips: Mx32x32x3"]:::data
     data25 & data26 --> op17 --> data28
     data25 & data27 --> op18 --> data29
-    op19["Resnet50"]:::op
-    op20["Resnet50"]:::op
-    data28 --> op19
-    data29 --> op20
-    data30["Dysplasia features _x1024"]:::outputData
-    op19 --> data30
-    data31["Non-dysplasia features _x1024"]:::outputData
-    op20 --> data31
