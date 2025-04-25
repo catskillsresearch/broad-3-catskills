@@ -38,8 +38,8 @@ Apply PCA transform pipeline with UC9_I Genes 458 PCA basis to map scRNA Genes 4
 ## scRNA Genes 18157 to PCs
 Apply PCA fit transform pipeline to scRNA 18157 gene expressions for MSE <= 0.064.
 
-## scRNA Gene Predictor Fit
-![scRNA gene predictor fit](mermaid/SCRNA_calibration.png)
+## scRNA Regress Gene 458 PCs to Gene 18157 PCs
+Apply Ridge regression pipeline to create a linear map from Gene 458 PCs to Gene 18157 PCS.
 
 ## UC9_I TIF splitter
 ![UC9_I TIF splitter](mermaid/UC9_I_tif_split_chips.png)  
