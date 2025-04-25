@@ -45,7 +45,7 @@ Apply PCA fit transform pipeline to scRNA 18157 gene expressions for MSE <= 0.06
 Apply Ridge regression pipeline to create a linear map from Gene 458 PCs to Gene 18157 PCS.
 
 ## UC9_I TIF Unpack
-![UC9_I TIF unpack](mermaid/UC9_I_TIF_unpack.png)
+![UC9_I_tif_unpack](mermaid/UC9_I_tif_unpack.png)
 
 ## Dysplasia chips to features
 Apply patches to features pipeline to Dysplasia chips.
