@@ -64,6 +64,8 @@ Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
 
 ## Dysplasia/Non-dysplasia 458 Genes and 18157 Genes to 18615 Gene Expression
 
+Concatenate.
+
 ## Genes ranked by highest absolute differential expression
 ![Crunch3 Processing](mermaid/crunch3.png)  
 
