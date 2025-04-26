@@ -24,13 +24,13 @@ Apply principal component dimension reduction pipline to features for MSE <= 0.1
 ![UC9_I_genes460_to_genes458](mermaid/UC9_I_genes460_to_genes458.png)
 
 ## UC9_I Genes 458 to PCs
-Apply principal component dimension reduction pipline to UCI_9 458 gene expressions for MSE <= 0.064.
+Apply PCA transform pipeline to UCI_9 458 gene expressions for MSE <= 0.064.
 
 ## Template Ridge regression fit pipeline
 ![template_ridge_fit](mermaid/template_ridge_fit.png)
 
 ## UC9_I Regress Feature PCs to Gene PCs
-Apply Ridge regression pipeline to create a linear map from Feature PCs to Gene PCS.
+Apply Ridge regression fit pipeline to create a linear map from Feature PCs to Gene PCS.
 
 ## Template PCA transform pipeline
 ![template_pca_transform](mermaid/template_pca_transform.png)
@@ -47,14 +47,22 @@ Apply Ridge regression pipeline to create a linear map from Gene 458 PCs to Gene
 ## UC9_I TIF Unpack
 ![UC9_I_tif_unpack](mermaid/UC9_I_tif_unpack.png)
 
-## Dysplasia chips to features
-Apply patches to features pipeline to Dysplasia chips.
+## Dysplasia/Non-dysplasia chips to 1024 features
+Apply patches to features pipeline to dysplasia/non-dysplasia patches.
 
-## Non-dysplasia chips to features
-Apply patches to features pipeline to Non-Dysplasia chips.
+## Dysplasia/Non-dysplasia 1024 features to Feature PCs
+Apply PCA transform pipeline to features using UC9_I Feature PCs basis.
 
-## scRNA Gene Predictor Transform (apply to plasia and non-dysplasia gene sets)
-![scRNA gene predictor transform](mermaid/plasia_gene_inference.png)
+## Dysplasia/Non-dysplasia Feature PCs to 458 Gene PCs
+Apply Ridge regression transform pipeline to feature PCs using UC9_I feature PCs to Gene PCs weights.
+
+## Dysplasia/Non-dysplasia 458 Gene PCs to 18157 Gene PCs
+Apply Ridge regression transform pipeline to 458 Gene PCs using scRNA 458 PCs to 18157 PCs weights.
+
+## Dysplasia/Non-dysplasia 18157 Gene PCs to 18157 Genes
+Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
+
+## Dysplasia/Non-dysplasia 458 Genes and 18157 Genes to 18615 Gene Expression
 
 ## Genes ranked by highest absolute differential expression
 ![Crunch3 Processing](mermaid/crunch3.png)  
