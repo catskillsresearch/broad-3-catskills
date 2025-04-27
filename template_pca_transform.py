@@ -54,8 +54,12 @@ class template_pca_transform(luigi.Task):
         B = np.load(fit['basis'].path)['arr_0']
         pca_mean = np.load(fit['pca_mean'].path)['arr_0']
         scaler = joblib.load(fit['scaler'].path)
-        src_fn = self.input()['source'].path
-        X = np_loadz(src_fn)
+        try:
+            src_fn = self.input()['source'].path
+            X = np_loadz(src_fn)
+        except:
+            src_fn = self.input()['source'][self.source_field].path
+            X = np_loadz(src_fn)
         pca_src = fit['input'].path
         X_original = np_loadz(pca_src)
 

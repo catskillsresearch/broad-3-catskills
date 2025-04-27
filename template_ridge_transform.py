@@ -20,7 +20,10 @@ class template_ridge_transform(luigi.Task):
         return luigi.LocalTarget(f'resources/run/{map_name}.npz')
        
     def run(self):
-        X = np_loadz(self.input()['src']['PCs'].path)
+        try:
+            X = np_loadz(self.input()['src']['PCs'].path)
+        except:
+            X = np_loadz(self.input()['src'].path)
         W = np_loadz(self.input()['fit']['W'].path)
         Y_hat = ridge_apply(X, W)
         np.savez_compressed(self.output().path, Y_hat)
