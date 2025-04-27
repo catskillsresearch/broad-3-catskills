@@ -6,6 +6,8 @@ from Resnet50ModelFile import Resnet50ModelFile
 class template_patches_to_features(luigi.Task):
 
     patches_task = luigi.TaskParameter()
+    patch_field = luigi.Parameter()
+    name = luigi.Parameter()
     
     def requires(self):
         return {
@@ -13,11 +15,11 @@ class template_patches_to_features(luigi.Task):
                 'patches': self.patches_task() }
         
     def output(self):
-        return luigi.LocalTarget('resources/run/UC9_I_features.npz')
+        return luigi.LocalTarget(f'resources/run/{self.name}_features.npz')
 
     def run(self):
         encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
-        patches_path = self.input()['patches']['patches'].path
+        patches_path = self.input()['patches'][self.patch_field].path
         embed_path = self.output().path
         batch_size = 128
         num_workers = 0

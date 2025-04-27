@@ -8,7 +8,7 @@ from skimage.measure import regionprops
 from tqdm import tqdm
 from Patcher import Patcher
 
-class UC9_I_unpack_patches_and_genes(luigi.Task):
+class UC9_I_tif_unpack(luigi.Task):
     
     def requires(self):
         from UC9_I_tif import UC9_I_tif
@@ -63,7 +63,7 @@ class UC9_I_unpack_patches_and_genes(luigi.Task):
 
 if __name__ == "__main__":
     luigi.build(
-        [UC9_I_unpack_patches_and_genes()],  # Replace with your task class
+        [UC9_I_tif_unpack()],  
         local_scheduler=True,  # Required for local execution
         workers=1  # Optional: single worker for serial execution
     )
