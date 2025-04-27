@@ -58,10 +58,10 @@ Apply PCA transform pipeline to features using UC9_I Feature PCs basis.
 ![template_ridge_transform](mermaid/template_ridge_transform.png)
 
 ## Dysplasia/Non-dysplasia Feature PCs to 458 Gene PCs
-Apply Ridge regression transform pipeline to feature PCs using UC9_I feature PCs to Gene PCs weights.
+Apply Ridge transform pipeline to feature PCs using UC9_I feature PCs to Gene PCs weights.
 
 ## Dysplasia/Non-dysplasia 458 Gene PCs to 18157 Gene PCs
-Apply Ridge regression transform pipeline to 458 Gene PCs using scRNA 458 PCs to 18157 PCs weights.
+Apply Ridge transform pipeline to 458 Gene PCs using scRNA 458 PCs to 18157 PCs weights.
 
 ## Dysplasia/Non-dysplasia 18157 Gene PCs to 18157 Genes
 Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
