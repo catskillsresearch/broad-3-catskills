@@ -19,6 +19,7 @@ class template_pca_fit_transform(luigi.Task):
         
     def output(self):
         return {
+            'input': self.input(),
             'scaler': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs_scaler.joblib'),
             'pca_mean': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_mean.npz'),
             'basis': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis.npz'),
@@ -40,7 +41,7 @@ class template_pca_fit_transform(luigi.Task):
         
     def run(self):
         src = self.input()
-        if self.sub_input is not None:
+        if self.sub_input != "":
             src = src[self.sub_input]
         data = np.load(src.path, allow_pickle=True)
         keys = [x for x in data]
