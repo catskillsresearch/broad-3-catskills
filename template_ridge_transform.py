@@ -21,7 +21,6 @@ class template_ridge_transform(luigi.Task):
        
     def run(self):
         X = np_loadz(self.input()['src']['PCs'].path)
-        print("FOO", [x for x in self.input()['fit']])
         W = np_loadz(self.input()['fit']['W'].path)
         Y_hat = ridge_apply(X, W)
         np.savez_compressed(self.output().path, Y_hat)

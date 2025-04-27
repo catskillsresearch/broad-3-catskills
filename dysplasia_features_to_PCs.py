@@ -1,7 +1,6 @@
 import os, luigi
 from template_pca_transform import template_pca_transform
-from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
-from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
+from UC9_I_features_to_PCs import UC9_I_features_to_PCs
 from SCRNA_unpack import SCRNA_unpack
 
 class dysplasia_features_to_PCs(luigi.Task):
@@ -10,7 +9,7 @@ class dysplasia_features_to_PCs(luigi.Task):
         return template_pca_transform(
             object_type="feature",
             object_name="UC9_I_dysplasia",
-            pca_fit_transform = UC9_I_genes458_to_PCs,
+            pca_fit_transform = UC9_I_features_to_PCs,
             source = SCRNA_unpack,
             source_field = 'scRNA_458_gene_expressions')
 
