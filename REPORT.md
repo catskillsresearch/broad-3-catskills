@@ -53,6 +53,10 @@ Apply patches to features pipeline to dysplasia/non-dysplasia patches.
 ## Dysplasia/Non-dysplasia 1024 features to Feature PCs
 Apply PCA transform pipeline to features using UC9_I Feature PCs basis.
 
+## Template Ridge transform pipeline
+
+![template_ridge_transform](mermaid/template_ridge_transform.png)
+
 ## Dysplasia/Non-dysplasia Feature PCs to 458 Gene PCs
 Apply Ridge regression transform pipeline to feature PCs using UC9_I feature PCs to Gene PCs weights.
 

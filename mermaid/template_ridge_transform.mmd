@@ -1,0 +1,13 @@
+%%{init: {'themeVariables': {'nodeTextColor':'#000'}}}%%
+flowchart TD
+    classDef data fill:#e6f3ff,stroke:#66b3ff,stroke-width:2px
+    classDef op fill:#ffe6e6,stroke:#667aff,stroke-width:2px,shape:round-rect
+    classDef inputData fill:#e6f3ff,stroke:#00AA00,stroke-width:2px
+    classDef outputData fill:#e6f3ff,stroke:#FF00FF,stroke-width:2px
+    classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
+
+    data4["Source N x M1"]:::inputData
+    data4  --> op6["RidgeTransform"]:::op
+    data10["Ridge weights: Source -> Target"]:::inputData
+    data10 --> op6 --> data11["Predicted Target"]:::outputData
+
