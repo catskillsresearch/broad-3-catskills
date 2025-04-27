@@ -10,14 +10,14 @@ class UC9_I_genes458_to_PCs(luigi.Task):
             object_name="UC9_I",
             mse_goal=0.064,
             dependency_task=UC9_I_genes460_to_genes458,
-            sub_input = None,
+            sub_input = "",
             sample_size = 5000)
 
     def run(self):
         pass
 
     def output(self):
-        return self.requires().output()
+        return UC9_I_genes460_to_genes458().output()
 
 if __name__ == "__main__":
     luigi.build(
