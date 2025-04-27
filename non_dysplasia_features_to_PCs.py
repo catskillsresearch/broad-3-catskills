@@ -1,15 +1,15 @@
 import os, luigi
 from template_pca_fit_transform import template_pca_fit_transform
-from UC9_I_patches_to_features import UC9_I_patches_to_features
+from non_dysplasia_patches_to_features import non_dysplasia_patches_to_features
 
-class UC9_I_features_to_PCs(luigi.Task):
+class non_dysplasia_features_to_PCs(luigi.Task):
     def requires(self):
         # Provide hardcoded parameters and dependency
         return template_pca_fit_transform(
             object_type="feature",
-            object_name="UC9_I",
+            object_name="UC9_I_non_dysplasia",
             mse_goal=0.16,
-            dependency_task=UC9_I_patches_to_features,
+            dependency_task=non_dysplasia_patches_to_features,
             sub_input = None,
             sample_size = 1000
         )
@@ -22,7 +22,7 @@ class UC9_I_features_to_PCs(luigi.Task):
 
 if __name__ == "__main__":
     luigi.build(
-        [UC9_I_features_to_PCs()],  
+        [non_dysplasia_features_to_PCs()],  
         local_scheduler=True,  # Required for local execution
         workers=1  # Optional: single worker for serial execution
     )
