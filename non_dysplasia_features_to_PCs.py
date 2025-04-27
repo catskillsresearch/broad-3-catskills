@@ -1,18 +1,17 @@
 import os, luigi
 from template_pca_transform import template_pca_transform
-from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
-from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
-from SCRNA_unpack import SCRNA_unpack
+from UC9_I_features_to_PCs import UC9_I_features_to_PCs
+from non_dysplasia_patches_to_features import non_dysplasia_patches_to_features
 
 class non_dysplasia_features_to_PCs(luigi.Task):
     def requires(self):
         # Provide hardcoded parameters and dependency
         return template_pca_transform(
             object_type="feature",
-            object_name="UC9_I_non_dysplasia",
-            pca_fit_transform = UC9_I_genes458_to_PCs,
-            source = SCRNA_unpack,
-            source_field = 'scRNA_458_gene_expressions')
+            object_name="UC9_I_dysplasia",
+            pca_fit_transform = UC9_I_features_to_PCs,
+            source = non_dysplasia_patches_to_features,
+            source_field = 'UC9_I_dysplasia')
 
     def run(self):
         pass

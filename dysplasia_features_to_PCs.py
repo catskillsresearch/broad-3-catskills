@@ -1,7 +1,7 @@
 import os, luigi
 from template_pca_transform import template_pca_transform
 from UC9_I_features_to_PCs import UC9_I_features_to_PCs
-from SCRNA_unpack import SCRNA_unpack
+from dysplasia_patches_to_features import dysplasia_patches_to_features
 
 class dysplasia_features_to_PCs(luigi.Task):
     def requires(self):
@@ -10,8 +10,8 @@ class dysplasia_features_to_PCs(luigi.Task):
             object_type="feature",
             object_name="UC9_I_dysplasia",
             pca_fit_transform = UC9_I_features_to_PCs,
-            source = SCRNA_unpack,
-            source_field = 'scRNA_458_gene_expressions')
+            source = dysplasia_patches_to_features,
+            source_field = 'UC9_I_dysplasia')
 
     def run(self):
         pass

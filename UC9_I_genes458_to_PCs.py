@@ -17,7 +17,7 @@ class UC9_I_genes458_to_PCs(luigi.Task):
         pass
 
     def output(self):
-        return UC9_I_genes460_to_genes458().output()
+        return self.requires().output()
 
 if __name__ == "__main__":
     luigi.build(

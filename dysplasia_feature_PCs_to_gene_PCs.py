@@ -7,7 +7,7 @@ class dysplasia_feature_PCs_to_gene_PCs(luigi.Task):
     def requires(self):
         # Provide hardcoded parameters and dependency
         return template_ridge_transform(
-            src_task = dysplasia_patches_to_features,
+            src_task = dysplasia_features_to_PCs,
             fit_task = UC9_I_feature_PCs_to_gene_PCs,
             tgt_object_type = "genes458_PCs",
             tgt_object_name = "UC9_I_dysplasia")

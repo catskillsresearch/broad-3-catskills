@@ -5,7 +5,9 @@ from template_patches_to_features import template_patches_to_features
 class dysplasia_patches_to_features(luigi.Task):
     def requires(self):
         # Provide hardcoded parameters and dependency
-        return template_patches_to_features(patches_task = UC9_I_tif_unpack, patch_field = 'UC9_I_dysplasia', name = 'UC9_I_dysplasia')
+        return template_patches_to_features(patches_task = UC9_I_tif_unpack, 
+                                            patch_field = 'UC9_I_dysplasia', 
+                                            name = 'UC9_I_dysplasia')
 
     def run(self):
         pass

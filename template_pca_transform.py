@@ -6,6 +6,7 @@ from pca_analysis import pca_transform, pca_inverse_transform
 from sklearn.metrics import mean_squared_error
 import numpy as np
 from select_random_from_2D_array import select_random_from_2D_array
+from np_loadz import np_loadz
 
 class template_pca_transform(luigi.Task):
     object_type = luigi.Parameter()
@@ -53,11 +54,10 @@ class template_pca_transform(luigi.Task):
         B = np.load(fit['basis'].path)['arr_0']
         pca_mean = np.load(fit['pca_mean'].path)['arr_0']
         scaler = joblib.load(fit['scaler'].path)
-        source = self.input()['source']
-        src = source[self.source_field].path
-        X = np.load(src, allow_pickle=True)['my_array']
+        src_fn = self.input()['source'].path
+        X = np_loadz(src_fn)
         pca_src = fit['input'].path
-        X_original = np.load(pca_src, allow_pickle=True)['arr_0']
+        X_original = np_loadz(pca_src)
 
         self.compare_densities(X_original, X)
         Y = pca_transform(B, scaler, pca_mean, X)
