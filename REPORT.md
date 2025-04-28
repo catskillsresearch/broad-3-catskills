@@ -75,7 +75,7 @@ Concatenate.
 ## Genes ranked by highest absolute differential expression
 ![Crunch3 Processing](mermaid/crunch3.png)  
 
-Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change:
+The following plot shows which impactful genes came from the original set of 460 and which came from imputation by Ridge regression:
 
 ![Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change](mermaid/logFC_plot.png)  
 
