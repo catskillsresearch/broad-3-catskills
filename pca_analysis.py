@@ -1,3 +1,4 @@
+import os, gc, gzip, pickle, tempfile
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -64,14 +65,6 @@ def pca_transform(B, scaler, pca_mean, X):
     Y = X_centered @ B
     
     return Y
-
-import os
-import gzip
-import pickle
-import tempfile
-import numpy as np
-import gc
-from pathlib import Path
 
 def pca_transform_batch_export_dealloc(B, scaler, pca_mean, X, batch_size, fn):
     """Process X in batches, write compressed chunks, then combine results.
