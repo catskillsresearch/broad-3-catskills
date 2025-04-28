@@ -66,8 +66,10 @@ Apply Ridge transform pipeline to 458 Gene PCs using scRNA 458 PCs to 18157 PCs 
 ## Dysplasia/Non-dysplasia 18157 Gene PCs to 18157 Genes
 Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
 
-## Dysplasia/Non-dysplasia 458 Genes and 18157 Genes to 18615 Gene Expression
+## Dysplasia/Non-dysplasia 458 Gene PCs to 458 Genes
+Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
 
+## Dysplasia/Non-dysplasia 458 Genes and 18157 Genes to 18615 Gene Expression
 Concatenate.
 
 ## Genes ranked by highest absolute differential expression
