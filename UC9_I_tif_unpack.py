@@ -16,8 +16,8 @@ class UC9_I_tif_unpack(luigi.Task):
         
     def output(self):
         return {
-            'UC9_I_dysplasia': luigi.LocalTarget('resources/run/UC9_I_cancer.h5'),
-            'UC9_I_non_dysplasia': luigi.LocalTarget('resources/run/UC9_I_no_cancer.h5') }
+            'UC9_I_dysplasia': luigi.LocalTarget('resources/run/UC9_I_dysplasia_patches.h5'),
+            'UC9_I_non_dysplasia': luigi.LocalTarget('resources/run/UC9_I_non_dysplasia_patches.h5') }
         
     def get_images_and_regions(self):
         import skimage.io
