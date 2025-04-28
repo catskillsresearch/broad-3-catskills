@@ -8,7 +8,7 @@ class dysplasia_genes458_genes_18157_to_genes_18615(luigi.Task):
                 'genes18157': dysplasia_genes18157PCs_to_genes18157()}
 
     def output(self):
-        return luigi.LocalTarget(f'resources/run/UC9_I_dysplasia_genes18615.npz'),
+        return luigi.LocalTarget(f'resources/run/UC9_I_dysplasia_genes18615.npz')
         
     def run(self):
         d458fn = self.input()['genes458'].path

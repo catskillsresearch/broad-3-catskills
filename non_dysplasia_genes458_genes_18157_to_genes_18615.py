@@ -1,14 +1,14 @@
 import luigi
-from dysplasia_genes458PCs_to_genes458 import dysplasia_genes458PCs_to_genes458
-from dysplasia_genes18157PCs_to_genes18157 import dysplasia_genes18157PCs_to_genes18157
+from non_dysplasia_genes458PCs_to_genes458 import non_dysplasia_genes458PCs_to_genes458
+from non_dysplasia_genes18157PCs_to_genes18157 import non_dysplasia_genes18157PCs_to_genes18157
 
-class dysplasia_genes458_genes_18157_to_genes_18615(luigi.Task):
+class non_dysplasia_genes458_genes_18157_to_genes_18615(luigi.Task):
     def requires(self):
-        return {'genes458': dysplasia_genes458PCs_to_genes458(),
-                'genes18157': dysplasia_genes18157PCs_to_genes18157()}
+        return {'genes458': non_dysplasia_genes458PCs_to_genes458(),
+                'genes18157': non_dysplasia_genes18157PCs_to_genes18157()}
 
     def output(self):
-        return luigi.LocalTarget(f'resources/run/UC9_I_dysplasia_genes18615.npz'),
+        return luigi.LocalTarget(f'resources/run/UC9_I_non_dysplasia_genes18615.npz')
         
     def run(self):
         d458fn = self.input()['genes458'].path
@@ -20,7 +20,7 @@ class dysplasia_genes458_genes_18157_to_genes_18615(luigi.Task):
 
 if __name__ == "__main__":
     luigi.build(
-        [dysplasia_genes458_genes_18157_to_genes_18615()],
+        [non_dysplasia_genes458_genes_18157_to_genes_18615()],
         local_scheduler=True,  # Required for local execution
         workers=1  # Optional: single worker for serial execution
     )
