@@ -1,5 +1,4 @@
 import luigi, os, json
-from glob import glob
 from np_loadz import np_loadz
 import numpy as np
 import pandas as pd
