@@ -75,6 +75,10 @@ Concatenate.
 ## Genes ranked by highest absolute differential expression
 ![Crunch3 Processing](mermaid/crunch3.png)  
 
+Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change:
+
+![Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change](mermaid/logFC_plot.png)  
+
 # Rationale
 
 For the gene panel we suggest to take the top 500 genes in our sorted list which is ranked by absolute value of log fold change between dysplasia and non-dysplasia chips.

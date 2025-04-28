@@ -17,9 +17,10 @@ class genes_ranked_by_descending_abs_log_fold_change(luigi.Task):
     def output(self):
         return {'prediction': luigi.LocalTarget('resources/prediction.csv'),
                 'gene_ranking': luigi.LocalTarget('resources/gene_ranking.csv'),
-                'logFC_plot': luigi.LocalTarget('resources/logFC_plot.csv')}
+                'logFC_plot': luigi.LocalTarget('mermaid/logFC_plot.png')}
 
     def logFC_plot(self, genes460, prediction, df_gene_ranking):
+        #  Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change
         prediction['is460'] = prediction['Gene Name'].apply(lambda x: x in genes460)
         df = df_gene_ranking[['logFC']].copy()
         df['is460'] = ['green' if gene in genes460 else 'red' for gene in df.index]
@@ -42,7 +43,7 @@ class genes_ranked_by_descending_abs_log_fold_change(luigi.Task):
         green_patch = mpatches.Patch(color='green', label='Assayed')
         plt.legend(handles=[red_patch, green_patch]);
         
-        plt.savefig('resources/logFC_plot.png', dpi=300, bbox_inches='tight')  
+        plt.savefig(self.output()['logFC_plot'].path, dpi=300, bbox_inches='tight')  
 
     def rank_genes(self):
         inp = self.input()
