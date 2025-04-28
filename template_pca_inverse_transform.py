@@ -52,5 +52,6 @@ class template_pca_inverse_transform(luigi.Task):
         Y_original = np_loadz(pca_src)
         self.compare_densities(Y_original, Y)
         X = pca_inverse_transform(B, scaler, pca_mean, Y)
+        X = np.maximum(0, X)  # Gene expressions are non-negative
         np.savez_compressed(self.output()[self.object_type].path, X)
 
