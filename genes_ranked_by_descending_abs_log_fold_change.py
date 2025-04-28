@@ -20,7 +20,7 @@ class genes_ranked_by_descending_abs_log_fold_change(luigi.Task):
                 'gene_ranking': luigi.LocalTarget('resources/gene_ranking.csv'),
                 'logFC_plot': luigi.LocalTarget('resources/logFC_plot.csv')}
 
-    def logFC_plot(self, genes460, df):
+    def logFC_plot(self, genes460, prediction, df_gene_ranking):
         prediction['is460'] = prediction['Gene Name'].apply(lambda x: x in genes460)
         df = df_gene_ranking[['logFC']].copy()
         df['is460'] = ['green' if gene in genes460 else 'red' for gene in df.index]
