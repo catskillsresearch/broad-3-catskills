@@ -2,6 +2,8 @@ import os, luigi, torch
 from inf_encoder_factory import inf_encoder_factory
 from generate_embeddings import generate_embeddings
 from Resnet50ModelFile import Resnet50ModelFile
+from select_random_from_2D_array import select_random_from_2D_array
+import matplotlib.pyplot as plt
 
 class template_patches_to_features(luigi.Task):
 
@@ -24,14 +26,13 @@ class template_patches_to_features(luigi.Task):
         plt.xlabel('Value')
         plt.ylabel('Frequency')
         plt.title(f"Non-0 {self.name} density")
-        out = self.output()
-        plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
+        plt.savefig(self.output()['density'].path, dpi=150, bbox_inches='tight')
         plt.clf()
 
     def run(self):
         encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
         patches_path = self.input()['patches'][self.patch_field].path
-        embed_path = self.output().path
+        embed_path = self.output()['features'].path
         batch_size = 128
         num_workers = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
