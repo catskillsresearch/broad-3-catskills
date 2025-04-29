@@ -7,16 +7,26 @@ flowchart TD
     classDef outputMetric fill:#e6f3ff,stroke:#FFFF00,stroke-width:2px
 
     data3["Array N x M"]:::inputData
-    data3 --> op3["PCAFitTransform"]:::op
-    op3 --> data4["Data N x K, K <= M"]:::outputData
-    op3 --> data5["Basis"]:::outputData
-    op3aa["Visualization"]:::op
-    data3aa["Data density"]:::outputMetric
-    data3 --> op3aa --> data3aa
-    op3a["Metrics"]:::op
-    op3b["Visualization"]:::op
-    data3a["MSE"]:::outputMetric
-    data3b["% Variance Explained"]:::outputMetric
-    data4c["#PCs needed for MSE <= 0.16"]:::outputMetric
-    data4 --> op3a --> data3b & data3a
-    data4 --> op3b --> data4c
+    data3 --> op3["PCAFit"]:::op
+    data4["Data N x K, K <= M"]:::outputData
+    data5["Full Basis M x M"]:::outputData
+    data6["Eigenvalues"]:::outputData
+    data7["Cumulative explained variance"]:::outputData
+    op3 --> data5 & data6
+    op7["Cumulative sum"]:::op
+    data6 --> op7 --> data7
+    op4["Cumulative Variance Goal"]:::outputMetric
+    op5["Knee method"]:::outputMetric
+    op6["Kaiser metric"]:::outputMetric
+    data7 --> op4
+    data6 --> op6
+    data6 --> op5
+    op8["max(2,min(K_cumvar,K_knee,K_kaiser))]"]:::op
+    op4 & op5 & op6 --> op8
+    data9["K"]:::outputData
+    op8 --> data9:::outputData
+    op9["Trim basis"]:::op
+    data10["Basis M x K"]:::outputData
+    data5  & data9--> op9 --> data10
+    op11["PCA transform"]:::op
+    data10 & data3 --> op11 --> data4

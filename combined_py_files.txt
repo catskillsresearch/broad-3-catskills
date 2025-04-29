@@ -1,0 +1,2676 @@
+
+
+# ==== FILE: H5Dataset.py ====
+
+"""
+Torch Dataset & Embeddings
+
+This section defines a custom torch dataset for handling spatial transcriptomics data and generating embeddings for image patches.
+
+ **`H5Dataset`**: A torch `Dataset` class for loading spatial transcriptomics data from an HDF5 file. It loads image patches, their associated barcodes/cells and coordinates in batches to efficiently handle large datasets.
+"""
+
+from torch.utils.data import Dataset
+import h5py, torch
+import numpy as np
+
+class H5Dataset(Dataset):
+    """
+    Dataset to read ST + H&E from an HDF5 (.h5) file
+    The dataset loads images and their associated barcodes/cells and coordinates in chunks for efficient data handling.
+
+    Attributes:
+    -----------
+    h5_path : str
+        Path to the HDF5 file containing the images, barcodes, and coordinates.
+    img_transform : callable, optional
+        A transformation function to apply to the images. Defaults to None.
+    chunk_size : int, optional
+        Number of items to load per batch. Defaults to 1000.
+    n_chunks : int
+        The total number of chunks, calculated based on the size of the 'barcode' array.
+    """
+
+    def __init__(self, h5_path, img_transform=None, chunk_size=1000):
+        self.h5_path = h5_path
+        self.img_transform = img_transform
+        self.chunk_size = chunk_size
+
+        with h5py.File(h5_path, 'r') as f:
+            self.n_chunks = int(np.ceil(len(f['barcode']) / chunk_size))
+
+    def __len__(self):
+        return self.n_chunks
+
+    def __getitem__(self, idx):
+        """
+        Fetches a batch of data (images, barcodes, and coordinates) from the HDF5 file.
+
+        Parameters:
+        -----------
+        idx : int
+            The index of the chunk to fetch.
+
+        Returns:
+        --------
+        dict
+            A dictionary containing the images, barcodes, and coordinates for the specified chunk.
+        """
+
+        start_idx = idx * self.chunk_size
+        end_idx = (idx + 1) * self.chunk_size
+        # Open the HDF5 file and load the specific chunk of data
+        with h5py.File(self.h5_path, 'r') as f:
+            imgs = f['img'][start_idx:end_idx]
+            barcodes = f['barcode'][start_idx:end_idx].flatten().tolist()
+            coords = f['coords'][start_idx:end_idx]
+
+        # Apply image transformations if any (e.g. to Torch and normalization)
+        if self.img_transform:
+            imgs = torch.stack([self.img_transform(img) for img in imgs])
+
+        return {'imgs': imgs, 'barcodes': barcodes, 'coords': coords}
+
+
+# ==== FILE: InferenceEncoder.py ====
+
+import torch, os
+from abc import abstractmethod
+import timm  # timm: A library to load pretrained SOTA computer vision models (e.g. classification, feature extraction, ...)
+
+class InferenceEncoder(torch.nn.Module):
+    """
+    Abstract base class for building inference encoders.
+
+    Attributes:
+    -----------
+    weights_path : str or None
+        Path to the model weights (optional).
+    model : torch.nn.Module
+        The model architecture.
+    eval_transforms : callable
+        Evaluation transformations applied to the input images.
+    precision : torch.dtype
+        The data type of the model's parameters and inputs.
+    """
+
+    def __init__(self, weights_path=None, **build_kwargs):
+        super(InferenceEncoder, self).__init__()
+
+        self.weights_path = weights_path
+        self.model, self.eval_transforms, self.precision = self._build(weights_path, **build_kwargs)
+
+    def forward(self, x):
+        z = self.model(x)
+        return z
+
+    @abstractmethod
+    def _build(self, **build_kwargs):
+        pass
+
+
+
+# ==== FILE: Patcher.py ====
+
+"""
+Utilities for Saving and Reading HDF5 Files
+
+This section contains functions for efficiently saving and loading data from HDF5 files, which is a common format for storing large datasets.
+
+*   `save_hdf5` & `read_assets_from_h5`: Functions for saving and reading datasets and attributes to/from HDF5 files.
+*   `Patcher` class: Extracts image patches from a larger image using given coordinates.
+
+
+![patcher](https://raw.githubusercontent.com/crunchdao/competitions/refs/heads/master/competitions/broad-1/quickstarters/resnet50-plus-ridge/images/patcher.png)
+"""
+
+from tqdm import tqdm
+import h5py  # For handling HDF5 data files
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+import numpy as np
+from save_hdf5 import save_hdf5
+
+class Patcher:
+    def __init__(self, image, coords, patch_size_target, name=None):
+        """
+        Initializes the patcher object to extract patches (localized square sub-region of an image) from an image at specified coordinates.
+
+        :param image: Input image as a numpy array (H x W x 3), the input image from which patches will be extracted.
+        :param coords: List or array of cell coordinates (centroïd) [(x1, y1), (x2, y2), ...].
+        :param patch_size_target: Target size of patches.
+        :param name: Name of the whole slide image (optional).
+        """
+
+        self.image = image
+        self.height, self.width = image.shape[:2]
+        self.coords = coords
+        self.patch_size_target = patch_size_target
+        self.name = name
+
+    def __iter__(self):
+        """
+        Iterates over coordinates, yielding image patches and their coordinates.
+        """
+
+        for x, y in self.coords:
+            # Extract patch dimension centered at (x, y)
+            x_start = max(x - self.patch_size_target // 2, 0)
+            y_start = max(y - self.patch_size_target // 2, 0)
+            x_end = min(x_start + self.patch_size_target, self.width)
+            y_end = min(y_start + self.patch_size_target, self.height)
+
+            # Ensure the patch size matches the target size, padding with zeros if necessary
+            patch = np.zeros((self.patch_size_target, self.patch_size_target, 3), dtype=np.uint8)
+            patch[:y_end - y_start, :x_end - x_start, :] = self.image[y_start:y_end, x_start:x_end, :]
+
+            yield patch, x, y
+
+    def __len__(self):
+        """
+        Returns the number of patches based on the number of coordinates.
+        This is used to determine how many iterations will be done when iterating over the object.
+        """
+
+        return len(self.coords)
+
+    def save_visualization(self, path, vis_width=300, dpi=150):
+        """
+        Save a visualization of patches overlayed on the tissue H&E image.
+        This function creates a plot where each patch's location is marked with a rectangle overlaid on the image.
+
+        :param path: File path where the visualization will be saved.
+        :param vis_width: Target width of the visualization in pixels.
+        :param dpi: Resolution of the saved visualization.
+        """
+
+        # Generate the tissue visualization mask
+        mask_plot = self.image
+
+        # Calculate downscale factor for visualization
+        downscale_vis = vis_width / self.width
+
+        # Create a plot
+        _, ax = plt.subplots(figsize=(self.height / self.width * vis_width / dpi, vis_width / dpi))
+        ax.imshow(mask_plot)
+
+        # Add patches
+        patch_rectangles = []
+        for x, y in self.coords:
+            x_start, y_start = x - self.patch_size_target // 2, y - self.patch_size_target // 2
+            patch_rectangles.append(Rectangle((x_start, y_start), self.patch_size_target, self.patch_size_target))
+
+        # Add rectangles to the plot
+        ax.add_collection(PatchCollection(patch_rectangles, facecolor='none', edgecolor='black', linewidth=0.3))
+
+        ax.set_axis_off()
+        plt.tight_layout()
+        plt.savefig(path, dpi=dpi, bbox_inches='tight')
+        plt.show()
+        plt.close()
+
+    def view_coord_points(self, path, vis_width=300, dpi=150):
+        """
+        Visualizes the coordinates as small points in 2D.
+        This function generates a scatter plot of the patch coordinates on the H&E image.
+        """
+
+        # Calculate downscale factor for visualization
+        downscale_vis = vis_width / self.width
+
+        # Create a plot
+        _, ax = plt.subplots(figsize=(self.height / self.width * vis_width / dpi, vis_width / dpi))
+        plt.scatter(self.coords[:, 0], -self.coords[:, 1], s=0.2)
+        plt.savefig(path, dpi=dpi, bbox_inches='tight')
+        plt.show()
+        plt.close()
+
+    def to_h5(self, path, extra_assets={}):
+        """
+        Saves the extracted patches and their associated information to an HDF5 file.
+
+        Each patch is saved as a dataset along with its coordinates and any additional assets (extra_assets).
+        The HDF5 file is structured with a dataset for the image patch ('img') and coordinates ('coords').
+
+        :param path: File path where the HDF5 file will be saved.
+        :param extra_assets: Dictionary of additional assets to save (optional). Each value in extra_assets must have the same length as the patches.
+        """
+
+        mode_HE = 'w'  # Start with write mode for the first patch
+        i = 0
+
+        # Check that the extra_assets match the number of patches
+        if extra_assets:
+            for _, value in extra_assets.items():
+                if len(value) != len(self):
+                    raise ValueError("Each value in extra_assets must have the same length as the patcher object.")
+
+        # Ensure the file has the correct extension
+        if not (path.endswith('.h5') or path.endswith('.h5ad')):
+            path = path + '.h5'
+
+        # Loop through each patch and save it to the HDF5 file (loop through __iter__ function)
+        for tile, x, y in tqdm(self):
+            assert tile.shape == (self.patch_size_target, self.patch_size_target, 3)
+
+            # Prepare the data to be saved for this patch
+            asset_dict = {
+                'img': np.expand_dims(tile, axis=0),  # Shape (1, h, w, 3)
+                'coords': np.expand_dims([x, y], axis=0)  # Shape (1, 2)
+            }
+
+            # Add any extra assets to the asset dictionary
+            extra_asset_dict = {key: np.expand_dims([value[i]], axis=0) for key, value in extra_assets.items()}
+            asset_dict = {**asset_dict, **extra_asset_dict}
+
+            # Define the attributes for the image patch
+            attr_dict = {'img': {'patch_size_target': self.patch_size_target}}
+
+            if self.name is not None:
+                attr_dict['img']['name'] = self.name
+
+            # Save the patch data to the HDF5 file
+            save_hdf5(path, asset_dict, attr_dict, mode=mode_HE, auto_chunk=False, chunk_size=1)
+            mode_HE = 'a'  # Switch to append mode after the first patch
+            i += 1
+
+
+
+# ==== FILE: ResNet50InferenceEncoder.py ====
+
+from InferenceEncoder import InferenceEncoder
+
+class ResNet50InferenceEncoder(InferenceEncoder):
+    """
+    A specific implementation of the InferenceEncoder class for ResNet50.
+    This encoder is used to extract features from images using a pretrained ResNet50 model.
+    """
+
+    def _build(
+        self,
+        weights_root="resnet50.tv_in1k",
+        timm_kwargs={"features_only": True, "out_indices": [3], "num_classes": 0},
+        pool=True
+    ):
+        """
+        Build the ResNet50 model and load its weights. It supports both pretrained models
+        from the internet and pretrained models from a given weights path (offline).
+
+        Parameters:
+        -----------
+        weights_root : str
+            Path to pretrained model weights. Defaults to "resnet50.tv_in1k" (if online).
+        timm_kwargs : dict
+            Additional arguments for creating the ResNet50 model via the timm library.
+        pool : bool
+            Whether to apply adaptive average pooling to the output of the model. Defaults to True.
+
+        Returns:
+        --------
+        tuple
+            A tuple containing the ResNet50 model, the evaluation transformations, and the precision type.
+        """
+
+        if weights_root == "resnet50.tv_in1k":
+            pretrained = True
+            print("Load pretrained Resnet50 from internet")
+        else:
+            pretrained = False
+            print(f"Load pretrained Resnet50 offline from weights path: {weights_root}")
+
+        # Build the model using the timm library
+        import timm  # timm: A library to load pretrained SOTA computer vision models (e.g. classification, feature extraction, ...)
+        model = timm.create_model("resnet50.tv_in1k", pretrained=pretrained, **timm_kwargs)
+
+        # If not using a pretrained model, load weights from the specified path
+        import torch, os
+        if not pretrained and os.path.exists(weights_root):
+            # Load the weights
+            checkpoint = torch.load(weights_root, map_location='cpu', weights_only=True)  # or 'cuda' if using GPU
+
+            # Remove the classifier layers from the checkpoint
+            model_state_dict = model.state_dict()
+            checkpoint = {k: v for k, v in checkpoint.items() if k in model_state_dict}
+
+            # Load the weights into the model
+            model.load_state_dict(checkpoint, strict=False)
+        elif not pretrained:
+            # Issue a warning if the weights file is missing
+            print(f"\n!!! WARNING: The specified weights file '{weights_root}' does not exist. The model will be initialized with random weights.\n")
+
+        from get_eval_transforms import get_eval_transforms
+        imagenet_mean, imagenet_std = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+        eval_transform = get_eval_transforms(imagenet_mean, imagenet_std)
+        precision = torch.float32
+        if pool:
+            self.pool = torch.nn.AdaptiveAvgPool2d(1)
+        else:
+            self.pool = None
+
+        return model, eval_transform, precision
+
+    def forward(self, x):
+        out = self.forward_features(x)
+        if self.pool:
+            out = self.pool(out).squeeze(-1).squeeze(-1)
+        return out
+
+    def forward_features(self, x):
+        out = self.model(x)
+        if isinstance(out, list):
+            assert len(out) == 1
+            out = out[0]
+        return out
+
+
+
+# ==== FILE: Resnet50ModelFile.py ====
+
+import luigi
+
+class Resnet50ModelFile(luigi.ExternalTask):
+    def output(self):
+        return luigi.LocalTarget('resources/pytorch_model.bin')
+
+
+# ==== FILE: SCRNA_unpack.py ====
+
+import os, json
+import spatialdata as sd 
+import scanpy as sc
+import numpy as np
+from log1p_normalization_scale_factor import log1p_normalization_scale_factor
+import luigi
+from UC9_I_HistologyArchive import UC9_I_HistologyArchive
+
+class scRNA_SequenceArchive(luigi.ExternalTask):
+    def output(self):
+        return luigi.LocalTarget('data/Crunch3_scRNAseq.h5ad')  # UC9_I histology image
+
+
+class SCRNA_unpack(luigi.Task):
+    def requires(self):
+        return {
+            'UC9_I': UC9_I_HistologyArchive(),  # Must expose outputs via output() method
+            'scRNA': scRNA_SequenceArchive()
+        }
+        
+    def output(self):
+        return {
+            'genes460': luigi.LocalTarget('resources/run/genes460.json'),
+            'genes458': luigi.LocalTarget('resources/run/genes458.json'),
+            'genes18157': luigi.LocalTarget('resources/run/genes18157.json'),
+            'genes18615': luigi.LocalTarget('resources/run/genes18615.json'),
+            'scRNA_458_gene_expressions': luigi.LocalTarget('resources/run/scRNA_458_gene_expressions.npz'),
+            'scRNA_18157_gene_expressions': luigi.LocalTarget('resources/run/scRNA_18157_gene_expressions.npz'),
+        }
+    
+    def run(self):
+        rundir = 'resources/run'
+        os.makedirs(rundir, exist_ok=True)
+        
+        sdata = sd.read_zarr(self.input()['UC9_I'].path)
+        genes460 = sdata['anucleus'].var['gene_symbols'].values.tolist()
+
+        scRNAseq = sc.read_h5ad(self.input()['scRNA'].path)
+        genes18615 = list(scRNAseq.var.index)
+        genes458 = [x for x in genes460 if x in genes18615]
+        genes18157 = [gene for gene in genes18615 if gene not in genes458]
+
+        # scRNA-Seq data log1p-normalized with scale factor 10000 on 18615 genes
+        rna_data_norm_10000_unmeasured_genes = scRNAseq[:, genes18157].X.toarray()
+        
+        # scRNA-Seq data log1p-normalized with scale factor 100 on 460 genes
+        rna_data_norm_100_common_genes = log1p_normalization_scale_factor(
+                scRNAseq[:, genes458].layers["counts"].toarray(), 
+                scale_factor=100)
+        with self.output()['genes460'].open('w') as f:
+            json.dump(genes460, f, indent=4)
+        with self.output()['genes458'].open('w') as f:
+            json.dump(genes458, f, indent=4)
+        with self.output()['genes18615'].open('w') as f:
+            json.dump(genes18615, f, indent=4)
+        with self.output()['genes18157'].open('w') as f:
+            json.dump(genes18157, f, indent=4)
+
+        np.savez_compressed(self.output()['scRNA_18157_gene_expressions'].path, 
+                            my_array=rna_data_norm_10000_unmeasured_genes)
+
+        np.savez_compressed(f'{rundir}/scRNA_458_gene_expressions', 
+                            my_array=rna_data_norm_100_common_genes)
+
+if __name__ == "__main__":
+    luigi.build(
+        [SCRNA_unpack()],  # Replace with your task class
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_HistologyArchive.py ====
+
+import luigi
+
+class UC9_I_HistologyArchive(luigi.ExternalTask):
+    def output(self):
+        return luigi.LocalTarget("data/UC9_I.zarr")  # UC9_I histology image
+
+
+
+# ==== FILE: UC9_I_feature_PCs_to_gene_PCs.py ====
+
+import os, luigi
+from template_ridge_fit import template_ridge_fit
+from UC9_I_features_to_PCs import UC9_I_features_to_PCs
+from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
+
+class UC9_I_feature_PCs_to_gene_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_ridge_fit(
+            src_object_type = "feature_PCs",
+            src_object_name = "UC9_I",
+            src_task = UC9_I_features_to_PCs,
+            tgt_object_type = "genes458_PCs",
+            tgt_object_name = "UC9_I", 
+            tgt_task = UC9_I_genes458_to_PCs)
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_feature_PCs_to_gene_PCs()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_features_to_PCs.py ====
+
+import os, luigi
+from template_pca_fit_transform import template_pca_fit_transform
+from UC9_I_patches_to_features import UC9_I_patches_to_features
+
+class UC9_I_features_to_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_fit_transform(
+            object_type="feature",
+            object_name="UC9_I",
+            mse_goal=0.16,
+            dependency_task=UC9_I_patches_to_features,
+            sub_input = "",
+            sample_size = 1000
+        )
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_features_to_PCs()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_genes458_to_PCs.py ====
+
+import os, luigi
+from template_pca_fit_transform import template_pca_fit_transform
+from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
+
+class UC9_I_genes458_to_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_fit_transform(
+            object_type="genes458",
+            object_name="UC9_I",
+            mse_goal=0.064,
+            dependency_task=UC9_I_genes460_to_genes458,
+            sub_input = "",
+            sample_size = 5000)
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_genes458_to_PCs()], 
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_genes460_to_genes458.py ====
+
+import os, luigi, json
+from UC9_I_unpack_patches_and_genes import UC9_I_unpack_patches_and_genes
+from load_adata import load_adata
+import numpy as np
+
+class UC9_I_genes460_to_genes458(luigi.Task):
+    def requires(self):
+        return UC9_I_unpack_patches_and_genes()
+        
+    def output(self):
+        return luigi.LocalTarget('resources/run/UC9_I_genes458.npz')
+
+    def run(self):
+        with open('resources/run/genes458.json', 'r') as f:
+            genes458 = json.load(f)
+        barcodes = np.load(self.input()['barcodes'].path,allow_pickle=True)
+        adata = load_adata(self.input()['genes'].path, genes=genes458, barcodes=barcodes, normalize=False)
+        np.savez_compressed(self.output().path, adata.values)
+
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_genes460_to_genes458()],  # Replace with your task class
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_patches_to_features.py ====
+
+import luigi
+from UC9_I_unpack_patches_and_genes import UC9_I_unpack_patches_and_genes
+from template_patches_to_features import template_patches_to_features
+
+class UC9_I_patches_to_features(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_patches_to_features(patches_task = UC9_I_unpack_patches_and_genes, patch_field = 'patches', name = 'UC9_I')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_patches_to_features()], 
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_tif.py ====
+
+import luigi
+
+class UC9_I_tif(luigi.ExternalTask):
+    
+    def output(self):
+        return {'tif_HE': luigi.LocalTarget("data/UC9_I-crunch3-HE.tif"),
+                'tif_HE_nuc': luigi.LocalTarget("data/UC9_I-crunch3-HE-label-stardist.tif"),
+                'tif_region': luigi.LocalTarget("data/UC9_I-crunch3-HE-dysplasia-ROI.tif")}
+
+
+
+# ==== FILE: UC9_I_tif_unpack.py ====
+
+import os, luigi
+import spatialdata as sd  # Manage multi-modal spatial omics datasets
+import numpy as np
+from extract_spatial_positions import extract_spatial_positions
+from read_assets_from_h5 import read_assets_from_h5
+import matplotlib.pylab as plt
+from skimage.measure import regionprops
+from tqdm import tqdm
+from Patcher import Patcher
+
+class UC9_I_tif_unpack(luigi.Task):
+    
+    def requires(self):
+        from UC9_I_tif import UC9_I_tif
+        return UC9_I_tif()
+        
+    def output(self):
+        return {
+            'UC9_I_dysplasia': luigi.LocalTarget('resources/run/UC9_I_dysplasia_patches.h5'),
+            'UC9_I_non_dysplasia': luigi.LocalTarget('resources/run/UC9_I_non_dysplasia_patches.h5') }
+        
+    def get_images_and_regions(self):
+        import skimage.io
+        # Read the dysplasia-related images and store them in a dictionary
+        self.dysplasia_img_list = {}
+        for key in self.input():
+            self.dysplasia_img_list[key] = skimage.io.imread(self.input()[key].path)
+        self.regions = regionprops(self.dysplasia_img_list['tif_HE_nuc'])
+
+    def get_cell_ids_by_type(self):
+        # Divide cell IDs between dysplasia and non-dysplasia status
+        self.cell_ids_no_cancer, self.cell_ids_cancer = [], []
+        # Loop through each region and extract centroid if the cell ID matches
+        tif_region = self.dysplasia_img_list['tif_region']
+        for props in tqdm(self.regions):
+            cell_id = props.label
+            centroid = props.centroid
+            y_center, x_center = int(centroid[0]), int(centroid[1])
+            dysplasia = tif_region[y_center, x_center]
+            if dysplasia == 1:
+                self.cell_ids_no_cancer.append(cell_id)
+            elif dysplasia == 2:
+                self.cell_ids_cancer.append(cell_id)
+
+    def save_patches(self, name_data, cell_ids):
+        target_patch_size=32
+        vis_width=1000
+        h5_path = self.output()[name_data].path
+        coords_center = extract_spatial_positions(self.dysplasia_img_list, cell_ids)
+        barcodes = np.array(['x' + str(i).zfill(6) for i in list(cell_ids)]) 
+        intensity_image = self.dysplasia_img_list['tif_HE'].copy()
+        patcher = Patcher(
+            image=intensity_image,
+            coords=coords_center,
+            patch_size_target=target_patch_size)
+        patcher.to_h5(h5_path, extra_assets={'barcode': barcodes})
+
+    def run(self):
+        self.get_images_and_regions()
+        self.get_cell_ids_by_type()
+        self.save_patches("UC9_I_non_dysplasia", self.cell_ids_no_cancer)
+        self.save_patches("UC9_I_dysplasia", self.cell_ids_cancer)
+
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_tif_unpack()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: UC9_I_unpack_patches_and_genes.py ====
+
+import os, luigi
+import spatialdata as sd  # Manage multi-modal spatial omics datasets
+import numpy as np
+from UC9_I_HistologyArchive import UC9_I_HistologyArchive
+from extract_spatial_positions import extract_spatial_positions
+from read_assets_from_h5 import read_assets_from_h5
+import matplotlib.pylab as plt
+
+class UC9_I_unpack_patches_and_genes(luigi.Task):
+    def requires(self):
+        return UC9_I_HistologyArchive()
+        
+    def output(self):
+        return {
+            'patches': luigi.LocalTarget('resources/run/UC9_I_patches.h5'),
+            'genes': luigi.LocalTarget('resources/run/UC9_I_genes.h5ad'),
+            'barcodes': luigi.LocalTarget('resources/run/UC9_I_barcodes.npy'),
+            'spatial_positions': luigi.LocalTarget('resources/run/spatial_positions.npy'),
+            'patch_locations_on_image': luigi.LocalTarget('mermaid/UC9_I_patch_locations_on_image.png'),
+            'spatial_coordinates': luigi.LocalTarget('mermaid/UC9_I_spatial_coordinates.png'),
+            'patch_examples': luigi.LocalTarget('mermaid/UC9_I_patch_examples.png')        }
+
+    def spatial_positions(self):
+        self.sdata = sd.read_zarr(self.input().path)   
+        cell_id_train = self.sdata['anucleus'].obs["cell_id"].values
+        new_spatial_coord = extract_spatial_positions(self.sdata, cell_id_train)
+        self.sdata['anucleus'].obsm['spatial'] = new_spatial_coord
+        np.save(self.output()['spatial_positions'].path, new_spatial_coord)
+
+    def gene_expressions(self):
+        # Create the gene expression dataset (Y)
+        rows_to_keep = list(self.sdata['anucleus'].obs.sample(n=len(self.sdata['anucleus'].obs)).index)
+        self.y_subtracted = self.sdata['anucleus'][rows_to_keep].copy()
+        # Trick to set all index to same length to avoid problems when saving to h5
+        self.y_subtracted.obs.index = ['x' + str(i).zfill(6) for i in self.y_subtracted.obs.index]
+        # Check
+        for index in self.y_subtracted.obs.index:
+            if len(index) != len(self.y_subtracted.obs.index[0]):
+                warnings.warn("indices of self.y_subtracted.obs should all have the same length to avoid problems when saving to h5", UserWarning)
+        # Save the gene expression data to an H5AD file
+        self.y_subtracted.write(self.output()['genes'].path)
+
+    def patches(self):
+        # Extract spatial coordinates and barcodes (cell IDs) for the patches
+        coords_center = self.y_subtracted.obsm['spatial']
+        barcodes = np.array(self.y_subtracted.obs.index)
+        # Load the image and transpose it to the correct format
+        intensity_image = np.transpose(self.sdata['HE_original'].to_numpy(), (1, 2, 0))
+        from Patcher import Patcher
+        self.patcher = Patcher(image=intensity_image, coords=coords_center, patch_size_target=32)
+        self.patcher.to_h5(self.output()['patches'].path, extra_assets={'barcode': barcodes})
+        np.save(self.output()['barcodes'].path, barcodes)
+        
+    def visualization(self):
+        # Visualization
+        vis_width=1000
+        self.patcher.save_visualization(self.output()['patch_locations_on_image'].path, vis_width=vis_width)
+        self.patcher.view_coord_points(self.output()['spatial_coordinates'].path, vis_width=vis_width)
+        # Display some example images from the created dataset
+        print("Examples from the created .h5 dataset")
+        assets, _ = read_assets_from_h5(self.output()['patches'].path)
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        for i in range(3):
+            axes[i].imshow(assets["img"][i])
+        for ax in axes:
+            ax.axis('off')
+        plt.savefig(self.output()['patch_examples'].path, dpi=150, bbox_inches='tight')
+        
+    def run(self):
+        self.spatial_positions()
+        self.gene_expressions()
+        self.patches()
+        self.visualization()
+
+if __name__ == "__main__":
+    luigi.build(
+        [UC9_I_unpack_patches_and_genes()],  # Replace with your task class
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_feature_PCs_to_gene_PCs.py ====
+
+import os, luigi
+from template_ridge_transform import template_ridge_transform
+from dysplasia_features_to_PCs import dysplasia_features_to_PCs
+from UC9_I_feature_PCs_to_gene_PCs import UC9_I_feature_PCs_to_gene_PCs
+
+class dysplasia_feature_PCs_to_gene_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_ridge_transform(
+            src_task = dysplasia_features_to_PCs,
+            fit_task = UC9_I_feature_PCs_to_gene_PCs,
+            tgt_object_type = "genes458_PCs",
+            tgt_object_name = "UC9_I_dysplasia")
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_feature_PCs_to_gene_PCs()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_features_to_PCs.py ====
+
+import os, luigi
+from template_pca_transform import template_pca_transform
+from UC9_I_features_to_PCs import UC9_I_features_to_PCs
+from dysplasia_patches_to_features import dysplasia_patches_to_features
+
+class dysplasia_features_to_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_transform(
+            object_type="feature",
+            object_name="UC9_I_dysplasia",
+            pca_fit_transform = UC9_I_features_to_PCs,
+            source = dysplasia_patches_to_features,
+            source_field = 'UC9_I_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_features_to_PCs()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_gene458_PCs_to_gene18157_PCs.py ====
+
+import os, luigi
+from template_ridge_transform import template_ridge_transform
+from dysplasia_feature_PCs_to_gene_PCs import dysplasia_feature_PCs_to_gene_PCs
+from scRNA_genes458_PCs_to_genes18157_PCs import scRNA_genes458_PCs_to_genes18157_PCs
+
+class dysplasia_gene458_PCs_to_gene18157_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_ridge_transform(
+            src_task = dysplasia_feature_PCs_to_gene_PCs,
+            fit_task = scRNA_genes458_PCs_to_genes18157_PCs,
+            tgt_object_type = "genes18157_PCs",
+            tgt_object_name = "UC9_I_dysplasia")
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_gene458_PCs_to_gene18157_PCs()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_genes18157PCs_to_genes18157.py ====
+
+import os, luigi
+from template_pca_inverse_transform import template_pca_inverse_transform
+from scRNA_genes18157_to_PCs import scRNA_genes18157_to_PCs
+from dysplasia_gene458_PCs_to_gene18157_PCs import dysplasia_gene458_PCs_to_gene18157_PCs
+
+class dysplasia_genes18157PCs_to_genes18157(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_inverse_transform(
+            object_type="genes18157",
+            object_name="UC9_I_dysplasia",
+            pca_fit_transform = scRNA_genes18157_to_PCs,
+            source = dysplasia_gene458_PCs_to_gene18157_PCs,
+            source_field = 'UC9_I_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_genes18157PCs_to_genes18157()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_genes458PCs_to_genes458.py ====
+
+import os, luigi
+from template_pca_inverse_transform import template_pca_inverse_transform
+from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
+from dysplasia_feature_PCs_to_gene_PCs import dysplasia_feature_PCs_to_gene_PCs
+
+class dysplasia_genes458PCs_to_genes458(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_inverse_transform(
+            object_type="genes458",
+            object_name="UC9_I_dysplasia",
+            pca_fit_transform = UC9_I_genes458_to_PCs,
+            source = dysplasia_feature_PCs_to_gene_PCs,
+            source_field = 'UC9_I_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_genes458PCs_to_genes458()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_genes458_genes_18157_to_genes_18615.py ====
+
+import luigi
+from dysplasia_genes458PCs_to_genes458 import dysplasia_genes458PCs_to_genes458
+from dysplasia_genes18157PCs_to_genes18157 import dysplasia_genes18157PCs_to_genes18157
+
+class dysplasia_genes458_genes_18157_to_genes_18615(luigi.Task):
+    def requires(self):
+        return {'genes458': dysplasia_genes458PCs_to_genes458(),
+                'genes18157': dysplasia_genes18157PCs_to_genes18157()}
+
+    def output(self):
+        return luigi.LocalTarget(f'resources/run/UC9_I_dysplasia_genes18615.npz')
+        
+    def run(self):
+        d458fn = self.input()['genes458'].path
+        d157fn = self.input()['genes18157'].path
+        d458 = np_loadz(d458fn)
+        d157 = np_loadz(d157fn)
+        d18615 = np.hstack([d458, d157])
+        np.savez_compressed(self.output().path, d18615)
+
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_genes458_genes_18157_to_genes_18615()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: dysplasia_patches_to_features.py ====
+
+import luigi
+from UC9_I_tif_unpack import UC9_I_tif_unpack
+from template_patches_to_features import template_patches_to_features
+
+class dysplasia_patches_to_features(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_patches_to_features(patches_task = UC9_I_tif_unpack, 
+                                            patch_field = 'UC9_I_dysplasia', 
+                                            name = 'UC9_I_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [dysplasia_patches_to_features()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: embed_tiles.py ====
+
+import torch
+import numpy as np
+        
+def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, device: str, precision):
+    """
+    Extracts embeddings from image tiles using the specified model and saves them to an HDF5 file.
+
+    Parameters:
+    -----------
+    dataloader : torch.utils.data.DataLoader
+        DataLoader providing the batches of image tiles.
+    model : torch.nn.Module
+        The model used to generate embeddings from the tiles.
+    embedding_save_path : str
+        Path where the generated embeddings will be saved.
+    device : str
+        The device to run the model on (e.g., 'cuda' or 'cpu').
+    precision : torch.dtype
+        The precision (data type) to use for inference (e.g., float16 for mixed precision).
+    """
+
+    model.eval()
+    # Iterate over the batches in the DataLoader
+    from tqdm import tqdm
+    A = []
+    for batch_idx, batch in tqdm(enumerate(dataloader), total=len(dataloader)):
+        from post_collate_fn import post_collate_fn
+        batch = post_collate_fn(batch)
+        imgs = batch['imgs'].to(device).float()
+        # Apply model on images
+        with torch.inference_mode():
+            if torch.cuda.is_available():  # Use mixed precision only if CUDA is available
+                with torch.amp.autocast('cuda', dtype=precision):
+                    embeddings = model(imgs)
+            else:  # No mixed precision on CPU
+                embeddings = model(imgs)
+
+        # Set mode to 'w' for the first batch, 'a' for appending subsequent batches
+        mode = 'w' if batch_idx == 0 else 'a'
+
+        # Create a dictionary with embeddings and other relevant data to save
+        f = embeddings.cpu().numpy()
+        A.append(f)
+        
+    features = np.vstack(A)
+    np.savez_compressed(embedding_save_path, features)
+
+    return embedding_save_path
+
+
+
+# ==== FILE: extract_spatial_positions.py ====
+
+"""
+Preprocessing Spatial Transcriptomics Data
+
+This section contains functions for preprocessing spatial transcriptomics data, including extracting spatial coordinates, generating image patches and preparing datasets for training and testing.
+
+* **`extract_spatial_positions`**: Extracts spatial coordinates (centroids) of cells.
+* **`process_and_visualize_image`**: Extracts square image patches from H&E images and visualizes them.
+* **`preprocess_spatial_transcriptomics_data_train`**: Prepares training data by generating gene expression (Y) and image patch datasets (X).
+* **`preprocess_spatial_transcriptomics_data_test`**: Prepares test data by generating image patches (X) for selected cells.
+* **`create_cross_validation_splits`**: Creates leave-one-out cross-validation splits for model evaluation.
+
+![data_X_Y](https://raw.githubusercontent.com/crunchdao/competitions/refs/heads/master/competitions/broad-1/quickstarters/resnet50-plus-ridge/images/data_X_Y.png)
+
+`Leave-one-out cross-validation schema:`
+![cross_validation](https://raw.githubusercontent.com/crunchdao/competitions/refs/heads/master/competitions/broad-1/quickstarters/resnet50-plus-ridge/images/cross_validation.png)
+"""
+
+import os
+import spatialdata as sd  # Manage multi-modal spatial omics datasets
+from skimage.measure import regionprops  # Get region properties of nucleus/cell image from masked nucleus image
+from tqdm import tqdm
+import numpy as np
+import pandas as pd
+from save_hdf5 import *
+import gc
+import json
+import warnings
+
+def extract_spatial_positions(sdata, cell_id_list):
+    """
+    Extracts spatial positions (centroids) of regions from the nucleus image where cell IDs match the provided cell list.
+
+    Need to use 'HE_nuc_original' to extract spatial coordinate of cells
+    HE_nuc_original: The nucleus segmentation mask of H&E image, in H&E native coordinate system. 
+                     The cell_id in this segmentation mask matches with the nuclei by gene matrix stored in anucleus.
+    HE_nuc_original is like a binary segmentation mask 0 - 1 but replace 1 with cell_ids.
+    You can directly find the location of a cell, with cell_id, through HE_nuc_original==cell_id
+
+    Parameters:
+    -----------
+    sdata: SpatialData
+        A spatial data object containing the nucleus segmentation mask ('HE_nuc_original').
+    cell_id_list: array-like
+        A list or array of cell IDs to filter the regions.
+
+    Returns:
+    --------
+    np.ndarray
+        A NumPy array of spatial coordinates (x_center, y_center) for matched regions.
+    """
+
+    print("Extracting spatial positions ...")
+    # Get region properties from the nucleus image: for each cell_id get its location on HE image
+    if "tif_HE_nuc" in sdata:
+        regions = regionprops(sdata['tif_HE_nuc'])
+    else:
+        regions = regionprops(sdata['HE_nuc_original'][0, :, :].to_numpy())
+
+    dict_spatial_positions = {}
+    # Loop through each region and extract centroid if the cell ID matches
+    for props in tqdm(regions):
+        cell_id = props.label
+        centroid = props.centroid
+        # Extract only coordinates from the provided cell_id list
+        if cell_id in cell_id_list:
+            y_center, x_center = int(centroid[0]), int(centroid[1])
+            dict_spatial_positions[cell_id] = [x_center, y_center]
+
+    # To maintain cell IDs order
+    spatial_positions = []
+    for cell_id in cell_id_list:
+        try:
+            spatial_positions.append(dict_spatial_positions[cell_id])
+        except KeyError:
+            print(f"Warning: Cell ID {cell_id} not found in the segmentation mask.")
+            spatial_positions.append([1000, 1000])
+
+    return np.array(spatial_positions)
+
+
+
+# ==== FILE: gene_ranking.py ====
+
+"""
+
+The `gene_ranking` function identifies the top discriminating genes that differentiate dysplastic (pre-cancerous) from non-cancerous mucosa regions.
+
+**Steps:**
+1. **Input Predictions**: Take gene expression data for non-cancerous and dysplastic cells (shapes: n_cells x 18615genes v.s. m_cells x 18615genes).
+2. **Compute Metrics**: Calculate mean, variance and absolute log fold change (logFC) for all 18 615 protein-coding genes.
+3. **Rank Genes**: Rank genes by their ability to distinguish dysplastic from non-cancerous regions using absolute log fold change.
+4. **Output**: Return a DataFrame of gene names ranked from best to worst discriminator.
+
+"""
+
+import numpy as np
+import pandas as pd
+
+def gene_ranking(prediction_cell_ids_no_cancer, prediction_cell_ids_cancer,
+                 column_for_ranking="abs_logFC", ascending=False):
+    """
+    Rank all 18,615 protein-coding genes based on their ability to distinguish dysplasia
+    from non-cancerous mucosa regions. Each gene is assigned a rank from 1
+    (best discriminator) to 18,615 (worst), comparing expression levels between
+    non-cancerous and dysplastic tissue cells.
+
+    Parameters:
+    prediction_cell_ids_no_cancer: np.ndarray
+        Predicted gene expression for cells from non-cancerous regions.
+    prediction_cell_ids_cancer: np.ndarray
+        Predicted gene expression for cells from dysplastic (pre-cancerous) regions.
+    column_for_ranking: str
+        Column name used to rank genes (default is "abs_logFC").
+    ascending: bool
+        Whether to sort in ascending order (default is False).
+
+    Returns:
+    pd.DataFrame
+        A DataFrame containing gene names ranked by the specified metric.
+    """
+
+    # Calculate mean and variance for each gene
+    mean_no_cancer = prediction_cell_ids_no_cancer.mean(axis=0)
+    mean_cancer = prediction_cell_ids_cancer.mean(axis=0)
+
+    var_no_cancer = prediction_cell_ids_no_cancer.var(axis=0)
+    var_cancer = prediction_cell_ids_cancer.var(axis=0)
+
+    ### Compute ranking metrics ###
+    # Compute the absolute difference in mean expression levels
+    dif_abs_mean = np.abs(mean_no_cancer - mean_cancer)
+
+    # Compute the log fold change (logFC) for each gene
+    epsilon = 1e-6  # Small value to avoid division by zero
+    log_fc = np.log2((mean_cancer + epsilon) / (mean_no_cancer + epsilon))
+
+    gene_ranking_df = pd.DataFrame({
+        'mean_no_cancer': mean_no_cancer,
+        'mean_cancer': mean_cancer,
+        'variance_no_cancer': var_no_cancer,
+        'variance_cancer': var_cancer,
+        'dif_abs_mean': dif_abs_mean,
+        'logFC': log_fc,
+        'abs_logFC': np.abs(log_fc)
+    })
+
+    # Sort by column_for_ranking
+    gene_ranking_df = gene_ranking_df.sort_values(by=column_for_ranking, ascending=ascending)
+
+    print(f"Gene ranking by {column_for_ranking}:")
+    print(gene_ranking_df.head())
+
+    # Create the final ranked DataFrame with gene names and their ranks
+    prediction = pd.DataFrame(
+        gene_ranking_df.index,
+        index=np.arange(1, len(gene_ranking_df) + 1),
+        columns=['Gene Name'],
+    )
+
+    return prediction, gene_ranking_df
+
+
+# ==== FILE: generate_embeddings.py ====
+
+"""
+**`generate_embeddings`**: A utility for generating embeddings from images  and saving them to an HDF5 file. It handles creating a `DataLoader`, running the model in evaluation mode and saving embeddings to disk.
+"""
+
+def generate_embeddings(embed_path, encoder, device, tile_h5_path, batch_size, num_workers):
+    """
+    Generate embeddings for images and save to a specified path.
+
+    Parameters:
+    -----------
+    embed_path : str
+        Path to save the embeddings.
+    encoder : torch.nn.Module
+        The encoder model for generating embeddings.
+    device : torch.device
+        Device to use for computation (e.g., 'cuda' or 'cpu').
+    tile_h5_path : str
+        Path to the HDF5 file containing images.
+    batch_size : int
+        Batch size for the DataLoader.
+    num_workers : int
+        Number of worker threads for data loading.
+    overwrite : bool, optional
+        If True, overwrite existing embeddings. Default is False.
+    """
+
+    # If the embeddings file doesn't exist or overwrite is True, proceed to generate embeddings
+    import os
+
+    # Set encoder to evaluation mode and move it to the device
+    encoder.eval()
+    encoder.to(device)
+
+    # Create dataset and dataloader for tiles
+    from H5Dataset import H5Dataset
+    tile_dataset = H5Dataset(tile_h5_path, chunk_size=batch_size, img_transform=encoder.eval_transforms)
+
+    import torch
+    tile_dataloader = torch.utils.data.DataLoader(
+        tile_dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=num_workers
+    )
+
+    # Generate and save embeddings
+    from embed_tiles import embed_tiles
+    embed_tiles(tile_dataloader, encoder, embed_path, device, encoder.precision)
+
+
+
+# ==== FILE: genes_ranked_by_descending_abs_log_fold_change.py ====
+
+import luigi, os, json
+from np_loadz import np_loadz
+import numpy as np
+import pandas as pd
+from gene_ranking import gene_ranking
+import matplotlib.pyplot as plt
+from dysplasia_genes458_genes_18157_to_genes_18615 import dysplasia_genes458_genes_18157_to_genes_18615
+from non_dysplasia_genes458_genes_18157_to_genes_18615 import non_dysplasia_genes458_genes_18157_to_genes_18615
+from SCRNA_unpack import SCRNA_unpack
+
+class genes_ranked_by_descending_abs_log_fold_change(luigi.Task):
+    def requires(self):
+        return {'dysplasia': dysplasia_genes458_genes_18157_to_genes_18615(),
+                'non_dysplasia': non_dysplasia_genes458_genes_18157_to_genes_18615(),
+                'unpack': SCRNA_unpack()}
+
+    def output(self):
+        return {'prediction': luigi.LocalTarget('resources/prediction.csv'),
+                'gene_ranking': luigi.LocalTarget('resources/gene_ranking.csv'),
+                'logFC_plot': luigi.LocalTarget('mermaid/logFC_plot.png')}
+
+    def logFC_plot(self, genes460, prediction, df_gene_ranking):
+        #  Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change
+        prediction['is460'] = prediction['Gene Name'].apply(lambda x: x in genes460)
+        df = df_gene_ranking[['logFC']].copy()
+        df['is460'] = ['green' if gene in genes460 else 'red' for gene in df.index]
+        df['rank'] = [i+1 for i in range(len(df))]
+
+        plt.figure(figsize=(10, 6))
+        df_460 = df[df.is460 == 'green']
+        df_imputed = df[df.is460 != 'green']
+        plt.scatter(df_imputed['rank'].values, df_imputed['logFC'].values, c=df_imputed['is460'].values, s=0.1);
+        plt.scatter(df_460['rank'].values, df_460['logFC'].values, c=df_460['is460'].values, s=5);
+        
+        # Add labels and title
+        plt.xlabel('Sort index by descending abs log fold change')
+        plt.ylabel('logFC')
+        plt.title('Scatterplot of logFC vs Imputed or Assayed')
+        
+        # Create custom legend
+        import matplotlib.patches as mpatches
+        red_patch = mpatches.Patch(color='red', label='Imputed')
+        green_patch = mpatches.Patch(color='green', label='Assayed')
+        plt.legend(handles=[red_patch, green_patch]);
+        
+        plt.savefig(self.output()['logFC_plot'].path, dpi=300, bbox_inches='tight')  
+
+    def rank_genes(self):
+        inp = self.input()
+        d18615 = np_loadz(inp['dysplasia'].path)
+        nd18615 = np_loadz(inp['non_dysplasia'].path)
+        
+        with open(inp['unpack']['genes18615'].path,'r') as f:
+            genes = json.load(f)
+        
+        with open(inp['unpack']['genes460'].path, 'r') as f:
+            genes460 = json.load(f)
+        
+        prediction_cell_ids_no_cancer = pd.DataFrame(nd18615, columns=genes)
+        prediction_cell_ids_cancer = pd.DataFrame(d18615, columns=genes)
+        prediction, df_gene_ranking = gene_ranking(prediction_cell_ids_no_cancer, prediction_cell_ids_cancer)
+        
+        # Save the ranked genes to a CSV file -> to use for the inder function and crunchDAO crunch 3 submission
+        outp = self.output()
+        prediction.to_csv(outp['gene_ranking'].path)
+        df_gene_ranking.to_csv(outp['logFC_plot'].path)
+
+        return genes460, prediction, df_gene_ranking 
+        
+    def run(self):
+        genes460, prediction, df_gene_ranking = self.rank_genes()
+        self.logFC_plot(genes460, prediction, df_gene_ranking)
+
+if __name__ == "__main__":
+    luigi.build(
+        [genes_ranked_by_descending_abs_log_fold_change()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: get_eval_transforms.py ====
+
+import torch, os
+from abc import abstractmethod
+import timm  # timm: A library to load pretrained SOTA computer vision models (e.g. classification, feature extraction, ...)
+from torchvision import transforms
+import torchvision.transforms.functional as TF
+
+def get_eval_transforms(mean, std):
+    """
+    Creates the evaluation transformations for preprocessing images. This includes
+    converting the images to tensor format and normalizing them with given mean and std.
+
+    Parameters:
+    -----------
+    mean : list
+        The mean values used for normalization.
+    std : list
+        The standard deviation values used for normalization.
+
+    Returns:
+    --------
+    transforms.Compose
+        A composed transformation function that applies the transformations in sequence.
+    """
+    trsforms = []
+
+    # Convert image to tensor
+    trsforms.append(lambda img: TF.to_tensor(img))
+
+    if mean is not None and std is not None:
+        # Normalize the image
+        trsforms.append(lambda img: TF.normalize(img, mean, std))
+
+    return transforms.Compose(trsforms)
+
+
+
+# ==== FILE: inf_encoder_factory.py ====
+
+from ResNet50InferenceEncoder import ResNet50InferenceEncoder
+
+def inf_encoder_factory(enc_name):
+    """
+    Factory function to instantiate an encoder based on the specified name.
+
+    Parameters:
+    -----------
+    enc_name : str
+        The name of the encoder model to instantiate (e.g., 'resnet50').
+
+    Returns:
+    --------
+    class
+        The encoder class corresponding to the specified encoder name.
+    """
+
+    if enc_name == 'resnet50':
+        return ResNet50InferenceEncoder
+
+    raise ValueError(f"Unknown encoder name {enc_name}")
+
+
+
+# ==== FILE: infer.py ====
+
+import os
+import pandas as pd
+
+def infer(
+    data_file_path: str,
+    data_directory_path: str,
+    model_directory_path: str
+):
+    return pd.read_csv(os.path.join(model_directory_path, "gene_ranking.csv"), index_col=0)
+
+if __name__=="__main__":
+    prediction = infer(
+        data_file_path="./data",
+        data_directory_path="./data",
+        model_directory_path="./resources"
+    )
+    print(prediction.head())
+
+
+
+
+# ==== FILE: load_adata.py ====
+
+import scanpy as sc  # For analyzing single-cell data, especially for dimensionality reduction and clustering.
+import numpy as np
+
+def load_adata(expr_path, genes=None, barcodes=None, normalize=False):
+    """
+    Load AnnData object from a given path
+
+    Parameters:
+    -----------
+    expr_path : str
+        Path to the .h5ad file containing the AnnData object.
+    genes : list, optional
+        List of genes to retain. If None, all genes are kept.
+    barcodes : list, optional
+        List of barcodes (cells) to retain. If None, all cells are kept.
+    normalize : bool, optional
+        Whether to apply normalization (log1p normalization) to the data.
+
+    Returns:
+    --------
+    pd.DataFrame
+        Gene expression data as a DataFrame.
+    """
+
+    adata = sc.read_h5ad(expr_path)
+    if barcodes is not None:
+        adata = adata[barcodes]
+    if genes is not None:
+        adata = adata[:, genes]
+    if normalize:
+        adata = normalize_adata(adata)
+    return adata.to_df()
+
+
+
+
+# ==== FILE: log1p_normalization.py ====
+
+import scanpy as sc  # For analyzing single-cell data, especially for dimensionality reduction and clustering.
+import numpy as np
+
+def log1p_normalization(arr):
+    """  Apply log1p normalization to the given array """
+
+    scale_factor = 100
+    return np.log1p((arr / np.sum(arr, axis=1, keepdims=True)) * scale_factor)
+
+
+
+# ==== FILE: log1p_normalization_scale_factor.py ====
+
+import numpy as np
+
+def log1p_normalization_scale_factor(arr, scale_factor=10000):
+    row_sums = np.sum(arr, axis=1, keepdims=True)
+    row_sums = np.where(row_sums == 0, 1, row_sums)  # Avoid division by zero
+    return np.log1p((arr / row_sums) * scale_factor)
+
+
+# ==== FILE: main.py ====
+
+from train import train
+from infer import infer
+
+
+# ==== FILE: non_dysplasia_feature_PCs_to_gene_PCs.py ====
+
+import os, luigi
+from template_ridge_transform import template_ridge_transform
+from non_dysplasia_features_to_PCs import non_dysplasia_features_to_PCs
+from UC9_I_feature_PCs_to_gene_PCs import UC9_I_feature_PCs_to_gene_PCs
+
+class non_dysplasia_feature_PCs_to_gene_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_ridge_transform(
+            src_task = non_dysplasia_features_to_PCs,
+            fit_task = UC9_I_feature_PCs_to_gene_PCs,
+            tgt_object_type = "genes458_PCs", 
+            tgt_object_name = "UC9_I_non_dysplasia")
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_feature_PCs_to_gene_PCs()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: non_dysplasia_features_to_PCs.py ====
+
+import os, luigi
+from template_pca_transform import template_pca_transform
+from UC9_I_features_to_PCs import UC9_I_features_to_PCs
+from non_dysplasia_patches_to_features import non_dysplasia_patches_to_features
+
+class non_dysplasia_features_to_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_transform(
+            object_type="feature",
+            object_name="UC9_I_non_dysplasia",
+            pca_fit_transform = UC9_I_features_to_PCs,
+            source = non_dysplasia_patches_to_features,
+            source_field = 'UC9_I_non_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_features_to_PCs()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: non_dysplasia_gene458_PCs_to_gene18157_PCs.py ====
+
+import os, luigi
+from template_ridge_transform import template_ridge_transform
+from non_dysplasia_feature_PCs_to_gene_PCs import non_dysplasia_feature_PCs_to_gene_PCs
+from scRNA_genes458_PCs_to_genes18157_PCs import scRNA_genes458_PCs_to_genes18157_PCs
+
+class non_dysplasia_gene458_PCs_to_gene18157_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_ridge_transform(
+            src_task = non_dysplasia_feature_PCs_to_gene_PCs,
+            fit_task = scRNA_genes458_PCs_to_genes18157_PCs,
+            tgt_object_type = "genes18157_PCs",
+            tgt_object_name = "UC9_I_non_dysplasia")
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_gene458_PCs_to_gene18157_PCs()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: non_dysplasia_genes18157PCs_to_genes18157.py ====
+
+import os, luigi
+from template_pca_inverse_transform import template_pca_inverse_transform
+from scRNA_genes18157_to_PCs import scRNA_genes18157_to_PCs
+from non_dysplasia_gene458_PCs_to_gene18157_PCs import non_dysplasia_gene458_PCs_to_gene18157_PCs
+
+class non_dysplasia_genes18157PCs_to_genes18157(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_inverse_transform(
+            object_type="genes18157",
+            object_name="UC9_I_non_dysplasia",
+            pca_fit_transform = scRNA_genes18157_to_PCs,
+            source = non_dysplasia_gene458_PCs_to_gene18157_PCs,
+            source_field = 'UC9_I_non_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_genes18157PCs_to_genes18157()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: non_dysplasia_genes458PCs_to_genes458.py ====
+
+import os, luigi
+from template_pca_inverse_transform import template_pca_inverse_transform
+from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
+from non_dysplasia_feature_PCs_to_gene_PCs import non_dysplasia_feature_PCs_to_gene_PCs
+
+class non_dysplasia_genes458PCs_to_genes458(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_inverse_transform(
+            object_type="genes458",
+            object_name="UC9_I_non_dysplasia",
+            pca_fit_transform = UC9_I_genes458_to_PCs,
+            source = non_dysplasia_feature_PCs_to_gene_PCs,
+            source_field = 'UC9_I_non_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_genes458PCs_to_genes458()],  
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: non_dysplasia_genes458_genes_18157_to_genes_18615.py ====
+
+import luigi
+from non_dysplasia_genes458PCs_to_genes458 import non_dysplasia_genes458PCs_to_genes458
+from non_dysplasia_genes18157PCs_to_genes18157 import non_dysplasia_genes18157PCs_to_genes18157
+
+class non_dysplasia_genes458_genes_18157_to_genes_18615(luigi.Task):
+    def requires(self):
+        return {'genes458': non_dysplasia_genes458PCs_to_genes458(),
+                'genes18157': non_dysplasia_genes18157PCs_to_genes18157()}
+
+    def output(self):
+        return luigi.LocalTarget(f'resources/run/UC9_I_non_dysplasia_genes18615.npz')
+        
+    def run(self):
+        d458fn = self.input()['genes458'].path
+        d157fn = self.input()['genes18157'].path
+        d458 = np_loadz(d458fn)
+        d157 = np_loadz(d157fn)
+        d18615 = np.hstack([d458, d157])
+        np.savez_compressed(self.output().path, d18615)
+
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_genes458_genes_18157_to_genes_18615()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: non_dysplasia_patches_to_features.py ====
+
+import luigi
+from UC9_I_tif_unpack import UC9_I_tif_unpack
+from template_patches_to_features import template_patches_to_features
+
+class non_dysplasia_patches_to_features(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_patches_to_features(patches_task = UC9_I_tif_unpack, patch_field = 'UC9_I_non_dysplasia', name = 'UC9_I_non_dysplasia')
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [non_dysplasia_patches_to_features()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: normalize_adata.py ====
+
+import scanpy as sc  # For analyzing single-cell data, especially for dimensionality reduction and clustering.
+import numpy as np
+
+def normalize_adata(adata: sc.AnnData) -> sc.AnnData:
+    """
+    Normalize and apply log1p transformation to the expression matrix of an AnnData object.
+    (The function normalizes the gene expression by row)
+
+    Parameters:
+    -----------
+    adata : sc.AnnData
+        AnnData object containing gene expression data.
+    """
+
+    filtered_adata = adata.copy()
+    filtered_adata.X = filtered_adata.X.astype(np.float64)
+    filtered_adata.X = log1p_normalization(filtered_adata.X)
+
+    return filtered_adata
+
+
+
+# ==== FILE: np_loadz.py ====
+
+import numpy as np
+
+def np_loadz(fn):
+    data = np.load(fn)
+    keys = [x for x in data]
+    return data[keys[0]]
+
+
+# ==== FILE: pca_analysis.py ====
+
+import os, gc, gzip, pickle, tempfile
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error
+from tqdm import tqdm
+
+def pca_analysis(X, mse_goal, start = 2, end = 1000000):
+    # Standardize data
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # Full PCA (compute ONCE)
+    pca = PCA(n_components=None)
+    pca.fit(X_scaled)
+    
+    # Get basis and eigenvalues
+    B = pca.components_.T  # M x M basis
+    L = pca.explained_variance_
+    V = np.cumsum(pca.explained_variance_ratio_) * 100
+    
+    # Precompute centered data
+    X_centered = X_scaled - pca.mean_
+    
+    MSE = np.ones(X.shape[1])*2*mse_goal
+    n_components = min(50, X.shape[1])                 # if it's more than 400, forget about it
+    finish = end
+    for i in tqdm(range(start, end+1)):
+        # Manual projection and reconstruction
+        proj = X_centered @ B[:, :i]  # Project to i components
+        recon = proj @ B[:, :i].T     # Reconstruct in centered space
+        
+        # Uncenter and inverse standardize
+        X_scaled_hat_i = recon + pca.mean_
+        X_hat_i = scaler.inverse_transform(X_scaled_hat_i)
+        
+        # Calculate MSE
+        MSE[i-1] = mean_squared_error(X, X_hat_i)
+        if MSE[i-1] <= mse_goal:
+            finish = i-1
+            break
+    print("MSE", MSE[i-1], "finish", finish)
+    basis = B[:, :finish]
+    return basis, scaler, L, V, MSE, pca.mean_, finish
+
+def pca_transform(B, scaler, pca_mean, X):
+    """Transform data into PCA components space.
+    
+    Args:
+        B: PCA components matrix (M x M) from pca_analysis
+        scaler: StandardScaler object from pca_analysis
+        pca_mean: Mean vector from PCA analysis (scaler.mean_ is different!)
+        X: New data (N x M) to transform
+    
+    Returns:
+        Y: Transformed data in PCA space (N x M)
+    """
+    # Standardize using original scaler
+    X_scaled = scaler.transform(X)
+    
+    # Center using PCA mean (critical for correct projection)
+    X_centered = X_scaled - pca_mean
+    
+    # Project onto PCA components
+    Y = X_centered @ B
+    
+    return Y
+
+def pca_transform_batch_export_dealloc(B, scaler, pca_mean, X, batch_size, fn):
+    """Process X in batches, write compressed chunks, then combine results.
+    
+    Args:
+        B: PCA components matrix (M x M)
+        scaler: Fitted StandardScaler object
+        pca_mean: PCA mean vector (M,)
+        X: Input data (N x M)
+        batch_size: Number of samples per batch
+        fn: Final output filename (.npz)
+    """
+    # Create temp directory
+    temp_dir = tempfile.mkdtemp()
+    chunk_paths = []
+    
+    try:
+        # Process and export batches
+        for i in tqdm(range(0, len(X), batch_size), total=int(len(X)/batch_size)):
+            batch = X[i:i + batch_size]
+            
+            # Transform batch
+            X_scaled = scaler.transform(batch)
+            X_centered = X_scaled - pca_mean
+            Y_batch = X_centered @ B
+            
+            # Export compressed chunk
+            chunk_path = os.path.join(temp_dir, f'chunk_{i}.pkl.gz')
+            with gzip.open(chunk_path, 'wb') as f:
+                pickle.dump(Y_batch, f)
+            chunk_paths.append(chunk_path)
+            
+        # Clear memory
+        del X
+        gc.collect()
+        
+        # Reassemble chunks
+        Y_chunks = []
+        for path in tqdm(chunk_paths):
+            with gzip.open(path, 'rb') as f:
+                Y_chunks.append(pickle.load(f))
+        
+        Y = np.vstack(Y_chunks)
+        
+        # Export final result
+        np.savez_compressed(fn, Y=Y)
+        
+    finally:
+        # Cleanup
+        for path in chunk_paths:
+            try:
+                os.remove(path)
+            except:
+                pass
+        try:
+            os.rmdir(temp_dir)
+        except:
+            pass
+
+def pca_inverse_transform(B, scaler, pca_mean, Y):
+    """Reconstruct data from PCA components.
+    
+    Args:
+        B: PCA components matrix (M x M) from pca_analysis
+        scaler: StandardScaler object from pca_analysis
+        pca_mean: Mean vector from PCA analysis
+        Y: Transformed data (N x K) where K ≤ M
+    
+    Returns:
+        X_recon: Reconstructed data in original space (N x M)
+    """
+    # Handle partial component reconstruction
+    if Y.shape[1] < B.shape[1]:
+        B_partial = B[:, :Y.shape[1]]
+    else:
+        B_partial = B
+    
+    # Reconstruct in centered space
+    X_centered = Y @ B_partial.T
+    
+    # Uncenter and inverse standardize
+    X_scaled = X_centered + pca_mean
+    X_recon = scaler.inverse_transform(X_scaled)
+    
+    return X_recon
+
+
+if __name__=="__main__":
+    # Generate random data
+    X = np.random.randn(100, 5)  # 100 samples, 5 features
+    
+    # Run analysis
+    B, scaler, L, V, MSE = pca_analysis(X)
+    print("B", B)
+    print("L", L)
+    print("V", V)
+    print("mse", MSE)
+    # Results:
+    # B.shape -> (5, 5)
+    # len(L) -> 5
+    # V[-1] -> 100.0 (last value)
+    # len(MSE) -> 5
+
+
+
+# ==== FILE: post_collate_fn.py ====
+
+def post_collate_fn(batch):
+    """ Post collate function to clean up batch """
+
+    if batch["imgs"].dim() == 5:
+        assert batch["imgs"].size(0) == 1
+        batch["imgs"] = batch["imgs"].squeeze(0)
+
+    if batch["coords"].dim() == 3:
+        assert batch["coords"].size(0) == 1
+        batch["coords"] = batch["coords"].squeeze(0)
+
+    return batch
+
+
+
+# ==== FILE: read_assets_from_h5.py ====
+
+from tqdm import tqdm
+import h5py  # For handling HDF5 data files
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+import numpy as np
+
+def read_assets_from_h5(h5_path, keys=None, skip_attrs=False, skip_assets=False):
+    """
+    Read data and attributes from an HDF5 file.
+
+    Parameters:
+        h5_path (str): Path to the HDF5 file.
+        keys (list, optional): List of keys to read. Reads all keys if None.
+        skip_attrs (bool): If True, skip reading attributes.
+        skip_assets (bool): If True, skip reading data assets.
+
+    Returns:
+        tuple: A dictionary of data assets and a dictionary of attributes.
+    """
+
+    assets = {}
+    attrs = {}
+    with h5py.File(h5_path, 'r') as f:
+        if keys is None:
+            keys = list(f.keys())
+
+        for key in keys:
+            if not skip_assets:
+                assets[key] = f[key][:]
+            if not skip_attrs and f[key].attrs is not None:
+                attrs[key] = dict(f[key].attrs)
+
+    return assets, attrs
+
+
+
+# ==== FILE: ridge_regression.py ====
+
+import torch
+
+def ridge_regression(X, Y, alpha=1.0):
+    """
+    Closed-form solution for multi-output Ridge regression
+    X: (n_samples, n_features) tensor
+    Y: (n_samples, n_targets) tensor
+    Returns: (n_features, n_targets) weight matrix
+    """
+    # Add bias term (optional, remove if not needed)
+    # X = torch.cat([X, torch.ones(X.shape[0], 1, device=device)], dim=1)
+    print("X", X.shape)
+    print("Y", Y.shape)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Compute closed-form solution
+    XtX = X.T @ X
+    regularization = alpha * torch.eye(XtX.shape[0], device=device)
+    weights = torch.linalg.solve(XtX + regularization, X.T @ Y)
+    return weights
+
+def ridge_fit(X, Y):
+    print("X", X.shape)
+    print("Y", Y.shape)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    X_train_t = torch.tensor(X, dtype=torch.float32, device=device)
+    Y_train_t = torch.tensor(Y, dtype=torch.float32, device=device)
+    
+    # Train the model
+    alpha = 100 / (X_train_t.shape[1] * Y_train_t.shape[1])
+    
+    W_t = ridge_regression(X_train_t, Y_train_t, alpha=alpha)
+
+    return W_t.cpu().numpy()
+
+def ridge_apply(X, W):
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    X_t = torch.tensor(X, dtype=torch.float32, device=device)
+    W_t = torch.tensor(W, dtype=torch.float32, device=device)
+
+    # Make predictions on test set
+    with torch.no_grad():
+        Y_t = X_t @ W_t
+
+    return Y_t.cpu().numpy()
+
+if __name__=="__main__":
+    import torch
+    import numpy as np
+    from sklearn.datasets import make_regression
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error
+    
+    # Set random seeds for reproducibility
+    torch.manual_seed(42)
+    np.random.seed(42)
+    
+    # Check for GPU availability
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    
+    # Generate synthetic multi-output regression data
+    n_samples = 10000
+    n_features = 100
+    n_targets = 5  # Number of output dimensions
+    
+    X, Y = make_regression(n_samples=n_samples,
+                           n_features=n_features,
+                           n_targets=n_targets,
+                           noise=0.1,
+                           random_state=42)
+    
+    # Split into train/test sets
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+    
+    # Convert to PyTorch tensors and move to GPU
+    X_train_t = torch.tensor(X_train, dtype=torch.float32, device=device)
+    Y_train_t = torch.tensor(Y_train, dtype=torch.float32, device=device)
+    X_test_t = torch.tensor(X_test, dtype=torch.float32, device=device)
+    
+    # Train the model
+    alpha = 100 / (X_train.shape[1] * Y_train.shape[1])
+    W = ridge_regression(X_train_t, Y_train_t, alpha=alpha)
+    # Make predictions on test set
+    with torch.no_grad():
+        Y_pred_t = X_test_t @ W
+    # Move predictions back to CPU for evaluation with sklearn
+    Y_pred = Y_pred_t.cpu().numpy()
+    # Evaluate
+    mse = mean_squared_error(Y_test, Y_pred)
+    print(f"Test MSE: {mse:.4f} for alpha: {alpha}")
+    print(f"Weight matrix shape: {W.shape} (features × targets)")
+
+    # Comparison
+    from sklearn.linear_model import Ridge  # Regression model
+    max_iter=1000
+    random_state=0
+
+    print(f"Scikit-Learn Ridge: using alpha: {alpha} versus calc alpha {alpha}")
+    # Initialize Ridge regression model
+    reg = Ridge(solver='lsqr',
+                alpha=alpha,
+                random_state=random_state,
+                fit_intercept=False,
+                max_iter=max_iter)
+    reg.fit(X_train, Y_train)
+
+    # Make predictions on the test data
+    Y_pred1 = reg.predict(X_test)
+    mse = mean_squared_error(Y_test, Y_pred1)
+    print(f"Test MSE: {mse:.4f}")
+
+
+
+# ==== FILE: save_hdf5.py ====
+
+from tqdm import tqdm
+import h5py  # For handling HDF5 data files
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+import numpy as np
+
+def save_hdf5(output_fpath, asset_dict, attr_dict=None, mode='a', auto_chunk=True, chunk_size=None):
+    """
+    Save data and attributes into an HDF5 file, or initialize a new file with the given data.
+
+    Parameters:
+        output_fpath (str): Path to save the HDF5 file.
+        asset_dict (dict): Dictionary containing keys and their corresponding data (e.g., numpy arrays) to save.
+        attr_dict (dict, optional): Dictionary of attributes for each key. Format: {key: {attr_key: attr_val, ...}}.
+        mode (str): File mode ('a' for append, 'w' for write, etc.).
+        auto_chunk (bool): Whether to enable automatic chunking for HDF5 datasets.
+        chunk_size (int, optional): If auto_chunk is False, specify the chunk size for the first dimension.
+
+    Returns:
+        str: Path of the saved HDF5 file.
+    """
+
+    with h5py.File(output_fpath, mode) as f:
+        for key, val in asset_dict.items():
+            data_shape = val.shape
+            # Ensure data has at least 2 dimensions
+            if len(data_shape) == 1:
+                val = np.expand_dims(val, axis=1)
+                data_shape = val.shape
+
+            if key not in f:  # if key does not exist, create a new dataset
+                data_type = val.dtype
+
+                if data_type.kind == 'U':  # Handle Unicode strings
+                    chunks = (1, 1)
+                    max_shape = (None, 1)
+                    data_type = h5py.string_dtype(encoding='utf-8')
+                else:
+                    if data_type == np.object_:
+                        data_type = h5py.string_dtype(encoding='utf-8')
+                    # Determine chunking strategy
+                    if auto_chunk:
+                        chunks = True  # let h5py decide chunk size
+                    else:
+                        chunks = (chunk_size,) + data_shape[1:]
+                    maxshape = (None,) + data_shape[1:]  # Allow unlimited size for the first dimension
+
+                try:
+                    dset = f.create_dataset(key,
+                                            shape=data_shape,
+                                            chunks=chunks,
+                                            maxshape=maxshape,
+                                            dtype=data_type)
+                    # Save attributes for the dataset
+                    if attr_dict is not None:
+                        if key in attr_dict.keys():
+                            for attr_key, attr_val in attr_dict[key].items():
+                                dset.attrs[attr_key] = attr_val
+                    # Write the data to the dataset
+                    dset[:] = val
+                except:
+                    print(f"Error encoding {key} of dtype {data_type} into hdf5")
+
+            else:  # Append data to an existing dataset
+                dset = f[key]
+                dset.resize(len(dset) + data_shape[0], axis=0)
+                # assert dset.dtype == val.dtype
+                dset[-data_shape[0]:] = val
+
+    return output_fpath
+
+
+
+# ==== FILE: scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs.py ====
+
+import os, luigi
+from template_pca_transform import template_pca_transform
+from UC9_I_genes458_to_PCs import UC9_I_genes458_to_PCs
+from UC9_I_genes460_to_genes458 import UC9_I_genes460_to_genes458
+from SCRNA_unpack import SCRNA_unpack
+
+class scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_transform(
+            object_type = "genes458",
+            object_name = "scRNA",
+            pca_fit_transform = UC9_I_genes458_to_PCs,
+            source = SCRNA_unpack,
+            source_field = 'scRNA_458_gene_expressions')
+        
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs()], 
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: scRNA_genes18157_to_PCs.py ====
+
+import os, luigi
+from template_pca_fit_transform import template_pca_fit_transform
+from SCRNA_unpack import SCRNA_unpack
+
+class scRNA_genes18157_to_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_pca_fit_transform(
+            object_type="genes18157",
+            object_name="scRNA",
+            mse_goal=0.064,
+            dependency_task=SCRNA_unpack,
+            sample_size = 1000,
+            sub_input="scRNA_18157_gene_expressions")
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+
+if __name__ == "__main__":
+    luigi.build(
+        [scRNA_genes18157_to_PCs()], 
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: scRNA_genes458_PCs_to_genes18157_PCs.py ====
+
+import os, luigi
+from template_ridge_fit import template_ridge_fit
+from scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs import scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs
+from scRNA_genes18157_to_PCs import scRNA_genes18157_to_PCs
+
+class scRNA_genes458_PCs_to_genes18157_PCs(luigi.Task):
+    def requires(self):
+        # Provide hardcoded parameters and dependency
+        return template_ridge_fit(
+            src_object_type = "genes458_PCs",
+            src_object_name = "scRNA",
+            src_task = scRNA_Genes_458_to_UC9_I_Genes_458_basis_PCs,
+            tgt_object_type = "genes18157_PCs",
+            tgt_object_name = "scRNA", 
+            tgt_task = scRNA_genes18157_to_PCs)
+
+    def run(self):
+        pass
+
+    def output(self):
+        return self.requires().output()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [scRNA_genes458_PCs_to_genes18157_PCs()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: select_random_from_2D_array.py ====
+
+import numpy as np
+
+def select_random_from_2D_array(arr, size):
+    # Step 1: Get non-zero indices
+    rows, cols = np.nonzero(arr)
+    
+    # Step 2: Sample 10,000 indices
+    random_indices = np.random.choice(len(rows), size=size, replace=False)
+    
+    # Step 3: Extract elements
+    sampled_elements = arr[rows[random_indices], cols[random_indices]]
+    
+    return sampled_elements
+
+
+
+# ==== FILE: template_patches_to_features.py ====
+
+import os, luigi, torch
+from inf_encoder_factory import inf_encoder_factory
+from generate_embeddings import generate_embeddings
+from Resnet50ModelFile import Resnet50ModelFile
+
+class template_patches_to_features(luigi.Task):
+
+    patches_task = luigi.TaskParameter()
+    patch_field = luigi.Parameter()
+    name = luigi.Parameter()
+    
+    def requires(self):
+        return {
+                'weights': Resnet50ModelFile(),
+                'patches': self.patches_task() }
+        
+    def output(self):
+        return luigi.LocalTarget(f'resources/run/{self.name}_features.npz')
+
+    def run(self):
+        encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
+        patches_path = self.input()['patches'][self.patch_field].path
+        embed_path = self.output().path
+        batch_size = 128
+        num_workers = 0
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        generate_embeddings(embed_path, encoder, device, patches_path, batch_size, num_workers)
+
+
+
+# ==== FILE: template_pca_fit_transform.py ====
+
+import os, luigi
+from read_assets_from_h5 import read_assets_from_h5
+import joblib
+import matplotlib.pyplot as plt
+from pca_analysis import *
+import numpy as np
+from select_random_from_2D_array import select_random_from_2D_array
+
+class template_pca_fit_transform(luigi.Task):
+    object_type = luigi.Parameter()
+    object_name = luigi.Parameter()
+    mse_goal = luigi.FloatParameter()
+    dependency_task = luigi.TaskParameter()  
+    sub_input = luigi.Parameter()
+    sample_size = luigi.IntParameter()
+    
+    def requires(self):
+        return self.dependency_task()
+        
+    def output(self):
+        return {
+            'input': self.input(),
+            'scaler': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs_scaler.joblib'),
+            'pca_mean': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_mean.npz'),
+            'basis': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis.npz'),
+            'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
+            'MSE': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_PCA_MSE.png'),
+            'density': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png'),
+            'explained_variance': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_explained_var.npz'),
+            'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
+
+    def show_density(self, data):
+        data_flat = select_random_from_2D_array(data, 1000)
+        plt.hist(data_flat, bins=100, density=True)
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.title(f"Non-0 {self.object_type} density")
+        out = self.output()
+        plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+        
+    def run(self):
+        src = self.input()
+        if self.sub_input != "":
+            src = src[self.sub_input]
+        data = np.load(src.path, allow_pickle=True)
+        keys = [x for x in data]
+        data = data[keys[0]]
+        self.show_density(data)
+        out = self.output()
+        # Create a generator for reproducibility
+        rng = np.random.default_rng()
+        # For a 2D array `arr` with shape (N, M)
+        sampled_rows = rng.choice(data.shape[0], size=self.sample_size, replace=False)  # Indices
+        sample = data[sampled_rows]
+        basis, scaler, L, V, MSE, pca_mean, finish = pca_analysis(sample, self.mse_goal, start=48, end = 50)
+        print("got B", basis.size)
+        np.savez_compressed(out['basis'].path, basis)
+        joblib.dump(scaler, out['scaler'].path)
+        np.savez_compressed(out['pca_mean'].path, pca_mean)
+        np.savez_compressed(out['explained_variance'].path, V)
+        np.savez_compressed(out['mse'].path, MSE)
+        print("pictures")
+        plt.xlim([finish-20, finish+20])
+        plt.ylim([self.mse_goal * 0.8, self.mse_goal * 1.2])
+        plt.scatter([finish],[self.mse_goal],color='red', s=40)
+        plt.title(f'Use {finish} PCs for {self.object_type} reconstruction MSE <= {self.mse_goal}')
+        plt.savefig(out['MSE'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+        print("inverse start")
+        print("sampled_rows", data.shape)
+        print("HAIL MARY")
+        batch_size = 1000
+        PCs = pca_transform_batch_export_dealloc(basis, scaler, pca_mean, data, batch_size, out['PCs'].path)
+        print("done")
+
+
+
+# ==== FILE: template_pca_inverse_transform.py ====
+
+import os, luigi
+from read_assets_from_h5 import read_assets_from_h5
+import joblib
+import matplotlib.pyplot as plt
+from pca_analysis import pca_transform, pca_inverse_transform
+from sklearn.metrics import mean_squared_error
+import numpy as np
+from select_random_from_2D_array import select_random_from_2D_array
+from np_loadz import np_loadz
+
+class template_pca_inverse_transform(luigi.Task):
+    object_type = luigi.Parameter()
+    object_name = luigi.Parameter()
+    pca_fit_transform = luigi.TaskParameter() 
+    source = luigi.TaskParameter() 
+    source_field = luigi.Parameter()
+    
+    def requires(self):
+        return {'fit': self.pca_fit_transform(),
+                'source': self.source()}
+        
+    def output(self):
+        return {
+            self.object_type: luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}.npz'),
+            'density_comparison': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png') }
+
+    def compare_densities(self, X_original, X):
+        X_flat = select_random_from_2D_array(X, 10000)
+        X_original_flat = select_random_from_2D_array(X_original, 10000)
+        
+        plt.hist(X_flat, bins=100, density=True, label='X')
+        plt.hist(X_original_flat, bins=100, density=True, label='X(original)')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.title(f"Non-0 {self.object_type} densities for fitted and application data")
+        plt.savefig(self.output()['density_comparison'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+      
+    def run(self):
+        fit = self.pca_fit_transform().output()
+        B = np_loadz(fit['basis'].path)
+        pca_mean = np_loadz(fit['pca_mean'].path)
+        scaler = joblib.load(fit['scaler'].path)
+        try:
+            src_fn = self.input()['source'].path
+            Y = np_loadz(src_fn)
+        except:
+            src_fn = self.input()['source'][self.source_field].path
+            Y = np_loadz(src_fn)
+        pca_src = fit['PCs'].path
+        Y_original = np_loadz(pca_src)
+        self.compare_densities(Y_original, Y)
+        X = pca_inverse_transform(B, scaler, pca_mean, Y)
+        X = np.maximum(0, X)  # Gene expressions are non-negative
+        np.savez_compressed(self.output()[self.object_type].path, X)
+
+
+
+
+# ==== FILE: template_pca_transform.py ====
+
+import os, luigi
+from read_assets_from_h5 import read_assets_from_h5
+import joblib
+import matplotlib.pyplot as plt
+from pca_analysis import pca_transform, pca_inverse_transform
+from sklearn.metrics import mean_squared_error
+import numpy as np
+from select_random_from_2D_array import select_random_from_2D_array
+from np_loadz import np_loadz
+
+class template_pca_transform(luigi.Task):
+    object_type = luigi.Parameter()
+    object_name = luigi.Parameter()
+    pca_fit_transform = luigi.TaskParameter() 
+    source = luigi.TaskParameter() 
+    source_field = luigi.Parameter()
+    
+    def requires(self):
+        return {'fit': self.pca_fit_transform(),
+                'source': self.source()}
+        
+    def output(self):
+        return {
+            'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
+            'source_MSE': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_PCA_MSE.png'),
+            'density_comparison': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png') }
+
+    def compare_densities(self, X_original, X):
+        X_flat = select_random_from_2D_array(X, 10000)
+        X_original_flat = select_random_from_2D_array(X_original, 10000)
+        
+        plt.hist(X_flat, bins=100, density=True, label='X')
+        plt.hist(X_original_flat, bins=100, density=True, label='X(original)')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.title(f"Non-0 {self.object_type} densities for fitted and application data")
+        plt.savefig(self.output()['density_comparison'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+
+    def mse_analysis(self, X, X_hat):
+        mse = mean_squared_error(X, X_hat)
+        with open(self.output()['source_MSE'].path,'w') as f:
+            print(mse, file=f)
+        plt.plot(X_hat[0], label='Xhat', color='green')
+        plt.plot(X[0], label='X', color='blue')
+        plt.title(f'{self.object_type} {self.object_name} preservation of X for one sample under PCA round-trip')
+        plt.legend()
+        plt.savefig(self.output()['source_MSE'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+        
+    def run(self):
+        fit = self.pca_fit_transform().input()
+        B = np.load(fit['basis'].path)['arr_0']
+        pca_mean = np.load(fit['pca_mean'].path)['arr_0']
+        scaler = joblib.load(fit['scaler'].path)
+        try:
+            src_fn = self.input()['source'].path
+            X = np_loadz(src_fn)
+        except:
+            src_fn = self.input()['source'][self.source_field].path
+            X = np_loadz(src_fn)
+        pca_src = fit['input'].path
+        X_original = np_loadz(pca_src)
+
+        self.compare_densities(X_original, X)
+        Y = pca_transform(B, scaler, pca_mean, X)
+        np.savez_compressed(self.output()['PCs'].path, Y)
+        
+        Xhat = pca_inverse_transform(B, scaler, pca_mean, Y)
+        self.mse_analysis(X, Xhat)
+
+
+
+# ==== FILE: template_ridge_fit.py ====
+
+import os, luigi, torch
+from ridge_regression import *
+import numpy as np
+import matplotlib.pylab as plt
+from sklearn.metrics import mean_squared_error
+from scipy.stats import spearmanr
+from np_loadz import np_loadz
+    
+class template_ridge_fit(luigi.Task):
+    src_object_type = luigi.Parameter()
+    src_object_name = luigi.Parameter()
+    src_task = luigi.TaskParameter()
+    tgt_object_type = luigi.Parameter()
+    tgt_object_name = luigi.Parameter()
+    tgt_task = luigi.TaskParameter()
+    
+    def requires(self):
+        return {'src': self.src_task(), 'tgt': self.tgt_task()}
+        
+    def output(self):
+        map_name = f'{self.src_object_name}_{self.src_object_type}_{self.tgt_object_name}_{self.tgt_object_type}_ridge_fit'
+        return {
+            'W': luigi.LocalTarget(f'resources/run/{map_name}_W.npz'),
+            'mse': luigi.LocalTarget(f'resources/run/{map_name}_mse.txt'),
+            'prediction': luigi.LocalTarget(f'mermaid/{map_name}_pred.png'),
+            'spearman': luigi.LocalTarget(f'mermaid/{map_name}_spearman.png')}
+
+    def mse_metric(self):
+        mse = mean_squared_error(self.Y, self.Y_hat)
+        with open(self.output()['mse'].path,'w') as f:
+            print(mse, file=f)
+        plt.plot(self.Y_hat[0], label='Yhat', color='green')
+        plt.plot(self.Y[0], label='Y', color='blue')
+        plt.title(f'Predicted vs Actual example for {self.tgt_object_type} via fitted Ridge regression')
+        plt.legend()
+        plt.savefig(self.output()['prediction'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+
+    def spearman_metric(self):
+        correlations = [spearmanr(a_row, b_row)[0] for a_row, b_row in zip(self.Y, self.Y_hat)]
+        mu = np.mean(correlations)
+        plt.hist(correlations, density=True, bins=100);
+        plt.axvline(x=mu, color='r', linestyle='--', alpha=0.7)
+        plt.title(f"""Spearman rank correlation density between predicted and actual
+        Mean={mu:0.3f}""");
+        plt.savefig(self.output()['spearman'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
+        
+    def run(self):
+        # Regression
+        X = np_loadz(self.input()['src']['PCs'].path)
+        self.Y = np_loadz(self.input()['tgt']['PCs'].path)
+        W = ridge_fit(X, self.Y)
+        np.savez_compressed(self.output()['W'].path, W)
+
+        # Metrics
+        self.Y_hat = ridge_apply(X, W)
+        self.mse_metric()
+        self.spearman_metric()
+    
+if __name__ == "__main__":
+    luigi.build(
+        [template_ridge_fit()],
+        local_scheduler=True,  # Required for local execution
+        workers=1  # Optional: single worker for serial execution
+    )
+
+
+
+# ==== FILE: template_ridge_transform.py ====
+
+import os, luigi, torch
+from ridge_regression import *
+import numpy as np
+import matplotlib.pylab as plt
+from sklearn.metrics import mean_squared_error
+from scipy.stats import spearmanr
+from np_loadz import np_loadz
+    
+class template_ridge_transform(luigi.Task):
+    src_task = luigi.TaskParameter()
+    fit_task = luigi.TaskParameter()
+    tgt_object_type = luigi.Parameter()
+    tgt_object_name = luigi.Parameter()
+    
+    def requires(self):
+        return {'src': self.src_task(), 'fit': self.fit_task()}
+        
+    def output(self):
+        map_name = f'{self.tgt_object_name}_{self.tgt_object_type}'
+        return luigi.LocalTarget(f'resources/run/{map_name}.npz')
+       
+    def run(self):
+        try:
+            X = np_loadz(self.input()['src']['PCs'].path)
+        except:
+            X = np_loadz(self.input()['src'].path)
+        W = np_loadz(self.input()['fit']['W'].path)
+        Y_hat = ridge_apply(X, W)
+        np.savez_compressed(self.output().path, Y_hat)
+
+
+
+# ==== FILE: train.py ====
+
+# Broad Institute IBD Challenge
+# Rank all 18615 protein-coding genes based on ability to distinguish dysplastic from non-cancerous tissue
+
+import os
+
+def train(
+    data_directory_path: str,  # Path to the input data directory
+    model_directory_path: str  # Path to save the trained model and results
+):
+    os.system('python genes_ranked_by_descending_abs_log_fold_change.py')
+
+if __name__=="__main__":
+    data_directory_path='./data'
+    model_directory_path="./resources"
+    train(data_directory_path, model_directory_path)
+
+    
+

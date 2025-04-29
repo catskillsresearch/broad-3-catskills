@@ -9,3 +9,6 @@ flowchart TD
     data2["Chips Nx32x32x3"]:::inputData
     data2 --> op2["Resnet50"]:::op
     op2 --> data3["Features N x 1024"]:::outputData
+    op3aa["Visualization"]:::op
+    data3aa["Feature density"]:::outputMetric
+    data3 --> op3aa --> data3aa

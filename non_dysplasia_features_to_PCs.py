@@ -11,7 +11,8 @@ class non_dysplasia_features_to_PCs(luigi.Task):
             object_name="UC9_I_non_dysplasia",
             pca_fit_transform = UC9_I_features_to_PCs,
             source = non_dysplasia_patches_to_features,
-            source_field = 'UC9_I_non_dysplasia')
+            source_field = 'UC9_I_non_dysplasia',
+            sub_input = "features")
 
     def run(self):
         pass

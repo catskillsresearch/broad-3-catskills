@@ -45,4 +45,4 @@ def generate_embeddings(embed_path, encoder, device, tile_h5_path, batch_size, n
 
     # Generate and save embeddings
     from embed_tiles import embed_tiles
-    embed_tiles(tile_dataloader, encoder, embed_path, device, encoder.precision)
+    return embed_tiles(tile_dataloader, encoder, embed_path, device, encoder.precision)

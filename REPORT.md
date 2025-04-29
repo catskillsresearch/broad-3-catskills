@@ -7,7 +7,9 @@ The method is as follows:
 
 ## Unpack UC9_I patches and genes
 
-Patches are 32x32x3 portions of the histology image.
+Patches are 32x32x3 portions of the histology image.  Patches and genes are unpacked from the dataset with this process:
+
+![UC9_I_unpack_patches_and_genes](mermaid/UC9_I_unpack_patches_and_genes.png)
 
 Patch locations are shown as black dots on the UC9_I image:
 
@@ -21,10 +23,6 @@ Here are examples of some patches:
 
 ![UC9_I_patch_examples](mermaid/UC9_I_patch_examples.png)
 
-Patches and genes are unpacked from the dataset with this process:
-
-![UC9_I_unpack_patches_and_genes](mermaid/UC9_I_unpack_patches_and_genes.png)
-
 ## Template patches to features
 
 This uses Resnet50 with 32x32x3 images upsized to 224x224 to extract image features.  This is used as a dimension reduction.
@@ -33,7 +31,17 @@ This uses Resnet50 with 32x32x3 images upsized to 224x224 to extract image featu
 
 ## UC9_I patches to features 
 
-Apply patches to features pipeline to UC9_I patches.  
+Apply patches to features pipeline to UC9_I patches.  Result is a 196937x1024 matrix of features.  Features are in range [0,39.84]. 
+
+![UC9_I_feature_density](mermaid/UC9_I_feature_density.png)
+
+The features appear from their correlation matrix to be uniformly uncorrelated.  
+
+![UC9_I_feature_correlation_matrix](mermaid/UC9_I_feature_correlation_matrix.png)
+
+The distribution of feature correlation shows that off-diagonal correlations are in range [-0.66, 0.79].  So certain features have significant correlation.
+
+![UC9_I_feature_correlation_density](mermaid/UC9_I_feature_correlation_density.png)
 
 ## Template principal component dimension reduction fit and transform pipeline
 
@@ -41,17 +49,26 @@ We will use PCA as a further dimension reduction on both patch features and gene
 
 ![template_pca_fit_transform](mermaid/template_pca_fit_transform.png)  
 
-This process visualizes MSE for the feature reduction and the density of feature values.
+To determine the best number of principal components for our process, we look at several criteria:
+
+* 90% **cumulative explained variance**
+* **Elbow method**: Plot the eigenvalues and look for the "elbow" point where the marginal gain drops off using the python `kneed` package.
+* **Kaiser criterion**: Keep components with eigenvalues > 1. Assumes standardized data.
+
+In interest of getting things done quickly, we take the maximum of 2 and the minimum of the number of components reported by the cumulative variance, knee and Kaiser criteria.  
 
 ## UC9_I features to PCs
 
-Apply principal component dimension reduction pipline to features for MSE <= 0.16.
+Apply principal component dimension reduction pipeline to features.
 
-Here is MSE of feature reduction
+![UC9_I_feature_pca_cumvar](mermaid/UC9_I_feature_pca_cumvar.png)
 
-![UC9_I_feature_PCA_MSE](mermaid/UC9_I_feature_PCA_MSE.png)
+![UC9_I_feature_scree](mermaid/UC9_I_feature_scree.png)
 
-Here is density of gene expression values:
+![UC9_I_feature_kaiser](mermaid/UC9_I_feature_kaiser.png)
+
+
+Final choice for UC9_I_feature number of principal components: 51.
 
 ## UC9_I Genes 460 to Genes 458
 

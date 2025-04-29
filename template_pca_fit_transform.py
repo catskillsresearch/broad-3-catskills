@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pca_analysis import *
 import numpy as np
 from select_random_from_2D_array import select_random_from_2D_array
+from np_loadz import np_loadz
 
 class template_pca_fit_transform(luigi.Task):
     object_type = luigi.Parameter()
@@ -25,28 +26,15 @@ class template_pca_fit_transform(luigi.Task):
             'basis': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis.npz'),
             'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
             'MSE': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_PCA_MSE.png'),
-            'density': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png'),
+
             'explained_variance': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_explained_var.npz'),
             'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
-
-    def show_density(self, data):
-        data_flat = select_random_from_2D_array(data, 1000)
-        plt.hist(data_flat, bins=100, density=True)
-        plt.xlabel('Value')
-        plt.ylabel('Frequency')
-        plt.title(f"Non-0 {self.object_type} density")
-        out = self.output()
-        plt.savefig(out['density'].path, dpi=150, bbox_inches='tight')
-        plt.clf()
         
     def run(self):
         src = self.input()
         if self.sub_input != "":
             src = src[self.sub_input]
-        data = np.load(src.path, allow_pickle=True)
-        keys = [x for x in data]
-        data = data[keys[0]]
-        self.show_density(data)
+        data = np_loadz(src.path)
         out = self.output()
         # Create a generator for reproducibility
         rng = np.random.default_rng()
@@ -69,7 +57,6 @@ class template_pca_fit_transform(luigi.Task):
         plt.clf()
         print("inverse start")
         print("sampled_rows", data.shape)
-        print("HAIL MARY")
         batch_size = 1000
         PCs = pca_transform_batch_export_dealloc(basis, scaler, pca_mean, data, batch_size, out['PCs'].path)
         print("done")

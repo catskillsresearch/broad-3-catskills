@@ -45,4 +45,4 @@ def embed_tiles(dataloader, model: torch.nn.Module, embedding_save_path: str, de
     features = np.vstack(A)
     np.savez_compressed(embedding_save_path, features)
 
-    return embedding_save_path
+    return features

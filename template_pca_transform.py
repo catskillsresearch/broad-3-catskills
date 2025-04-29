@@ -14,6 +14,7 @@ class template_pca_transform(luigi.Task):
     pca_fit_transform = luigi.TaskParameter() 
     source = luigi.TaskParameter() 
     source_field = luigi.Parameter()
+    sub_input = luigi.Parameter()
     
     def requires(self):
         return {'fit': self.pca_fit_transform(),
@@ -23,7 +24,7 @@ class template_pca_transform(luigi.Task):
         return {
             'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
             'source_MSE': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_PCA_MSE.png'),
-            'density_comparison': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png') }
+            'density_comparison': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density_pca_transform.png') }
 
     def compare_densities(self, X_original, X):
         X_flat = select_random_from_2D_array(X, 10000)
@@ -54,11 +55,12 @@ class template_pca_transform(luigi.Task):
         B = np.load(fit['basis'].path)['arr_0']
         pca_mean = np.load(fit['pca_mean'].path)['arr_0']
         scaler = joblib.load(fit['scaler'].path)
+        inp = self.input()[self.sub_input] if self.sub_input else self.input()
         try:
-            src_fn = self.input()['source'].path
+            src_fn = inp['source'].path
             X = np_loadz(src_fn)
         except:
-            src_fn = self.input()['source'][self.source_field].path
+            src_fn = inp['source'][self.source_field].path
             X = np_loadz(src_fn)
         pca_src = fit['input'].path
         X_original = np_loadz(pca_src)
