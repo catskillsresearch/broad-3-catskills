@@ -31,10 +31,6 @@ This uses Resnet50 with 32x32x3 images upsized to 224x224 to extract image featu
 
 ![template_patches_to_features](mermaid/template_patches_to_features.png)  
 
-This is the range of values produced by Resnet50 for features:
-
-![UC9_I_feature_density](mermaid/UC9_I_feature_density.png)
-
 ## UC9_I patches to features 
 
 Apply patches to features pipeline to UC9_I patches.  
@@ -70,11 +66,17 @@ Here is the density of values in the 458 gene expressions:
 ## UC9_I Genes 458 to PCs
 Apply PCA transform pipeline to UCI_9 458 gene expressions for MSE <= 0.064.
 
+![UC9_I_genes458_PCA_MSE](mermaid/UC9_I_genes458_PCA_MSE.png)
+
 ## Template Ridge regression fit pipeline
 ![template_ridge_fit](mermaid/template_ridge_fit.png)
 
 ## UC9_I Regress Feature PCs to Gene PCs
 Apply Ridge regression fit pipeline to create a linear map from Feature PCs to Gene PCS.
+
+![UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_pred](mermaid/UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_pred.png)
+
+![UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_spearman](mermaid/UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_spearman.png)
 
 ## Template PCA transform pipeline
 ![template_pca_transform](mermaid/template_pca_transform.png)
@@ -85,17 +87,31 @@ Apply PCA transform pipeline with UC9_I Genes 458 PCA basis to map scRNA Genes 4
 ## scRNA Genes 18157 to PCs
 Apply PCA fit transform pipeline to scRNA 18157 gene expressions for MSE <= 0.064.
 
+![scRNA_genes18157_PCA_MSE](mermaid/scRNA_genes18157_PCA_MSE.png)
+
 ## scRNA Regress Gene 458 PCs to Gene 18157 PCs
 Apply Ridge regression pipeline to create a linear map from Gene 458 PCs to Gene 18157 PCS.
+
+![scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_pred](mermaid/scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_pred.png)
+![scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_spearman](mermaid/scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_spearman.png)
 
 ## UC9_I TIF Unpack
 ![UC9_I_tif_unpack](mermaid/UC9_I_tif_unpack.png)
 
+![scRNA_genes18157_density](mermaid/scRNA_genes18157_density.png)
+![scRNA_genes458_density](mermaid/scRNA_genes458_density.png)
+
 ## Dysplasia/Non-dysplasia patches to 1024 features
 Apply patches to features pipeline to dysplasia/non-dysplasia patches.
 
+![UC9_I_dysplasia_feature_density](mermaid/UC9_I_dysplasia_feature_density.png)
+![UC9_I_non_dysplasia_feature_density](mermaid/UC9_I_non_dysplasia_feature_density.png)
+
 ## Dysplasia/Non-dysplasia 1024 features to Feature PCs
 Apply PCA transform pipeline to features using UC9_I Feature PCs basis.
+
+![UC9_I_dysplasia_feature_PCA_MSE](mermaid/UC9_I_dysplasia_feature_PCA_MSE.png)
+![UC9_I_non_dysplasia_feature_PCA_MSE](mermaid/UC9_I_non_dysplasia_feature_PCA_MSE.png)
 
 ## Template Ridge transform pipeline
 
@@ -104,14 +120,22 @@ Apply PCA transform pipeline to features using UC9_I Feature PCs basis.
 ## Dysplasia/Non-dysplasia Feature PCs to 458 Gene PCs
 Apply Ridge transform pipeline to feature PCs using UC9_I feature PCs to Gene PCs weights.
 
+![scRNA_genes458_PCA_MSE](mermaid/scRNA_genes458_PCA_MSE.png)
+
 ## Dysplasia/Non-dysplasia 458 Gene PCs to 18157 Gene PCs
 Apply Ridge transform pipeline to 458 Gene PCs using scRNA 458 PCs to 18157 PCs weights.
 
 ## Dysplasia/Non-dysplasia 18157 Gene PCs to 18157 Genes
 Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
 
+![UC9_I_dysplasia_genes18157_density](mermaid/UC9_I_dysplasia_genes18157_density.png)
+![UC9_I_non_dysplasia_genes18157_density](mermaid/UC9_I_non_dysplasia_genes18157_density.png)
+
 ## Dysplasia/Non-dysplasia 458 Gene PCs to 458 Genes
 Apply inverse PCA transform pipeline to gene PCs using scRNA 18157 gene basis.
+
+![UC9_I_dysplasia_genes458_density](mermaid/UC9_I_dysplasia_genes458_density.png)
+![UC9_I_non_dysplasia_genes458_density](mermaid/UC9_I_non_dysplasia_genes458_density.png)
 
 ## Dysplasia/Non-dysplasia 458 Genes and 18157 Genes to 18615 Gene Expression
 Concatenate.
@@ -122,28 +146,6 @@ Concatenate.
 The following plot shows which impactful genes came from the original set of 460 and which came from imputation by Ridge regression:
 
 ![Scatterplot of logFC vs Imputed or Assayed, X-axis is sort index by descending abs log fold change](mermaid/logFC_plot.png)  
-
-## More pictures
-
-![UC9_I_genes458_PCA_MSE](mermaid/UC9_I_genes458_PCA_MSE.png)
-![UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_pred](mermaid/UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_pred.png)
-![UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_spearman](mermaid/UC9_I_feature_PCs_UC9_I_genes458_PCs_ridge_fit_spearman.png)
-![scRNA_genes18157_density](mermaid/scRNA_genes18157_density.png)
-![scRNA_genes18157_PCA_MSE](mermaid/scRNA_genes18157_PCA_MSE.png)
-![scRNA_genes458_density](mermaid/scRNA_genes458_density.png)
-![scRNA_genes458_PCA_MSE](mermaid/scRNA_genes458_PCA_MSE.png)
-![scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_pred](mermaid/scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_pred.png)
-![scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_spearman](mermaid/scRNA_genes458_PCs_scRNA_genes18157_PCs_ridge_fit_spearman.png)
-![UC9_I_dysplasia_feature_density](mermaid/UC9_I_dysplasia_feature_density.png)
-![UC9_I_dysplasia_feature_PCA_MSE](mermaid/UC9_I_dysplasia_feature_PCA_MSE.png)
-![UC9_I_non_dysplasia_feature_density](mermaid/UC9_I_non_dysplasia_feature_density.png)
-![UC9_I_non_dysplasia_feature_PCA_MSE](mermaid/UC9_I_non_dysplasia_feature_PCA_MSE.png)
-![UC9_I_dysplasia_genes18157_density](mermaid/UC9_I_dysplasia_genes18157_density.png)
-![UC9_I_non_dysplasia_genes18157_density](mermaid/UC9_I_non_dysplasia_genes18157_density.png)
-![UC9_I_dysplasia_genes458_density](mermaid/UC9_I_dysplasia_genes458_density.png)
-![UC9_I_non_dysplasia_genes458_density](mermaid/UC9_I_non_dysplasia_genes458_density.png)
-
-
 
 # Rationale
 
