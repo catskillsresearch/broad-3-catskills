@@ -22,7 +22,7 @@ class template_pca_inverse_transform(luigi.Task):
     def output(self):
         return {
             self.object_type: luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}.npz'),
-            'density_comparison': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_density.png') }
+            'density_comparison': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png') }
 
     def compare_densities(self, X_original, X):
         X_flat = select_random_from_2D_array(X, 10000)

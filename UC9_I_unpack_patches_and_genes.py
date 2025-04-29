@@ -16,9 +16,9 @@ class UC9_I_unpack_patches_and_genes(luigi.Task):
             'genes': luigi.LocalTarget('resources/run/UC9_I_genes.h5ad'),
             'barcodes': luigi.LocalTarget('resources/run/UC9_I_barcodes.npy'),
             'spatial_positions': luigi.LocalTarget('resources/run/spatial_positions.npy'),
-            'patch_locations_on_image': luigi.LocalTarget('resources/run/UC9_I_patch_locations_on_image.png'),
-            'spatial_coordinates': luigi.LocalTarget('resources/run/UC9_I_spatial_coordinates.png'),
-            'patch_examples': luigi.LocalTarget('resources/run/UC9_I_patch_examples.png')        }
+            'patch_locations_on_image': luigi.LocalTarget('mermaid/UC9_I_patch_locations_on_image.png'),
+            'spatial_coordinates': luigi.LocalTarget('mermaid/UC9_I_spatial_coordinates.png'),
+            'patch_examples': luigi.LocalTarget('mermaid/UC9_I_patch_examples.png')        }
 
     def spatial_positions(self):
         self.sdata = sd.read_zarr(self.input().path)   

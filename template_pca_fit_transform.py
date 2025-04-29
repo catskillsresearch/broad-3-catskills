@@ -24,8 +24,8 @@ class template_pca_fit_transform(luigi.Task):
             'pca_mean': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_mean.npz'),
             'basis': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis.npz'),
             'PCs': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCs.npz'),
-            'MSE': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_PCA_MSE.png'),
-            'density': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_density.png'),
+            'MSE': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_PCA_MSE.png'),
+            'density': luigi.LocalTarget(f'mermaid/{self.object_name}_{self.object_type}_density.png'),
             'explained_variance': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_explained_var.npz'),
             'mse': luigi.LocalTarget(f'resources/run/{self.object_name}_{self.object_type}_pca_basis_MSE.npz') }
 

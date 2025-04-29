@@ -22,8 +22,8 @@ class template_ridge_fit(luigi.Task):
         return {
             'W': luigi.LocalTarget(f'resources/run/{map_name}_W.npz'),
             'mse': luigi.LocalTarget(f'resources/run/{map_name}_mse.txt'),
-            'prediction': luigi.LocalTarget(f'resources/run/{map_name}_pred.png'),
-            'spearman': luigi.LocalTarget(f'resources/run/{map_name}_spearman.png')}
+            'prediction': luigi.LocalTarget(f'mermaid/{map_name}_pred.png'),
+            'spearman': luigi.LocalTarget(f'mermaid/{map_name}_spearman.png')}
 
     def mse_metric(self):
         mse = mean_squared_error(self.Y, self.Y_hat)
