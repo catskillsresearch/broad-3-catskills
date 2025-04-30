@@ -31,17 +31,7 @@ This uses Resnet50 with 32x32x3 images upsized to 224x224 to extract image featu
 
 ## UC9_I patches to features 
 
-Apply patches to features pipeline to UC9_I patches.  Result is a 196937x1024 matrix of features.  Features are in range [0,39.84]. 
-
-![UC9_I_feature_density](mermaid/UC9_I_feature_density.png)
-
-The features appear from their correlation matrix to be uniformly uncorrelated.  
-
-![UC9_I_feature_correlation_matrix](mermaid/UC9_I_feature_correlation_matrix.png)
-
-The distribution of feature correlation shows that off-diagonal correlations are in range [-0.66, 0.79].  So certain features have significant correlation.
-
-![UC9_I_feature_correlation_density](mermaid/UC9_I_feature_correlation_density.png)
+Apply patches to features pipeline to UC9_I patches.  Result is a 196937x1024 matrix of features. 
 
 ## Template principal component dimension reduction fit and transform pipeline
 
@@ -61,14 +51,20 @@ In interest of getting things done quickly, we take the maximum of 2 and the min
 
 Apply principal component dimension reduction pipeline to features.
 
-![UC9_I_feature_pca_cumvar](mermaid/UC9_I_feature_pca_cumvar.png)
+Final choice for UC9_I_feature number of principal components: 53.
 
-![UC9_I_feature_scree](mermaid/UC9_I_feature_scree.png)
+![UC9_I_feature_density](mermaid/UC9_I_feature_density.png)
 
-![UC9_I_feature_kaiser](mermaid/UC9_I_feature_kaiser.png)
+![UC9_I_feature_correlation_density](mermaid/UC9_I_feature_correlation_density.png)
 
+![UC9_I_feature_correlation_matrix](mermaid/UC9_I_feature_correlation_matrix.png)
 
-Final choice for UC9_I_feature number of principal components: 51.
+![UC9_I_feature_cumvar_method](mermaid/UC9_I_feature_cumvar_method.png)
+
+![UC9_I_feature_elbow_method](mermaid/UC9_I_feature_elbow_method.png)
+
+![UC9_I_feature_kaiser_method](mermaid/UC9_I_feature_kaiser_method.png)
+
 
 ## UC9_I Genes 460 to Genes 458
 

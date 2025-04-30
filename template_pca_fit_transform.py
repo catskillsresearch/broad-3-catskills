@@ -54,8 +54,9 @@ class template_pca_fit_transform(luigi.Task):
         plt.clf()
         return rho                
 
-    def plot_correlation_matrix_density(self, data_flat, rho):
+    def plot_correlation_matrix_density(self, rho):
         rho[rho>= 0.999] = np.nan
+        data_flat = select_random_from_2D_array(rho, 2000)
         rhomin, rhomax = np.nanmin(rho), np.nanmax(rho)
         plt.hist(data_flat, bins=200, density=True)
         plt.xlabel('Value')
@@ -130,7 +131,7 @@ class template_pca_fit_transform(luigi.Task):
         # Show various statistics for insight
         data_flat = self.show_density(data)
         rho = self.plot_correlation_matrix(data)
-        self.plot_correlation_matrix_density(data_flat, rho)
+        self.plot_correlation_matrix_density(rho)
         
     def run(self):
         src = self.input()
