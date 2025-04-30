@@ -4,6 +4,7 @@ from generate_embeddings import generate_embeddings
 from Resnet50ModelFile import Resnet50ModelFile
 from select_random_from_2D_array import select_random_from_2D_array
 import matplotlib.pyplot as plt
+import numpy as np
 
 class template_patches_to_features(luigi.Task):
 
@@ -12,22 +13,12 @@ class template_patches_to_features(luigi.Task):
     name = luigi.Parameter()
     
     def requires(self):
-        return {
-                'weights': Resnet50ModelFile(),
+        return {'weights': Resnet50ModelFile(),
                 'patches': self.patches_task() }
         
     def output(self):
-        return {'features': luigi.LocalTarget(f'resources/run/{self.name}_features.npz'),
-                'density': luigi.LocalTarget(f'mermaid/{self.name}_features_density.png')}
-
-    def show_density(self, data):
-        data_flat = select_random_from_2D_array(data, 1000)
-        plt.hist(data_flat, bins=100, density=True)
-        plt.xlabel('Value')
-        plt.ylabel('Frequency')
-        plt.title(f"Non-0 {self.name} density")
-        plt.savefig(self.output()['density'].path, dpi=150, bbox_inches='tight')
-        plt.clf()
+        tag = f'{self.name}_features'
+        return luigi.LocalTarget(f'resources/run/{tag}.npz')
 
     def run(self):
         encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
@@ -36,5 +27,4 @@ class template_patches_to_features(luigi.Task):
         batch_size = 128
         num_workers = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        data = generate_embeddings(embed_path, encoder, device, patches_path, batch_size, num_workers)
-        self.show_density(data)
+        generate_embeddings(embed_path, encoder, device, patches_path, batch_size, num_workers)

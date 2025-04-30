@@ -11,7 +11,7 @@ class UC9_I_genes458_to_PCs(luigi.Task):
             mse_goal=0.064,
             dependency_task=UC9_I_genes460_to_genes458,
             sub_input = "",
-            sample_size = 5000)
+            sample_size = 100000)
 
     def run(self):
         pass

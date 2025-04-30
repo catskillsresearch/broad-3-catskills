@@ -2,46 +2,24 @@ import os, gc, gzip, pickle, tempfile
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
 from tqdm import tqdm
 
-def pca_analysis(X, mse_goal, start = 2, end = 1000000):
+def pca_fit(data, sample_size):
+    # Calc full PCA
+    # Create a generator for reproducibility
+    rng = np.random.default_rng()
+    # For a 2D array `arr` with shape (N, M)
+    sampled_rows = rng.choice(data.shape[0], size=sample_size, replace=False)  # Indices
+    X = data[sampled_rows]
+
     # Standardize data
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # Full PCA (compute ONCE)
+    # Full PCA 
     pca = PCA(n_components=None)
     pca.fit(X_scaled)
-    
-    # Get basis and eigenvalues
-    B = pca.components_.T  # M x M basis
-    L = pca.explained_variance_
-    V = np.cumsum(pca.explained_variance_ratio_) * 100
-    
-    # Precompute centered data
-    X_centered = X_scaled - pca.mean_
-    
-    MSE = np.ones(X.shape[1])*2*mse_goal
-    n_components = min(50, X.shape[1])                 # if it's more than 400, forget about it
-    finish = end
-    for i in tqdm(range(start, end+1)):
-        # Manual projection and reconstruction
-        proj = X_centered @ B[:, :i]  # Project to i components
-        recon = proj @ B[:, :i].T     # Reconstruct in centered space
-        
-        # Uncenter and inverse standardize
-        X_scaled_hat_i = recon + pca.mean_
-        X_hat_i = scaler.inverse_transform(X_scaled_hat_i)
-        
-        # Calculate MSE
-        MSE[i-1] = mean_squared_error(X, X_hat_i)
-        if MSE[i-1] <= mse_goal:
-            finish = i-1
-            break
-    print("MSE", MSE[i-1], "finish", finish)
-    basis = B[:, :finish]
-    return basis, scaler, L, V, MSE, pca.mean_, finish
+    return scaler, pca
 
 def pca_transform(B, scaler, pca_mean, X):
     """Transform data into PCA components space.

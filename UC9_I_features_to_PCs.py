@@ -11,7 +11,7 @@ class UC9_I_features_to_PCs(luigi.Task):
             mse_goal=0.16,
             dependency_task=UC9_I_patches_to_features,
             sub_input = "features",
-            sample_size = 1000
+            sample_size = 100000
         )
 
     def run(self):
