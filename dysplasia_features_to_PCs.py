@@ -12,7 +12,7 @@ class dysplasia_features_to_PCs(luigi.Task):
             pca_fit_transform = UC9_I_features_to_PCs,
             source = dysplasia_patches_to_features,
             source_field = 'UC9_I_dysplasia',
-            sub_input = "features")
+            sub_input = "")
 
     def run(self):
         pass
