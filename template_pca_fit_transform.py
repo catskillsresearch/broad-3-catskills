@@ -51,6 +51,7 @@ class template_pca_fit_transform(luigi.Task):
         plt.imshow(rho)
         plt.title(f'{tag} correlation')
         plt.savefig(self.output()['correlation_matrix'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
         return rho                
 
     def plot_correlation_matrix_density(self, data_flat, rho):
@@ -61,7 +62,8 @@ class template_pca_fit_transform(luigi.Task):
         plt.ylabel('Frequency')
         plt.title(f"Off-diagonal feature correlation density in [{rhomin:.2f},{rhomax:.2f}]")
         plt.savefig(self.output()['correlation_matrix_density'].path, dpi=150, bbox_inches='tight')
-
+        plt.clf()
+        
     def plot_elbow_method(self, pca, K_nee):
         plt.figure(figsize=(8,6))
         plt.plot(np.arange(1, len(pca.explained_variance_)+1), pca.explained_variance_, marker='o')
@@ -71,6 +73,7 @@ class template_pca_fit_transform(luigi.Task):
         plt.axvline(K_nee, color='red', linestyle='--')  # Dashed red line
         plt.grid(True)
         plt.savefig(self.output()['elbow_method'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
         
     def elbow_method(self, pca):
         # Plot the eigenvalues and look for the "elbow" point where the marginal gain drops off. 
@@ -87,7 +90,8 @@ class template_pca_fit_transform(luigi.Task):
         plt.axvline(K_aiser, color='red', linestyle='--')  # Dashed red line
         plt.grid(True)
         plt.savefig(self.output()['kaiser_method'].path, dpi=150, bbox_inches='tight')
-
+        plt.clf()
+        
     def kaiser_method(self, pca):
         # Keep components with eigenvalues > 1. Assumes standardized data.
         eigenvalues = pca.explained_variance_
@@ -106,6 +110,7 @@ class template_pca_fit_transform(luigi.Task):
         plt.plot(K_cumvar, goal, 'ko', markersize=8)  # Black dot at intersection
         plt.grid(True)
         plt.savefig(self.output()['cumvar_method'].path, dpi=150, bbox_inches='tight')
+        plt.clf()
         
     def cumulative_variance_method(self, pca):
         explained_variance_ratio = np.cumsum(pca.explained_variance_ratio_)

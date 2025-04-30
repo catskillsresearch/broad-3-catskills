@@ -23,7 +23,7 @@ class template_patches_to_features(luigi.Task):
     def run(self):
         encoder = inf_encoder_factory("resnet50")(self.input()['weights'].path)
         patches_path = self.input()['patches'][self.patch_field].path
-        embed_path = self.output()['features'].path
+        embed_path = self.output().path
         batch_size = 128
         num_workers = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
