@@ -39,7 +39,8 @@ class template_pca_fit_transform(luigi.Task):
         plt.hist(data_flat, bins=200, density=True)
         plt.xlabel('Value')
         plt.ylabel('Frequency')
-        plt.title(f"Non-0 {self.name} density")
+        tag = f'{self.object_name}_{self.object_type}'
+        plt.title(f"Non-0 {tag} density")
         plt.savefig(self.output()['density'].path, dpi=150, bbox_inches='tight')
         plt.clf()
         return data_flat
@@ -59,7 +60,7 @@ class template_pca_fit_transform(luigi.Task):
         plt.xlabel('Value')
         plt.ylabel('Frequency')
         plt.title(f"Off-diagonal feature correlation density in [{rhomin:.2f},{rhomax:.2f}]")
-        plt.savefig(self.output()['correlation_matrix_density'], dpi=150, bbox_inches='tight')
+        plt.savefig(self.output()['correlation_matrix_density'].path, dpi=150, bbox_inches='tight')
 
     def plot_elbow_method(self, pca, K_nee):
         plt.figure(figsize=(8,6))
@@ -83,7 +84,7 @@ class template_pca_fit_transform(luigi.Task):
         plt.xlabel('Component number')
         plt.ylabel('Eigenvalue')
         plt.title(f"{self.object_type} Kaiser components to eigenvalue < 1: {K_aiser}")
-        plt.axvline(K_nee, color='red', linestyle='--')  # Dashed red line
+        plt.axvline(K_aiser, color='red', linestyle='--')  # Dashed red line
         plt.grid(True)
         plt.savefig(self.output()['kaiser_method'].path, dpi=150, bbox_inches='tight')
 
@@ -94,7 +95,7 @@ class template_pca_fit_transform(luigi.Task):
         self.plot_kaiser_method(pca, K_aiser)
         return K_aiser
 
-    def plot_cumvar_method(self, pca, K_cumvar)
+    def plot_cumvar_method(self, pca, K_cumvar, goal):
         V = np.cumsum(pca.explained_variance_ratio_)
         plt.figure(figsize=(8,6))
         plt.plot(V)
@@ -110,7 +111,7 @@ class template_pca_fit_transform(luigi.Task):
         explained_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
         goal = 0.9
         K_cumvar = np.argmax(explained_variance_ratio >= goal) + 1
-        self.plot_cumvar_method(pca, K_cumvar)
+        self.plot_cumvar_method(pca, K_cumvar, goal)
         return K_cumvar
         
     def assess_optimal_components(self, pca):
@@ -135,10 +136,9 @@ class template_pca_fit_transform(luigi.Task):
         scaler, pca = pca_fit(data, self.sample_size)
         K = self.assess_optimal_components(pca)
         basis = pca.components_.T[:,:K]
-        
+        out = self.output()
         np.savez_compressed(out['basis'].path, basis)
         joblib.dump(scaler, out['scaler'].path)
         np.savez_compressed(out['pca_mean'].path, pca.mean_)
-
         batch_size = 1000
-        PCs = pca_transform_batch_export_dealloc(basis, scaler, pca_mean, data, batch_size, self.output()['PCs'].path)
+        PCs = pca_transform_batch_export_dealloc(basis, scaler, pca.mean_, data, batch_size, self.output()['PCs'].path)
